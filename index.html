@@ -1762,7 +1762,7 @@ function renderHome(){
  const feed=[...ACTIVITIES.slice(0,2).map(a=>({d:a.d,t:a.t,b:a.b,tag:{bn:"কার্যক্রম",en:"Activity"},href:"#/activity?id="+a.id})),...NEWS.slice(0,2).map(n=>({...n,href:"#/news"}))];
  $("#homeFeed").innerHTML=feed.map(f=>edRow(f,f.href)).join("");
  $("#homeLedger").innerHTML=FINANCE["2026"].slice(0,4).map(r=>`<tr><td>${esc(r.i[state.lang])}</td><td class="num">${r.a<0?"−":""}৳${num(Math.abs(r.a).toLocaleString("en-IN"))}</td></tr>`).join("")+
-  `<tr class="total"><td>${state.lang==="bn"?"উদ্বৃত্ত (নমুনা)":"Surplus (sample)"}</td><td class="num">৳${num("320,000")}</td></tr>`;
+  `<tr class="total"><td>${state.lang==="bn"?"উদ্বৃত্ত (নমুনা)":"Surplus (sample)"}</td><td class="num">৳${num("230,000")}</td></tr>`;
  $("#homeGallery").innerHTML=GALLERY.slice(0,6).map((g,i)=>`<button type="button" class="${g.wide?"wide":""}" data-gal="${i}"><figure style="margin:0;height:100%"><img src="${g.src}" alt="${esc(g.c[state.lang])}" /><figcaption>${esc(g.c[state.lang])}</figcaption></figure></button>`).join("");
  bindGallery($("#homeGallery"));
 }
