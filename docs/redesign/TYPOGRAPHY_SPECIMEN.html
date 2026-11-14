@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Typography Specimen — Satanipara Community (Redesign Phase 3)</title>
+<!--
+  STANDALONE SPECIMEN — Satanipara Community redesign, Phase 3 (2026-11-14)
+  Purpose: compare Bengali candidate fonts side by side on the SAME real strings.
+  Fonts load from Google Fonts CDN; if offline, each block falls back to the
+  system Bengali sans/serif so the page still reads (fallback is labelled).
+
+  ⚠️ NO SCREENSHOT VERIFICATION HAS BEEN PERFORMED on this file. The final font
+  decision must be confirmed from actual rendered screenshots during build QA
+  (see TYPOGRAPHY_RESEARCH.md). Do not present this file as proof of rendering.
+  All strings are DEMO copy; no real people, stats, or finance appear here.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anek+Bangla:wght@100..800&family=Tiro+Bangla:ital@0;1&family=Noto+Sans+Bengali:wght@100..900&family=Noto+Serif+Bengali:wght@100..900&family=Baloo+Da+2:wght@400..800&family=Hind+Siliguri:wght@300;400;500;600;700&family=Manrope:wght@200..800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --forest:#173F35; --deep:#102E27; --gold:#C49A4A; --brass:#9A7B2E;
+    --ivory:#F7F4EA; --paper:#FFFDF6; --ink:#1E2A25; --muted:#5A6B62; --line:#E2DCCB;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--ivory);color:var(--ink);font-family:'Anek Bangla','Noto Sans Bengali',sans-serif;}
+  .wrap{max-width:1080px;margin:0 auto;padding:32px 20px 64px}
+  header{border-bottom:2px solid var(--forest);padding-bottom:20px;margin-bottom:8px}
+  .kicker{color:var(--brass);font-weight:700;font-size:14px;letter-spacing:.02em;margin:0 0 8px}
+  h1{font-family:'Tiro Bangla','Noto Serif Bengali',serif;font-weight:400;font-size:clamp(32px,6vw,52px);line-height:1.3;margin:0;color:var(--forest)}
+  .lede{font-size:17px;line-height:1.8;color:var(--muted);max-width:68ch}
+  .notice{background:#FFF3D6;border:1px solid var(--gold);border-left:4px solid var(--gold);border-radius:8px;padding:14px 16px;font-size:15px;line-height:1.8;margin:20px 0 32px}
+  .notice b{color:var(--forest)}
+  nav.toc{margin:0 0 32px;padding:0;list-style:none;display:flex;flex-wrap:wrap;gap:8px}
+  nav.toc a{display:inline-block;padding:8px 14px;border:1px solid var(--forest);border-radius:999px;color:var(--forest);text-decoration:none;font-size:15px;font-weight:600}
+  section.font-block{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:24px;margin-bottom:28px}
+  section.font-block h2{margin:0 0 4px;color:var(--forest);font-size:24px;line-height:1.35}
+  section.font-block .meta{color:var(--muted);font-size:14px;line-height:1.7;margin:0 0 20px}
+  .sample{border-top:1px solid var(--line);padding:16px 0}
+  .sample:first-of-type{border-top:none}
+  .label{font-size:12px;font-weight:700;color:var(--brass);text-transform:uppercase;letter-spacing:.08em;margin:0 0 8px}
+  .label span{font-family:'Manrope',sans-serif}
+  /* --- per-font classes: each block sets ONLY its own family --- */
+  .f-anek{font-family:'Anek Bangla','Noto Sans Bengali',sans-serif}
+  .f-tiro{font-family:'Tiro Bangla','Noto Serif Bengali',serif}
+  .f-notosans{font-family:'Noto Sans Bengali','Hind Siliguri',sans-serif}
+  .f-notoserif{font-family:'Noto Serif Bengali','Tiro Bangla',serif}
+  .f-baloo{font-family:'Baloo Da 2','Noto Sans Bengali',sans-serif}
+  .f-hind{font-family:'Hind Siliguri','Noto Sans Bengali',sans-serif}
+  .f-manrope{font-family:'Manrope','Anek Bangla',sans-serif}
+  .hero{font-size:clamp(30px,5vw,44px);line-height:1.3;margin:0}
+  .h2s{font-size:clamp(22px,3vw,30px);line-height:1.35;margin:0}
+  .body{font-size:17px;line-height:1.8;margin:0;max-width:68ch}
+  .body-sm{font-size:15px;line-height:1.8;margin:0;max-width:68ch}
+  .ui{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+  .btn{display:inline-block;background:var(--forest);color:var(--ivory);border:none;border-radius:8px;padding:12px 20px;font-size:16px;font-weight:600;cursor:pointer}
+  .btn-ghost{display:inline-block;background:transparent;color:var(--forest);border:1px solid var(--forest);border-radius:8px;padding:12px 20px;font-size:16px;font-weight:600;cursor:pointer}
+  .chip{display:inline-block;border:1px solid var(--line);border-radius:999px;padding:6px 12px;font-size:14px;font-weight:600;color:var(--forest)}
+  .mixed{font-size:17px;line-height:1.8;margin:0}
+  .mixed .en{font-family:'Manrope',sans-serif}
+  .conj{font-size:19px;line-height:1.9;margin:0;word-spacing:.35em}
+  .nums{font-size:19px;line-height:1.8;margin:0}
+  .sizes p{margin:6px 0;line-height:1.8}
+  footer{border-top:2px solid var(--forest);padding-top:16px;color:var(--muted);font-size:14px;line-height:1.8}
+  @media (max-width:640px){ .wrap{padding:20px 14px 48px} section.font-block{padding:18px 16px} }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <p class="kicker">সাতানীপাড়া কমিউনিটি — টাইপোগ্রাফি নমুনা</p>
+  <h1>সাতানীপাড়া কমিউনিটি</h1>
+  <p class="lede">একটি এলাকা, একটি পরিবার — প্রতিটি ফন্টে একই বাক্য, একই আকারে, যাতে চোখেই
+  তুলনা করা যায়। নিচের প্রতিটি ব্লকে শিরোনাম, অনুচ্ছেদ, বোতাম/লেবেল, মিশ্র
+  বাংলা–ইংরেজি লাইন, যুক্তাক্ষর ও সংখ্যার নমুনা আছে।</p>
+</header>
+
+<div class="notice"><b>সতর্কতা — স্ক্রিনশট যাচাই হয়নি:</b> এই ফাইলটি কোনো লাইভ ব্রাউজারে
+রেন্ডার করে যাচাই করা হয়নি। চূড়ান্ত ফন্ট সিদ্ধান্ত বিল্ড QA পর্যায়ে আসল
+রেন্ডার করা স্ক্রিনশট (Chrome, Safari, Android ফোন; 360px ও 1280px) দেখে নিতে
+হবে — বিশেষ করে যুক্তাক্ষর (ক্ষ ত্র ষ্ট জ্ঞ শ্র ফ্র) ও বাংলা সংখ্যা। বিস্তারিত:
+TYPOGRAPHY_RESEARCH.md। সব লেখা ডেমো কপি।</div>
+
+<nav class="toc" aria-label="ফন্ট তালিকা">
+  <a href="#anek">Anek Bangla</a><a href="#tiro">Tiro Bangla</a>
+  <a href="#notosans">Noto Sans Bengali</a><a href="#notoserif">Noto Serif Bengali</a>
+  <a href="#baloo">Baloo Da 2</a><a href="#hind">Hind Siliguri</a>
+  <a href="#manrope">Manrope (English)</a>
+</nav>
+
+<!-- ============ 1. ANEK BANGLA ============ -->
+<section class="font-block" id="anek">
+  <h2 class="f-anek">Anek Bangla — প্রস্তাবিত UI ও অনুচ্ছেদ ফন্ট</h2>
+  <p class="meta f-anek">Ek Type · Google Fonts (Feb 2022) · Variable: weight 100–800, width 75–125 · OFL 1.1 · কোনো সত্যিকারের italic নেই</p>
+  <div class="sample f-anek"><p class="label">Hero / শিরোনাম — 700</p><p class="hero" style="font-weight:700">সাতানীপাড়া কমিউনিটি</p></div>
+  <div class="sample f-anek"><p class="label">Tagline / স্লোগান — 600</p><p class="h2s" style="font-weight:600">একটি এলাকা, একটি পরিবার</p></div>
+  <div class="sample f-anek"><p class="label">Slogan — 500</p><p class="h2s" style="font-weight:500;font-size:22px">শিক্ষা • ঐক্য • শান্তি • প্রগতি</p></div>
+  <div class="sample f-anek"><p class="label">Body / অনুচ্ছেদ — 400, 17px</p><p class="body">আমাদের এলাকার মানুষের জন্য একটি পরিবার। মানুষের পাশে, প্রতিটি প্রয়োজনে — প্রবাসে থেকেও থাকুন পরিবারের কাছাকাছি।</p></div>
+  <div class="sample f-anek"><p class="label">Body small / ছোট লেখা — 400, 15px</p><p class="body-sm">প্রবাসে থেকেও থাকুন পরিবারের কাছাকাছি। সাহায্যের আবেদন করুন, আবেদনের অবস্থা দেখুন, আর এলাকার খবর জানুন — সব এক জায়গায়।</p></div>
+  <div class="sample f-anek"><p class="label">UI labels / বোতাম ও লেবেল — 600</p><div class="ui"><button class="btn f-anek" type="button">সাহায্যের আবেদন করুন</button><button class="btn-ghost f-anek" type="button">আবেদন ট্র্যাক করুন</button><span class="chip">রক্তদাতা খুঁজুন</span><span class="chip">নোটিশ দেখুন</span></div></div>
+  <div class="sample f-anek"><p class="label">Mixed BN / EN — মিশ্র লাইন</p><p class="mixed">প্রবাসে থেকেও থাকুন পরিবারের কাছাকাছি। <span class="en">— Satanipara Community, est. 1999</span></p></div>
+  <div class="sample f-anek"><p class="label">Conjuncts / যুক্তাক্ষর</p><p class="conj">ক্ষ ত্র ষ্ট জ্ঞ শ্র ফ্র ব্র হ্র ন্ত ণ্ড স্থ &nbsp;·&nbsp; শিক্ষা ঐক্য শান্তি প্রগতি শ্রী</p></div>
+  <div class="sample f-anek"><p class="label">Numerals / সংখ্যা</p><p class="nums">০১২৩৪৫৬৭৮৯ &nbsp;·&nbsp; 0123456789 &nbsp;·&nbsp; EXP-2026-1052</p></div>
+  <div class="sample f-anek sizes"><p class="label">Weight ladder / ওজনের ধাপ</p><p style="font-weight:400;font-size:24px">আমাদের এলাকার মানুষের জন্য একটি পরিবার — 400</p><p style="font-weight:500;font-size:24px">আমাদের এলাকার মানুষের জন্য একটি পরিবার — 500</p><p style="font-weight:600;font-size:24px">আমাদের এলাকার মানুষের জন্য একটি পরিবার — 600</p><p style="font-weight:700;font-size:24px">আমাদের এলাকার মানুষের জন্য একটি পরিবার — 700</p><p style="font-weight:800;font-size:24px">আমাদের এলাকার মানুষের জন্য একটি পরিবার — 800</p></div>
+</section>
+
+<!-- ============ 2. TIRO BANGLA ============ -->
+<section class="font-block" id="tiro">
+  <h2 class="f-tiro">Tiro Bangla — প্রস্তাবিত সম্পাদকীয় শিরোনাম ফন্ট (শুধু বড় আকারে)</h2>
+  <p class="meta f-tiro">Tiro Typeworks (John Hudson, Fiona Ross) · Google Fonts (May 2022) · Regular 400 + সত্যিকারের Italic · কোনো Bold নেই · OFL 1.1</p>
+  <div class="sample f-tiro"><p class="label">Hero / শিরোনাম — 400</p><p class="hero">সাতানীপাড়া কমিউনিটি</p></div>
+  <div class="sample f-tiro"><p class="label">Tagline / স্লোগান — 400</p><p class="h2s">একটি এলাকা, একটি পরিবার</p></div>
+  <div class="sample f-tiro"><p class="label">Slogan — 400</p><p class="h2s" style="font-size:22px">শিক্ষা • ঐক্য • শান্তি • প্রগতি</p></div>
+  <div class="sample f-tiro"><p class="label">Pull quote / উদ্ধৃতি — Italic 400</p><p class="body" style="font-style:italic;font-size:20px">আমাদের এলাকার মানুষের জন্য একটি পরিবার। মানুষের পাশে, প্রতিটি প্রয়োজনে।</p></div>
+  <div class="sample f-tiro"><p class="label">Body / অনুচ্ছেদ — 400, 17px (তুলনার জন্য; শরীরের লেখায় ব্যবহারের প্রস্তাব নেই)</p><p class="body">আমাদের এলাকার মানুষের জন্য একটি পরিবার। মানুষের পাশে, প্রতিটি প্রয়োজনে — প্রবাসে থেকেও থাকুন পরিবারের কাছাকাছি।</p></div>
+  <div class="sample f-tiro"><p class="label">UI labels / বোতাম ও লেবেল — 400 (তুলনার জন্য; UI-তে ব্যবহারের প্রস্তাব নেই)</p><div class="ui"><button class="btn f-tiro" type="button">সাহায্যের আবেদন করুন</button><button class="btn-ghost f-tiro" type="button">আবেদন ট্র্যাক করুন</button><span class="chip">রক্তদাতা খুঁজুন</span></div></div>
+  <div class="sample f-tiro"><p class="label">Mixed BN / EN — মিশ্র লাইন</p><p class="mixed">প্রবাসে থেকেও থাকুন পরিবারের কাছাকাছি। <span class="en">— Satanipara Community, est. 1999</span></p></div>
+  <div class="sample f-tiro"><p class="label">Conjuncts / যুক্তাক্ষর — QA-তে বিশেষ নজর: শ্র / ফ্র</p><p class="conj">ক্ষ ত্র ষ্ট জ্ঞ শ্র ফ্র ব্র হ্র ন্ত ণ্ড স্থ &nbsp;·&nbsp; শিক্ষা ঐক্য শান্তি প্রগতি শ্রী</p></div>
+  <div class="sample f-tiro"><p class="label">Numerals / সংখ্যা</p><p class="nums">০১২৩৪৫৬৭৮৯ &nbsp;·&nbsp; 0123456789 &nbsp;·&nbsp; EXP-2026-1052</p></div>
+</section>
+
+<!-- ============ 3. NOTO SANS BENGALI ============ -->
+<section class="font-block" id="notosans">
+  <h2 class="f-notosans">Noto Sans Bengali — রানার-আপ UI/অনুচ্ছেদ ফন্ট; সর্বজনীন ফলব্যাক</h2>
+  <p class="meta f-notosans">Google (Noto project) · Google Fonts (Nov 2020) · Variable: weight 100–900, width 62.5–100 · OFL 1.1</p>
+  <div class="sample f-notosans"><p class="label">Hero / শিরোনাম — 700</p><p class="hero" style="font-weight:700">সাতানীপাড়া কমিউনিটি</p></div>
+  <div class="sample f-notosans"><p class="label">Tagline / স্লোগান — 600</p><p class="h2s" style="font-weight:600">একটি এলাকা, একটি পরিবার</p></div>
+  <div class="sample f-notosans"><p class="label">Slogan — 500</p><p class="h2s" style="font-weight:500;font-size:22px">শিক্ষা • ঐক্য • শান্তি • প্রগতি</p></div>
+  <div class="sample f-notosans"><p class="label">Body / অনুচ্ছেদ — 400, 17px</p><p class="body">আমাদের এলাকার মানুষের জন্য একটি পরিবার। মানুষের পাশে, প্রতিটি প্রয়োজনে — প্রবাসে থেকেও থাকুন পরিবারের কাছাকাছি।</p></div>
+  <div class="sample f-notosans"><p class="label">Body small / ছোট লেখা — 400, 15px</p><p class="body-sm">প্রবাসে থেকেও থাকুন পরিবারের কাছাকাছি। সাহায্যের আবেদন করুন, আবেদনের অবস্থা দেখুন, আর এলাকার খবর জানুন — সব এক জায়গায়।</p></div>
+  <div class="sample f-notosans"><p class="label">UI labels / বোতাম ও লেবেল — 600</p><div class="ui"><button class="btn f-notosans" type="button">সাহায্যের আবেদন করুন</button><button class="btn-ghost f-notosans" type="button">আবেদন ট্র্যাক করুন</button><span class="chip">রক্তদাতা খুঁজুন</span><span class="chip">নোটিশ দেখুন</span></div></div>
+  <div class="sample f-notosans"><p class="label">Mixed BN / EN — মিশ্র লাইন</p><p class="mixed">প্রবাসে থেকেও থাকুন পরিবারের কাছাকাছি। <span class="en">— Satanipara Community, est. 1999</span></p></div>
+  <div class="sample f-notosans"><p class="label">Conjuncts / যুক্তাক্ষর</p><p class="conj">ক্ষ ত্র ষ্ট জ্ঞ শ্র ফ্র ব্র হ্র ন্ত ণ্ড স্থ &nbsp;·&nbsp; শিক্ষা ঐক্য শান্তি প্রগতি শ্রী</p></div>
+  <div class="sample f-notosans"><p class="label">Numerals / সংখ্যা</p><p class="nums">০১২৩৪৫৬৭৮৯ &nbsp;·&nbsp; 0123456789 &nbsp;·&nbsp; EXP-2026-1052</p></div>
+</section>
+
+<!-- ============ 4. NOTO SERIF BENGALI ============ -->
+<section class="font-block" id="notoserif">
+  <h2 class="f-notoserif">Noto Serif Bengali — রানার-আপ শিরোনাম ফন্ট; Tiro-র ফলব্যাক</h2>
+  <p class="meta f-notoserif">Google (Noto project) · Google Fonts (Nov 2020) · Variable: weight 100–900, width 62.5–100 · OFL 1.1</p>
+  <div class="sample f-notoserif"><p class="label">Hero / শিরোনাম — 700</p><p class="hero" style="font-weight:700">সাতানীপাড়া কমিউনিটি</p></div>
+  <div class="sample f-notoserif"><p class="label">Tagline / স্লোগান — 600</p><p class="h2s" style="font-weight:600">একটি এলাকা, একটি পরিবার</p></div>
+  <div class="sample f-notoserif"><p class="label">Slogan — 500</p><p class="h2s" style="font-weight:500;font-size:22px">শিক্ষা • ঐক্য • শান্তি • প্রগতি</p></div>
+  <div class="sample f-notoserif"><p class="label">Body / অনুচ্ছেদ — 400, 17px (তুলনার জন্য)</p><p class="body">আমাদের এলাকার মানুষের জন্য একটি পরিবার। মানুষের পাশে, প্রতিটি প্রয়োজনে — প্রবাসে থেকেও থাকুন পরিবারের কাছাকাছি।</p></div>
+  <div class="sample f-notoserif"><p class="label">UI labels / বোতাম ও লেবেল — 600 (তুলনার জন্য; UI-তে ব্যবহারের প্রস্তাব নেই)</p><div class="ui"><button class="btn f-notoserif" type="button">সাহায্যের আবেদন করুন</button><button class="btn-ghost f-notoserif" type="button">আবেদন ট্র্যাক করুন</button><span class="chip">রক্তদাতা খুঁজুন</span></div></div>
+  <div class="sample f-notoserif"><p class="label">Mixed BN / EN — মিশ্র লাইন</p><p class="mixed">প্রবাসে থেকেও থাকুন পরিবারের কাছাকাছি। <span class="en">— Satanipara Community, est. 1999</span></p></div>
+  <div class="sample f-notoserif"><p class="label">Conjuncts / যুক্তাক্ষর</p><p class="conj">ক্ষ ত্র ষ্ট জ্ঞ শ্র ফ্র ব্র হ্র ন্ত ণ্ড স্থ &nbsp;·&nbsp; শিক্ষা ঐক্য শান্তি প্রগতি শ্রী</p></div>
+  <div class="sample f-notoserif"><p class="label">Numerals / সংখ্যা</p><p class="nums">০১২৩৪৫৬৭৮৯ &nbsp;·&nbsp; 0123456789 &nbsp;·&nbsp; EXP-2026-1052</p></div>
+  <div class="sample f-notoserif sizes"><p class="label">Weight ladder / ওজনের ধাপ</p><p style="font-weight:400;font-size:24px">আমাদের এলাকার মানুষের জন্য একটি পরিবার — 400</p><p style="font-weight:700;font-size:24px">আমাদের এলাকার মানুষের জন্য একটি পরিবার — 700</p><p style="font-weight:900;font-size:24px">আমাদের এলাকার মানুষের জন্য একটি পরিবার — 900</p></div>
+</section>
+
+<!-- ============ 5. BALOO DA 2 ============ -->
+<section class="font-block" id="baloo">
+  <h2 class="f-baloo">Baloo Da 2 — তুলনার জন্য; এই সাইটের জন্য প্রস্তাবিত নয়</h2>
+  <p class="meta f-baloo">Ek Type · Google Fonts (Jan 2016) · Variable: weight 400–800 · OFL 1.1 · গোলাকার, খেলো — প্রাতিষ্ঠানিক আস্থার সুরের সঙ্গে যায় না</p>
+  <div class="sample f-baloo"><p class="label">Hero / শিরোনাম — 700</p><p class="hero" style="font-weight:700">সাতানীপাড়া কমিউনিটি</p></div>
+  <div class="sample f-baloo"><p class="label">Tagline / স্লোগান — 600</p><p class="h2s" style="font-weight:600">একটি এলাকা, একটি পরিবার</p></div>
+  <div class="sample f-baloo"><p class="label">Slogan — 500</p><p class="h2s" style="font-weight:500;font-size:22px">শিক্ষা • ঐক্য • শান্তি • প্রগতি</p></div>
+  <div class="sample f-baloo"><p class="label">Body / অনুচ্ছেদ — 400, 17px</p><p class="body">আমাদের এলাকার মানুষের জন্য একটি পরিবার। মানুষের পাশে, প্রতিটি প্রয়োজনে — প্রবাসে থেকেও থাকুন পরিবারের কাছাকাছি।</p></div>
+  <div class="sample f-baloo"><p class="label">UI labels / বোতাম ও লেবেল — 600</p><div class="ui"><button class="btn f-baloo" type="button">সাহায্যের আবেদন করুন</button><button class="btn-ghost f-baloo" type="button">আবেদন ট্র্যাক করুন</button><span class="chip">রক্তদাতা খুঁজুন</span></div></div>
+  <div class="sample f-baloo"><p class="label">Mixed BN / EN — মিশ্র লাইন</p><p class="mixed">প্রবাসে থেকেও থাকুন পরিবারের কাছাকাছি। <span class="en">— Satanipara Community, est. 1999</span></p></div>
+  <div class="sample f-baloo"><p class="label">Conjuncts / যুক্তাক্ষর</p><p class="conj">ক্ষ ত্র ষ্ট জ্ঞ শ্র ফ্র ব্র হ্র ন্ত ণ্ড স্থ &nbsp;·&nbsp; শিক্ষা ঐক্য শান্তি প্রগতি শ্রী</p></div>
+  <div class="sample f-baloo"><p class="label">Numerals / সংখ্যা</p><p class="nums">০১২৩৪৫৬৭৮৯ &nbsp;·&nbsp; 0123456789 &nbsp;·&nbsp; EXP-2026-1052</p></div>
+</section>
+
+<!-- ============ 6. HIND SILIGURI ============ -->
+<section class="font-block" id="hind">
+  <h2 class="f-hind">Hind Siliguri — v1-এর ফন্ট; ফলব্যাক হিসেবে রাখা</h2>
+  <p class="meta f-hind">Indian Type Foundry (Jyotish Sonowal) · Google Fonts (Jun 2016) · 5 static weights 300–700 · Variable নয়, Italic নেই · OFL 1.1</p>
+  <div class="sample f-hind"><p class="label">Hero / শিরোনাম — 700</p><p class="hero" style="font-weight:700">সাতানীপাড়া কমিউনিটি</p></div>
+  <div class="sample f-hind"><p class="label">Tagline / স্লোগান — 600</p><p class="h2s" style="font-weight:600">একটি এলাকা, একটি পরিবার</p></div>
+  <div class="sample f-hind"><p class="label">Slogan — 500</p><p class="h2s" style="font-weight:500;font-size:22px">শিক্ষা • ঐক্য • শান্তি • প্রগতি</p></div>
+  <div class="sample f-hind"><p class="label">Body / অনুচ্ছেদ — 400, 17px</p><p class="body">আমাদের এলাকার মানুষের জন্য একটি পরিবার। মানুষের পাশে, প্রতিটি প্রয়োজনে — প্রবাসে থেকেও থাকুন পরিবারের কাছাকাছি।</p></div>
+  <div class="sample f-hind"><p class="label">UI labels / বোতাম ও লেবেল — 600</p><div class="ui"><button class="btn f-hind" type="button">সাহায্যের আবেদন করুন</button><button class="btn-ghost f-hind" type="button">আবেদন ট্র্যাক করুন</button><span class="chip">রক্তদাতা খুঁজুন</span></div></div>
+  <div class="sample f-hind"><p class="label">Mixed BN / EN — মিশ্র লাইন</p><p class="mixed">প্রবাসে থেকেও থাকুন পরিবারের কাছাকাছি। <span class="en">— Satanipara Community, est. 1999</span></p></div>
+  <div class="sample f-hind"><p class="label">Conjuncts / যুক্তাক্ষর</p><p class="conj">ক্ষ ত্র ষ্ট জ্ঞ শ্র ফ্র ব্র হ্র ন্ত ণ্ড স্থ &nbsp;·&nbsp; শিক্ষা ঐক্য শান্তি প্রগতি শ্রী</p></div>
+  <div class="sample f-hind"><p class="label">Numerals / সংখ্যা — QA-তে ১ যাচাই করুন</p><p class="nums">০১২৩৪৫৬৭৮৯ &nbsp;·&nbsp; 0123456789 &nbsp;·&nbsp; EXP-2026-1052</p></div>
+</section>
+
+<!-- ============ 7. MANROPE (EN) ============ -->
+<section class="font-block" id="manrope">
+  <h2 class="f-manrope">Manrope — English companion (Latin only, no Bengali glyphs)</h2>
+  <p class="meta f-manrope">Mikhail Sharanda · Google Fonts (Oct 2019) · Variable: weight 200–800 · OFL 1.1 · No italic</p>
+  <div class="sample f-manrope"><p class="label">English heading — 800</p><p class="hero" style="font-weight:800">Satanipara Community</p></div>
+  <div class="sample f-manrope"><p class="label">English tagline — 700</p><p class="h2s" style="font-weight:700">One area, one family.</p></div>
+  <div class="sample f-manrope"><p class="label">English body — 400, 16px</p><p class="body" style="font-size:16px;line-height:1.65">Education • Unity • Peace • Progress. Standing beside our people, for every need — stay close to family, even from abroad.</p></div>
+  <div class="sample f-manrope"><p class="label">English UI — 600</p><div class="ui"><button class="btn f-manrope" type="button">Request Help</button><button class="btn-ghost f-manrope" type="button">Track Request</button><span class="chip">Find a Blood Donor</span></div></div>
+  <div class="sample f-manrope"><p class="label">Mixed EN / BN — Bengali falls back to the Bengali stack (never Manrope alone)</p><p class="mixed"><span class="en">Stay close to family, even from abroad — </span><span class="f-anek">প্রবাসে থেকেও থাকুন পরিবারের কাছাকাছি।</span></p></div>
+  <div class="sample f-manrope"><p class="label">Numerals / Request ID</p><p class="nums">0123456789 · EXP-2026-1052 · est. 1999</p></div>
+</section>
+
+<footer>
+  <p><b>How to use this specimen in QA:</b> open in Chrome, Safari, and an Android
+  phone browser; screenshot each block at 360px and 1280px; compare conjuncts,
+  numerals (especially ১), vowel-sign clipping, and mixed BN/EN line heights.
+  If Tiro Bangla fails on শ্র/ফ্র or Anek Bangla fails at 15px body, swap to the
+  runner-up system in TYPOGRAPHY_RESEARCH.md and re-screenshot. All copy is demo.</p>
+  <p>শিক্ষা • ঐক্য • শান্তি • প্রগতি — সাতানীপাড়া কমিউনিটি (নমুনা)</p>
+</footer>
+
+</div>
+</body>
+</html>

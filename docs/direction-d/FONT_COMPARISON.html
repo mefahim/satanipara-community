@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Direction D — Font Comparison Specimen · Satanipara Community</title>
+<!--
+  Satanipara Community — DIRECTION D font-comparison specimen.
+  Status: PROVISIONAL. Google Fonts loads in this environment (verified
+  2026-11-14 via curl: css2 200, woff2 200), but NO rendered screenshot has
+  been taken — no browser was available to the researcher. Nothing here is
+  claimed as screenshot-verified. See FONT_COMPARISON.md for the evidence.
+  Fallbacks are deliberate: if a webfont fails, each block still reads in
+  the next Bengali face in the stack.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anek+Bangla:wdth,wght@75..125,100..800&family=Tiro+Bangla:ital,wght@0,400;1,400&family=Noto+Sans+Bengali:wght@100..900&family=Noto+Serif+Bengali:wght@100..900&family=Baloo+Da+2:wght@400..800&family=Hind+Siliguri:wght@300;400;500;600;700&family=Alkatra:wght@400..700&family=Manrope:wght@200..800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --forest:#173F35; --gold:#C49A4A; --ivory:#F7F4EA; --ink:#1E2A26;
+    --paper:#FFFDF6; --muted:#5A6B64; --line:#E4DCC8;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--ivory);color:var(--ink);
+    font-family:'Anek Bangla','Noto Sans Bengali','Hind Siliguri',sans-serif;
+    font-size:17px;line-height:1.85;}
+  .wrap{max-width:1060px;margin:0 auto;padding:48px 24px 96px}
+  header{margin-bottom:40px}
+  .kicker{font-family:'Anek Bangla','Noto Sans Bengali',sans-serif;font-weight:600;
+    font-size:14px;color:var(--gold);margin:0 0 8px}
+  h1{font-family:'Anek Bangla','Noto Sans Bengali',sans-serif;font-weight:800;
+    font-stretch:82%;font-size:clamp(2.4rem,6vw,4rem);line-height:1.15;
+    color:var(--forest);margin:0 0 12px}
+  .lede{font-size:18px;line-height:1.8;color:var(--muted);max-width:62ch;margin:0}
+  .status{margin-top:20px;padding:14px 18px;background:var(--paper);
+    border:1px solid var(--line);border-radius:10px;font-size:15px;line-height:1.7}
+  .status b{color:var(--forest)}
+  .status .js{color:var(--muted)}
+  section.face{background:var(--paper);border:1px solid var(--line);
+    border-radius:14px;padding:28px 30px;margin:0 0 28px}
+  .face-head{display:flex;flex-wrap:wrap;gap:6px 16px;align-items:baseline;
+    border-bottom:1px solid var(--line);padding-bottom:14px;margin-bottom:20px}
+  .face-head h2{margin:0;font-size:22px;color:var(--forest)}
+  .face-head .meta{font-size:14px;color:var(--muted);line-height:1.6}
+  .tag{display:inline-block;font-size:12px;font-weight:600;padding:2px 10px;
+    border-radius:99px;background:var(--ivory);border:1px solid var(--line);color:var(--muted)}
+  .tag.hot{background:var(--forest);color:var(--ivory);border-color:var(--forest)}
+  .tag.quote{background:#F3EAD3;color:#7A5E1F;border-color:#E2CD96}
+  .row{margin:0 0 18px}
+  .row .lbl{font-size:12px;font-weight:600;color:var(--muted);margin:0 0 4px}
+  .display{font-size:48px;line-height:1.35}
+  .heading{font-size:28px;line-height:1.5}
+  .body{font-size:17px;line-height:1.85}
+  .conj{font-size:22px;line-height:1.8;word-spacing:.35em}
+  .nums{font-size:22px;line-height:1.8}
+  .mixed{font-size:17px;line-height:1.85}
+  /* per-face classes */
+  .f-anek{font-family:'Anek Bangla','Noto Sans Bengali','Hind Siliguri',sans-serif}
+  .f-tiro{font-family:'Tiro Bangla','Noto Serif Bengali',serif}
+  .f-notoserif{font-family:'Noto Serif Bengali','Tiro Bangla',serif}
+  .f-notosans{font-family:'Noto Sans Bengali','Anek Bangla','Hind Siliguri',sans-serif}
+  .f-baloo{font-family:'Baloo Da 2','Anek Bangla','Noto Sans Bengali',sans-serif}
+  .f-hind{font-family:'Hind Siliguri','Noto Sans Bengali',sans-serif}
+  .f-alkatra{font-family:'Alkatra','Anek Bangla','Noto Sans Bengali',sans-serif}
+  .f-manrope{font-family:'Manrope','Anek Bangla',sans-serif}
+  .w800{font-weight:800}.w700{font-weight:700}.w600{font-weight:600}
+  .w400{font-weight:400}.w500{font-weight:500}
+  .cond{font-stretch:78%}
+  .ital{font-style:italic}
+  /* Direction D system preview */
+  .system{border:2px solid var(--forest);border-radius:14px;padding:36px 34px;
+    background:var(--paper);margin:0 0 28px}
+  .system .sys-kicker{font-family:'Anek Bangla','Noto Sans Bengali',sans-serif;
+    font-weight:600;font-size:14px;color:var(--gold);margin:0 0 10px}
+  .system .sys-hero{font-family:'Anek Bangla','Noto Sans Bengali',sans-serif;
+    font-weight:800;font-stretch:80%;font-size:clamp(2.5rem,6vw,4.25rem);
+    line-height:1.15;color:var(--forest);margin:0 0 14px}
+  .system .sys-h2{font-family:'Anek Bangla','Noto Sans Bengali',sans-serif;
+    font-weight:700;font-size:clamp(1.6rem,3vw,2.25rem);line-height:1.25;
+    color:var(--forest);margin:26px 0 8px}
+  .system .sys-body{font-size:17px;line-height:1.85;max-width:62ch;margin:0 0 8px}
+  .system .sys-quote{font-family:'Tiro Bangla','Noto Serif Bengali',serif;
+    font-style:italic;font-size:clamp(1.5rem,3vw,2rem);line-height:1.5;
+    color:var(--forest);margin:24px 0 6px}
+  .system .sys-quote-by{font-size:14px;color:var(--muted);margin:0}
+  .system .sys-label{font-family:'Anek Bangla','Noto Sans Bengali',sans-serif;
+    font-weight:600;font-size:15px;color:var(--forest);margin:22px 0 4px}
+  .system .sys-btn{display:inline-block;margin-top:14px;padding:12px 26px;
+    background:var(--forest);color:var(--ivory);border-radius:8px;
+    font-family:'Anek Bangla','Noto Sans Bengali',sans-serif;font-weight:600;
+    font-size:16px}
+  .system .sys-en{font-family:'Manrope','Anek Bangla',sans-serif}
+  .notes{font-size:15px;line-height:1.8;color:var(--muted)}
+  .notes h2{color:var(--forest);font-size:20px;margin:0 0 8px}
+  .notes ul{margin:0;padding-left:22px}
+  .notes li{margin-bottom:6px}
+  footer{margin-top:48px;font-size:13px;color:var(--muted);line-height:1.7}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <p class="kicker">সাতানীপাড়া কমিউনিটি · DIRECTION D · TYPOGRAPHY SPECIMEN</p>
+  <h1 class="f-anek w800 cond">সাতানীপাড়া কমিউনিটি</h1>
+  <p class="lede">Direction D — a premium creative redesign. This specimen renders the same
+  real Bengali strings in every candidate face, side by side, at display, heading
+  and body sizes. Recommendation and evidence: see FONT_COMPARISON.md.</p>
+  <div class="status" id="load-status"><b>Font-load status:</b>
+    <span class="js">checking with document.fonts… (enable JavaScript; if a face shows “not loaded”, it fell back to the next face in its stack)</span>
+  </div>
+</header>
+
+<!-- ============ ANEK BANGLA — recommended workhorse ============ -->
+<section class="face">
+  <div class="face-head">
+    <h2 class="f-anek w700">Anek Bangla</h2>
+    <span class="tag hot">DIRECTION D · RECOMMENDED — display + UI + body</span>
+    <span class="meta">Ek Type · variable wght 100–800, wdth 75–125 · 8 weights · OFL · no true italic</span>
+  </div>
+  <div class="row"><p class="lbl">Display — 48px · 800 · wdth 78 (condensed)</p>
+    <p class="display f-anek w800 cond">সাতানীপাড়া কমিউনিটি</p></div>
+  <div class="row"><p class="lbl">Heading — 28px · 700</p>
+    <p class="heading f-anek w700">একটি এলাকা, একটি পরিবার</p></div>
+  <div class="row"><p class="lbl">Body — 17px · 400 · lh 1.85</p>
+    <p class="body f-anek w400">আমাদের এলাকার মানুষের জন্য একটি পরিবার — মানুষের পাশে, প্রতিটি প্রয়োজনে।
+    প্রবাসে থেকেও থাকুন পরিবারের কাছাকাছি।</p></div>
+  <div class="row"><p class="lbl">Slogan — 22px · 600</p>
+    <p class="heading f-anek w600" style="font-size:22px">শিক্ষা • ঐক্য • শান্তি • প্রগতি</p></div>
+  <div class="row"><p class="lbl">Conjunct test — 22px</p>
+    <p class="conj f-anek w400">ক্ষ ত্র ষ্ট জ্ঞ শ্র ফ্র ব্র হ্র ন্ত ণ্ড স্থ · শ্রী</p></div>
+  <div class="row"><p class="lbl">Bengali numerals — 22px</p>
+    <p class="nums f-anek w400">০১২৩৪৫৬৭৮৯ · ১৯৯৯ · ২০২৬</p></div>
+  <div class="row"><p class="lbl">Mixed BN / EN — 17px</p>
+    <p class="mixed f-anek w400">প্রবাসে থেকেও থাকুন পরিবারের কাছাকাছি। — Satanipara Community, est. 1999</p></div>
+</section>
+
+<!-- ============ TIRO BANGLA — quotes only ============ -->
+<section class="face">
+  <div class="face-head">
+    <h2 class="f-tiro">Tiro Bangla</h2>
+    <span class="tag quote">PULL-QUOTES ONLY (italic) — not the display face in Direction D</span>
+    <span class="meta">Tiro Typeworks · 400 + true italic 400 only · no bold · OFL</span>
+  </div>
+  <div class="row"><p class="lbl">Display — 48px · 400 (for comparison only — NOT used at this role in D)</p>
+    <p class="display f-tiro">সাতানীপাড়া কমিউনিটি</p></div>
+  <div class="row"><p class="lbl">Pull quote — 32px · italic 400 (its Direction D role)</p>
+    <p class="heading f-tiro ital" style="font-size:32px">“একটি এলাকা, একটি পরিবার”</p></div>
+  <div class="row"><p class="lbl">Body — 17px · 400 (for comparison only — never body in D)</p>
+    <p class="body f-tiro">আমাদের এলাকার মানুষের জন্য একটি পরিবার — মানুষের পাশে, প্রতিটি প্রয়োজনে।</p></div>
+  <div class="row"><p class="lbl">Conjunct test — 22px</p>
+    <p class="conj f-tiro">ক্ষ ত্র ষ্ট জ্ঞ শ্র ফ্র ব্র হ্র ন্ত ণ্ড স্থ · শ্রী</p></div>
+  <div class="row"><p class="lbl">Bengali numerals — 22px</p>
+    <p class="nums f-tiro">০১২৩৪৫৬৭৮৯ · ১৯৯৯ · ২০২৬</p></div>
+</section>
+
+<!-- ============ NOTO SERIF BENGALI — runner-up display / quote fallback ============ -->
+<section class="face">
+  <div class="face-head">
+    <h2 class="f-notoserif w700">Noto Serif Bengali</h2>
+    <span class="tag">RUNNER-UP — quote fallback · display fallback if Tiro fails QA</span>
+    <span class="meta">Google · variable wght 100–900, wdth 62.5–100 · real bold · OFL · no true italic</span>
+  </div>
+  <div class="row"><p class="lbl">Display — 48px · 700</p>
+    <p class="display f-notoserif w700">সাতানীপাড়া কমিউনিটি</p></div>
+  <div class="row"><p class="lbl">Heading — 28px · 600</p>
+    <p class="heading f-notoserif w600">একটি এলাকা, একটি পরিবার</p></div>
+  <div class="row"><p class="lbl">Body — 17px · 400</p>
+    <p class="body f-notoserif w400">আমাদের এলাকার মানুষের জন্য একটি পরিবার — মানুষের পাশে, প্রতিটি প্রয়োজনে।</p></div>
+  <div class="row"><p class="lbl">Conjunct test — 22px</p>
+    <p class="conj f-notoserif w400">ক্ষ ত্র ষ্ট জ্ঞ শ্র ফ্র ব্র হ্র ন্ত ণ্ড স্থ · শ্রী</p></div>
+  <div class="row"><p class="lbl">Bengali numerals — 22px</p>
+    <p class="nums f-notoserif w400">০১২৩৪৫৬৭৮৯ · ১৯৯৯ · ২০২৬</p></div>
+</section>
+
+<!-- ============ NOTO SANS BENGALI — runner-up workhorse ============ -->
+<section class="face">
+  <div class="face-head">
+    <h2 class="f-notosans w700">Noto Sans Bengali</h2>
+    <span class="tag">RUNNER-UP WORKHORSE — same weight-led system, different face</span>
+    <span class="meta">Google · variable wght 100–900, wdth 62.5–100 · real bold · OFL · no true italic</span>
+  </div>
+  <div class="row"><p class="lbl">Display — 48px · 800</p>
+    <p class="display f-notosans w800">সাতানীপাড়া কমিউনিটি</p></div>
+  <div class="row"><p class="lbl">Heading — 28px · 700</p>
+    <p class="heading f-notosans w700">একটি এলাকা, একটি পরিবার</p></div>
+  <div class="row"><p class="lbl">Body — 17px · 400 · lh 1.85</p>
+    <p class="body f-notosans w400">আমাদের এলাকার মানুষের জন্য একটি পরিবার — মানুষের পাশে, প্রতিটি প্রয়োজনে।
+    প্রবাসে থেকেও থাকুন পরিবারের কাছাকাছি।</p></div>
+  <div class="row"><p class="lbl">Conjunct test — 22px</p>
+    <p class="conj f-notosans w400">ক্ষ ত্র ষ্ট জ্ঞ শ্র ফ্র ব্র হ্র ন্ত ণ্ড স্থ · শ্রী</p></div>
+  <div class="row"><p class="lbl">Bengali numerals — 22px</p>
+    <p class="nums f-notosans w400">০১২৩৪৫৬৭৮৯ · ১৯৯৯ · ২০২৬</p></div>
+  <div class="row"><p class="lbl">Mixed BN / EN — 17px</p>
+    <p class="mixed f-notosans w400">প্রবাসে থেকেও থাকুন পরিবারের কাছাকাছি। — Satanipara Community, est. 1999</p></div>
+</section>
+
+<!-- ============ BALOO DA 2 — accent only, not recommended ============ -->
+<section class="face">
+  <div class="face-head">
+    <h2 class="f-baloo w700">Baloo Da 2</h2>
+    <span class="tag">NOT RECOMMENDED — display accent only, wrong tone for trust surfaces</span>
+    <span class="meta">Ek Type · variable wght 400–800 · rounded · OFL</span>
+  </div>
+  <div class="row"><p class="lbl">Display — 48px · 700</p>
+    <p class="display f-baloo w700">সাতানীপাড়া কমিউনিটি</p></div>
+  <div class="row"><p class="lbl">Heading — 28px · 600</p>
+    <p class="heading f-baloo w600">একটি এলাকা, একটি পরিবার</p></div>
+  <div class="row"><p class="lbl">Conjunct test — 22px</p>
+    <p class="conj f-baloo w400">ক্ষ ত্র ষ্ট জ্ঞ শ্র ফ্র ব্র হ্র ন্ত ণ্ড স্থ · শ্রী</p></div>
+  <div class="row"><p class="lbl">Bengali numerals — 22px</p>
+    <p class="nums f-baloo w400">০১২৩৪৫৬৭৮৯ · ১৯৯৯ · ২০২৬</p></div>
+</section>
+
+<!-- ============ HIND SILIGURI — incumbent, fallback only ============ -->
+<section class="face">
+  <div class="face-head">
+    <h2 class="f-hind w600">Hind Siliguri</h2>
+    <span class="tag">INCUMBENT (v1) — fallback only, superseded by Anek</span>
+    <span class="meta">Indian Type Foundry · static 300–700 · no variable · no italic · OFL</span>
+  </div>
+  <div class="row"><p class="lbl">Display — 48px · 700</p>
+    <p class="display f-hind w700">সাতানীপাড়া কমিউনিটি</p></div>
+  <div class="row"><p class="lbl">Heading — 28px · 600</p>
+    <p class="heading f-hind w600">একটি এলাকা, একটি পরিবার</p></div>
+  <div class="row"><p class="lbl">Body — 17px · 400</p>
+    <p class="body f-hind w400">আমাদের এলাকার মানুষের জন্য একটি পরিবার — মানুষের পাশে, প্রতিটি প্রয়োজনে।</p></div>
+  <div class="row"><p class="lbl">Conjunct test — 22px (check digit ১ shape)</p>
+    <p class="conj f-hind w400">ক্ষ ত্র ষ্ট জ্ঞ শ্র ফ্র ব্র হ্র ন্ত ণ্ড স্থ · শ্রী</p></div>
+  <div class="row"><p class="lbl">Bengali numerals — 22px</p>
+    <p class="nums f-hind w400">০১২৩৪৫৬৭৮৯ · ১৯৯৯ · ২০২৬</p></div>
+</section>
+
+<!-- ============ ALKATRA — extra face, considered and excluded ============ -->
+<section class="face">
+  <div class="face-head">
+    <h2 class="f-alkatra w600">Alkatra</h2>
+    <span class="tag">CONSIDERED + EXCLUDED — graffiti display voice, wrong register for a sangha</span>
+    <span class="meta">Suman Bhandary · variable wght 400–700 · Jan 2023 · OFL · only ~84 Bengali glyphs reported</span>
+  </div>
+  <div class="row"><p class="lbl">Display — 48px · 700 (shown so the exclusion is visible, not assumed)</p>
+    <p class="display f-alkatra w700">সাতানীপাড়া কমিউনিটি</p></div>
+  <div class="row"><p class="lbl">Conjunct test — 22px</p>
+    <p class="conj f-alkatra w400">ক্ষ ত্র ষ্ট জ্ঞ শ্র ফ্র ব্র হ্র ন্ত ণ্ড স্থ · শ্রী</p></div>
+  <div class="row"><p class="lbl">Bengali numerals — 22px</p>
+    <p class="nums f-alkatra w400">০১২৩৪৫৬৭৮৯ · ১৯৯৯ · ২০২৬</p></div>
+</section>
+
+<!-- ============ MANROPE — English ============ -->
+<section class="face">
+  <div class="face-head">
+    <h2 class="f-manrope w700">Manrope <span style="font-weight:400;font-size:16px;color:var(--muted)">— English only (no Bengali glyphs)</span></h2>
+    <span class="tag hot">ENGLISH — display + body</span>
+    <span class="meta">Mikhail Sharanda · variable wght 200–800 · OFL · no italic</span>
+  </div>
+  <div class="row"><p class="lbl">Display — 48px · 800</p>
+    <p class="display f-manrope w800">Satanipara Community</p></div>
+  <div class="row"><p class="lbl">Heading — 28px · 700</p>
+    <p class="heading f-manrope w700">One neighbourhood, one family</p></div>
+  <div class="row"><p class="lbl">Body — 16px · 400 · lh 1.65</p>
+    <p class="body f-manrope w400" style="font-size:16px;line-height:1.65">A family for the people of our neighbourhood — beside you at every need.
+    Stay close to family, even from abroad. Est. 1999.</p></div>
+  <div class="row"><p class="lbl">Numerals / stats — 28px · 700</p>
+    <p class="heading f-manrope w700">1999 · 27 years · 1,250 members</p></div>
+</section>
+
+<!-- ============ DIRECTION D SYSTEM PREVIEW ============ -->
+<section class="system">
+  <p class="sys-kicker">DIRECTION D SYSTEM PREVIEW — weight-led, not size-led · serif only as a quote voice</p>
+  <h2 class="sys-hero">সাতানীপাড়া কমিউনিটি</h2>
+  <p class="sys-body">আমাদের এলাকার মানুষের জন্য একটি পরিবার। শিক্ষা, ঐক্য, শান্তি আর প্রগতি —
+  এই চারটি কথায় আমাদের পরিচয়। প্রবাসে থেকেও থাকুন পরিবারের কাছাকাছি।</p>
+  <h3 class="sys-h2">একটি এলাকা, একটি পরিবার</h3>
+  <p class="sys-body">মানুষের পাশে, প্রতিটি প্রয়োজনে। রক্তদান থেকে প্রবাসী সহায়তা — কমিউনিটির
+  প্রতিটি কাজে আমরা একসাথে।</p>
+  <p class="sys-quote">“একটি এলাকা, একটি পরিবার।”</p>
+  <p class="sys-quote-by">— সাতানীপাড়া সমাজ কল্যাণ সংঘ, প্রতিষ্ঠা ১৯৯৯</p>
+  <p class="sys-label">সদস্য ডিরেক্টরি · রক্তদাতা খুঁজুন · প্রবাসী সহায়তা</p>
+  <p class="sys-body" style="font-size:15px">আপনার অনুরোধের অবস্থা দেখুন — Request ID দিয়ে ট্র্যাক করুন।</p>
+  <span class="sys-btn">সদস্য হোন</span>
+  <p class="sys-body sys-en" style="margin-top:22px;font-size:16px;line-height:1.65">
+    One neighbourhood, one family — Satanipara Community, est. 1999.</p>
+</section>
+
+<section class="notes">
+  <h2>How to use this specimen (QA)</h2>
+  <ul>
+    <li>Open in Chrome, Safari and an Android phone browser at 360px and 1280px; screenshot every face block.</li>
+    <li>Check the conjunct rows first: ক্ষ ত্র ষ্ট জ্ঞ শ্র ফ্র ব্র হ্র ন্ত ণ্ড স্থ — every conjunct must form as one joined shape, never as a visible hasant (্) plus two separate letters. Check শ্রী (honorific) and the digit ১ in Hind Siliguri.</li>
+    <li>Check the “Font-load status” box at the top: it reports which faces the browser actually loaded. A face that fell back will still read — that is the fallback stack working, not a pass.</li>
+    <li>Compare Anek at 800/condensed (Direction D hero) against Tiro at 400 (broadsheet hero): the difference is weight and width, not size — that is the whole point of Direction D.</li>
+    <li>Rules that never change: never letter-space Bengali, never uppercase Bengali, never fake-bold Tiro (400 only), never fake-italic Anek/Noto.</li>
+  </ul>
+</section>
+
+<footer>
+  Direction D typography specimen · Satanipara Community (Satanipara Somaj Kallyan Sangha, est. 1999) ·
+  Forest #173F35 / Gold #C49A4A / Ivory #F7F4EA · Research 2026-11-14 · Status: PROVISIONAL —
+  no rendered screenshot has been taken; see FONT_COMPARISON.md.
+</footer>
+
+</div>
+<script>
+(function(){
+  var faces = [
+    ['Anek Bangla', '16px "Anek Bangla"'],
+    ['Anek Bangla 800 condensed', '800 16px "Anek Bangla"'],
+    ['Tiro Bangla', '16px "Tiro Bangla"'],
+    ['Tiro Bangla italic', 'italic 16px "Tiro Bangla"'],
+    ['Noto Serif Bengali', '16px "Noto Serif Bengali"'],
+    ['Noto Sans Bengali', '16px "Noto Sans Bengali"'],
+    ['Baloo Da 2', '16px "Baloo Da 2"'],
+    ['Hind Siliguri', '16px "Hind Siliguri"'],
+    ['Alkatra', '16px "Alkatra"'],
+    ['Manrope', '16px "Manrope"']
+  ];
+  function report(){
+    var el = document.getElementById('load-status');
+    if(!document.fonts || !document.fonts.check){ el.innerHTML = '<b>Font-load status:</b> document.fonts API unavailable — check visually.'; return; }
+    var lines = faces.map(function(f){
+      var ok = false;
+      try { ok = document.fonts.check(f[1]); } catch(e){ ok = false; }
+      return (ok ? '✓ loaded: ' : '✗ NOT loaded (fallback in use): ') + f[0];
+    });
+    el.innerHTML = '<b>Font-load status (live, this browser):</b><br>' + lines.join('<br>');
+  }
+  if(document.fonts && document.fonts.ready){ document.fonts.ready.then(report); }
+  setTimeout(report, 2500);
+})();
+</script>
+</body>
+</html>
