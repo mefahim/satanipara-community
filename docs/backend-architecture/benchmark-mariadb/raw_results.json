@@ -1,0 +1,2228 @@
+{
+  "index_build": {
+    "posts_ft": {
+      "ms": 1562.7,
+      "rc": 0,
+      "stderr": ""
+    },
+    "persons_ft": {
+      "ms": 865.8,
+      "rc": 0,
+      "stderr": ""
+    },
+    "activities_ft": {
+      "ms": 1190.4,
+      "rc": 0,
+      "stderr": ""
+    },
+    "persons_name_btree": {
+      "ms": 447.6,
+      "rc": 0,
+      "stderr": ""
+    },
+    "posts_title_btree": {
+      "ms": 365.6,
+      "rc": 0,
+      "stderr": ""
+    },
+    "posts_add_tokens_col": {
+      "ms": 2305.9,
+      "rc": 0,
+      "stderr": ""
+    },
+    "persons_add_tokens_col": {
+      "ms": 1103.6,
+      "rc": 0,
+      "stderr": ""
+    },
+    "activities_add_tokens_col": {
+      "ms": 836.3,
+      "rc": 0,
+      "stderr": ""
+    },
+    "posts_tokens_ft": {
+      "ms": 2460.5,
+      "rc": 0,
+      "stderr": ""
+    },
+    "persons_tokens_ft": {
+      "ms": 1053.4,
+      "rc": 0,
+      "stderr": ""
+    },
+    "activities_tokens_ft": {
+      "ms": 1500.4,
+      "rc": 0,
+      "stderr": ""
+    }
+  },
+  "counts": {
+    "rows": "1800\t1500\t600",
+    "posts_word[রক্তদান]||ft_nl": 112,
+    "posts_word[রক্তদান]||ft_bool": 112,
+    "posts_word[রক্তদান]||ft_bool_wild": 112,
+    "posts_word[রক্তদান]||tokens_ft": 165,
+    "posts_word[রক্তদান]||like_pct": 112,
+    "posts_word[বৃত্তি]||ft_nl": 142,
+    "posts_word[বৃত্তি]||ft_bool": 142,
+    "posts_word[বৃত্তি]||ft_bool_wild": 142,
+    "posts_word[বৃত্তি]||tokens_ft": 142,
+    "posts_word[বৃত্তি]||like_pct": 142,
+    "posts_word[শীতবস্ত্র]||ft_nl": 50,
+    "posts_word[শীতবস্ত্র]||ft_bool": 50,
+    "posts_word[শীতবস্ত্র]||ft_bool_wild": 50,
+    "posts_word[শীতবস্ত্র]||tokens_ft": 106,
+    "posts_word[শীতবস্ত্র]||like_pct": 50,
+    "posts_word[মসজিদ]||ft_nl": 108,
+    "posts_word[মসজিদ]||ft_bool": 108,
+    "posts_word[মসজিদ]||ft_bool_wild": 108,
+    "posts_word[মসজিদ]||tokens_ft": 108,
+    "posts_word[মসজিদ]||like_pct": 108,
+    "posts_word[প্রশিক্ষণ]||ft_nl": 316,
+    "posts_word[প্রশিক্ষণ]||ft_bool": 316,
+    "posts_word[প্রশিক্ষণ]||ft_bool_wild": 316,
+    "posts_word[প্রশিক্ষণ]||tokens_ft": 316,
+    "posts_word[প্রশিক্ষণ]||like_pct": 316,
+    "posts_word[শ্রমিক]||ft_nl": 58,
+    "posts_word[শ্রমিক]||ft_bool": 58,
+    "posts_word[শ্রমিক]||ft_bool_wild": 58,
+    "posts_word[শ্রমিক]||tokens_ft": 58,
+    "posts_word[শ্রমিক]||like_pct": 58,
+    "posts_partial[রক্তদা]||ft_nl": 0,
+    "posts_partial[রক্তদা]||ft_bool": 0,
+    "posts_partial[রক্তদা]||ft_bool_wild": 282,
+    "posts_partial[রক্তদা]||tokens_ft": 332,
+    "posts_partial[রক্তদা]||like_pct": 282,
+    "posts_partial[শীতব]||ft_nl": 0,
+    "posts_partial[শীতব]||ft_bool": 0,
+    "posts_partial[শীতব]||ft_bool_wild": 50,
+    "posts_partial[শীতব]||tokens_ft": 106,
+    "posts_partial[শীতব]||like_pct": 50,
+    "posts_partial[বৃত্ত]||ft_nl": 0,
+    "posts_partial[বৃত্ত]||ft_bool": 0,
+    "posts_partial[বৃত্ত]||ft_bool_wild": 142,
+    "posts_partial[বৃত্ত]||tokens_ft": 142,
+    "posts_partial[বৃত্ত]||like_pct": 142,
+    "posts_partial[রক]||ft_nl": 0,
+    "posts_partial[রক]||ft_bool": 0,
+    "posts_partial[রক]||ft_bool_wild": 332,
+    "posts_partial[রক]||tokens_ft": 0,
+    "posts_partial[রক]||like_pct": 704,
+    "posts_partial[র] (1-char edge)||ft_nl": 0,
+    "posts_partial[র] (1-char edge)||ft_bool": 0,
+    "posts_partial[র] (1-char edge)||ft_bool_wild": 332,
+    "posts_partial[র] (1-char edge)||tokens_ft": 0,
+    "posts_partial[র] (1-char edge)||like_pct": 1800,
+    "posts_spelling[সাতানিপাড়া]||ft_nl": 928,
+    "posts_spelling[সাতানিপাড়া]||ft_bool": 928,
+    "posts_spelling[সাতানিপাড়া]||ft_bool_wild": 928,
+    "posts_spelling[সাতানিপাড়া]||tokens_ft": 928,
+    "posts_spelling[সাতানিপাড়া]||like_pct": 928,
+    "posts_spelling[শাতানিপাড়া]||ft_nl": 54,
+    "posts_spelling[শাতানিপাড়া]||ft_bool": 54,
+    "posts_spelling[শাতানিপাড়া]||ft_bool_wild": 54,
+    "posts_spelling[শাতানিপাড়া]||tokens_ft": 54,
+    "posts_spelling[শাতানিপাড়া]||like_pct": 54,
+    "posts_spelling[সাতানীপাড়া]||ft_nl": 54,
+    "posts_spelling[সাতানীপাড়া]||ft_bool": 54,
+    "posts_spelling[সাতানীপাড়া]||ft_bool_wild": 54,
+    "posts_spelling[সাতানীপাড়া]||tokens_ft": 54,
+    "posts_spelling[সাতানীপাড়া]||like_pct": 54,
+    "posts_spelling[মাদ্রাসা]||ft_nl": 38,
+    "posts_spelling[মাদ্রাসা]||ft_bool": 38,
+    "posts_spelling[মাদ্রাসা]||ft_bool_wild": 38,
+    "posts_spelling[মাদ্রাসা]||tokens_ft": 38,
+    "posts_spelling[মাদ্রাসা]||like_pct": 38,
+    "posts_spelling[মাদরাসা]||ft_nl": 51,
+    "posts_spelling[মাদরাসা]||ft_bool": 51,
+    "posts_spelling[মাদরাসা]||ft_bool_wild": 51,
+    "posts_spelling[মাদরাসা]||tokens_ft": 51,
+    "posts_spelling[মাদরাসা]||like_pct": 51,
+    "posts_spelling[রক্ত দান]||ft_nl": 53,
+    "posts_spelling[রক্ত দান]||ft_bool": 53,
+    "posts_spelling[রক্ত দান]||ft_bool_wild": 53,
+    "posts_spelling[রক্ত দান]||tokens_ft": 165,
+    "posts_spelling[রক্ত দান]||like_pct": 53,
+    "posts_spelling[শীত বস্ত্র]||ft_nl": 56,
+    "posts_spelling[শীত বস্ত্র]||ft_bool": 56,
+    "posts_spelling[শীত বস্ত্র]||ft_bool_wild": 56,
+    "posts_spelling[শীত বস্ত্র]||tokens_ft": 106,
+    "posts_spelling[শীত বস্ত্র]||like_pct": 56,
+    "posts_mixed[Blood Donation]||ft_nl": 215,
+    "posts_mixed[Blood Donation]||ft_bool": 215,
+    "posts_mixed[Blood Donation]||ft_bool_wild": 215,
+    "posts_mixed[Blood Donation]||tokens_ft": 215,
+    "posts_mixed[Blood Donation]||like_pct": 215,
+    "posts_mixed[SSC বৃত্তি]||ft_nl": 287,
+    "posts_mixed[SSC বৃত্তি]||ft_bool": 9,
+    "posts_mixed[SSC বৃত্তি]||ft_bool_wild": 9,
+    "posts_mixed[SSC বৃত্তি]||tokens_ft": 9,
+    "posts_mixed[SSC বৃত্তি]||like_pct": 0,
+    "posts_mixed[Scholarship]||ft_nl": 154,
+    "posts_mixed[Scholarship]||ft_bool": 154,
+    "posts_mixed[Scholarship]||ft_bool_wild": 154,
+    "posts_mixed[Scholarship]||tokens_ft": 154,
+    "posts_mixed[Scholarship]||like_pct": 154,
+    "posts_mixed[the]||ft_nl": 0,
+    "posts_mixed[the]||ft_bool": 0,
+    "posts_mixed[the]||ft_bool_wild": 0,
+    "posts_mixed[the]||tokens_ft": 0,
+    "posts_mixed[the]||like_pct": 0,
+    "posts_relevance[রক্তদান শিবির]||ft_nl": 112,
+    "posts_relevance[রক্তদান শিবির]||ft_bool": 112,
+    "posts_relevance[রক্তদান শিবির]||ft_bool_wild": 112,
+    "posts_relevance[রক্তদান শিবির]||tokens_ft": 112,
+    "posts_relevance[রক্তদান শিবির]||like_pct": 112,
+    "posts_relevance[শীতবস্ত্র বিতরণ]||ft_nl": 106,
+    "posts_relevance[শীতবস্ত্র বিতরণ]||ft_bool": 50,
+    "posts_relevance[শীতবস্ত্র বিতরণ]||ft_bool_wild": 50,
+    "posts_relevance[শীতবস্ত্র বিতরণ]||tokens_ft": 50,
+    "posts_relevance[শীতবস্ত্র বিতরণ]||like_pct": 50,
+    "persons[মোহাম্মদ]||ft_nl": 37,
+    "persons[মোহাম্মদ]||ft_bool": 37,
+    "persons[মোহাম্মদ]||ft_bool_wild": 37,
+    "persons[মোহাম্মদ]||tokens_ft": 37,
+    "persons[মোহাম্মদ]||like_pct": 37,
+    "persons[রহিম]||ft_nl": 33,
+    "persons[রহিম]||ft_bool": 33,
+    "persons[রহিম]||ft_bool_wild": 33,
+    "persons[রহিম]||tokens_ft": 33,
+    "persons[রহিম]||like_pct": 33,
+    "persons[চক্রবর্তী]||ft_nl": 58,
+    "persons[চক্রবর্তী]||ft_bool": 58,
+    "persons[চক্রবর্তী]||ft_bool_wild": 58,
+    "persons[চক্রবর্তী]||tokens_ft": 58,
+    "persons[চক্রবর্তী]||like_pct": 58,
+    "persons[শিক্ষক]||ft_nl": 0,
+    "persons[শিক্ষক]||ft_bool": 0,
+    "persons[শিক্ষক]||ft_bool_wild": 0,
+    "persons[শিক্ষক]||tokens_ft": 0,
+    "persons[শিক্ষক]||like_pct": 0,
+    "persons[Mohammad]||ft_nl": 37,
+    "persons[Mohammad]||ft_bool": 37,
+    "persons[Mohammad]||ft_bool_wild": 37,
+    "persons[Mohammad]||tokens_ft": 37,
+    "persons[Mohammad]||like_pct": 37,
+    "persons[মোহা]||ft_nl": 0,
+    "persons[মোহা]||ft_bool": 0,
+    "persons[মোহা]||ft_bool_wild": 37,
+    "persons[মোহা]||tokens_ft": 37,
+    "persons[মোহা]||like_pct": 37,
+    "persons_prefix[মোহাম্মদ] (LIKE 'term%')||ft_bool_wild": 37,
+    "persons_prefix[মোহাম্মদ] (LIKE 'term%')||tokens_ft": 37,
+    "persons_prefix[মোহাম্মদ] (LIKE 'term%')||like_prefix": 37,
+    "posts_prefix[শিক্ষা] (LIKE 'term%')||ft_bool_wild": 792,
+    "posts_prefix[শিক্ষা] (LIKE 'term%')||tokens_ft": 792,
+    "posts_prefix[শিক্ষা] (LIKE 'term%')||like_prefix": 60,
+    "activities[বৃত্তি]||ft_nl": 46,
+    "activities[বৃত্তি]||ft_bool": 46,
+    "activities[বৃত্তি]||ft_bool_wild": 46,
+    "activities[বৃত্তি]||tokens_ft": 46,
+    "activities[বৃত্তি]||like_pct": 46,
+    "activities[শীতবস্ত্র]||ft_nl": 49,
+    "activities[শীতবস্ত্র]||ft_bool": 49,
+    "activities[শীতবস্ত্র]||ft_bool_wild": 49,
+    "activities[শীতবস্ত্র]||tokens_ft": 49,
+    "activities[শীতবস্ত্র]||like_pct": 49,
+    "activities[রক্তদান]||ft_nl": 66,
+    "activities[রক্তদান]||ft_bool": 66,
+    "activities[রক্তদান]||ft_bool_wild": 66,
+    "activities[রক্তদান]||tokens_ft": 66,
+    "activities[রক্তদান]||like_pct": 66
+  },
+  "timings_ms": {
+    "posts_word[রক্তদান]||ft_nl": {
+      "median_ms": 0.831,
+      "runs_ms": [
+        5.968,
+        0.701,
+        0.831
+      ]
+    },
+    "posts_word[রক্তদান]||ft_bool": {
+      "median_ms": 0.673,
+      "runs_ms": [
+        0.698,
+        0.611,
+        0.673
+      ]
+    },
+    "posts_word[রক্তদান]||ft_bool_wild": {
+      "median_ms": 0.528,
+      "runs_ms": [
+        0.528,
+        0.473,
+        0.533
+      ]
+    },
+    "posts_word[রক্তদান]||tokens_ft": {
+      "median_ms": 0.74,
+      "runs_ms": [
+        0.74,
+        0.686,
+        0.764
+      ]
+    },
+    "posts_word[রক্তদান]||like_pct": {
+      "median_ms": 1.303,
+      "runs_ms": [
+        1.303,
+        1.239,
+        1.312
+      ]
+    },
+    "posts_word[বৃত্তি]||ft_nl": {
+      "median_ms": 0.624,
+      "runs_ms": [
+        0.624,
+        0.575,
+        0.69
+      ]
+    },
+    "posts_word[বৃত্তি]||ft_bool": {
+      "median_ms": 0.62,
+      "runs_ms": [
+        0.62,
+        0.578,
+        0.651
+      ]
+    },
+    "posts_word[বৃত্তি]||ft_bool_wild": {
+      "median_ms": 0.538,
+      "runs_ms": [
+        0.538,
+        0.521,
+        0.591
+      ]
+    },
+    "posts_word[বৃত্তি]||tokens_ft": {
+      "median_ms": 0.689,
+      "runs_ms": [
+        0.689,
+        0.613,
+        0.864
+      ]
+    },
+    "posts_word[বৃত্তি]||like_pct": {
+      "median_ms": 1.091,
+      "runs_ms": [
+        1.091,
+        1.074,
+        1.346
+      ]
+    },
+    "posts_word[শীতবস্ত্র]||ft_nl": {
+      "median_ms": 0.329,
+      "runs_ms": [
+        0.329,
+        0.306,
+        0.551
+      ]
+    },
+    "posts_word[শীতবস্ত্র]||ft_bool": {
+      "median_ms": 0.335,
+      "runs_ms": [
+        0.335,
+        0.308,
+        0.42
+      ]
+    },
+    "posts_word[শীতবস্ত্র]||ft_bool_wild": {
+      "median_ms": 0.302,
+      "runs_ms": [
+        0.293,
+        0.302,
+        0.368
+      ]
+    },
+    "posts_word[শীতবস্ত্র]||tokens_ft": {
+      "median_ms": 0.48,
+      "runs_ms": [
+        0.48,
+        0.46,
+        0.571
+      ]
+    },
+    "posts_word[শীতবস্ত্র]||like_pct": {
+      "median_ms": 1.819,
+      "runs_ms": [
+        1.811,
+        1.819,
+        1.907
+      ]
+    },
+    "posts_word[মসজিদ]||ft_nl": {
+      "median_ms": 0.554,
+      "runs_ms": [
+        0.558,
+        0.484,
+        0.554
+      ]
+    },
+    "posts_word[মসজিদ]||ft_bool": {
+      "median_ms": 0.514,
+      "runs_ms": [
+        0.514,
+        0.486,
+        0.562
+      ]
+    },
+    "posts_word[মসজিদ]||ft_bool_wild": {
+      "median_ms": 0.437,
+      "runs_ms": [
+        0.437,
+        0.431,
+        0.455
+      ]
+    },
+    "posts_word[মসজিদ]||tokens_ft": {
+      "median_ms": 0.525,
+      "runs_ms": [
+        0.515,
+        0.525,
+        0.571
+      ]
+    },
+    "posts_word[মসজিদ]||like_pct": {
+      "median_ms": 1.064,
+      "runs_ms": [
+        1.178,
+        1.032,
+        1.064
+      ]
+    },
+    "posts_word[প্রশিক্ষণ]||ft_nl": {
+      "median_ms": 1.063,
+      "runs_ms": [
+        1.05,
+        1.063,
+        1.087
+      ]
+    },
+    "posts_word[প্রশিক্ষণ]||ft_bool": {
+      "median_ms": 1.197,
+      "runs_ms": [
+        1.184,
+        1.197,
+        1.261
+      ]
+    },
+    "posts_word[প্রশিক্ষণ]||ft_bool_wild": {
+      "median_ms": 0.962,
+      "runs_ms": [
+        0.962,
+        0.955,
+        1.014
+      ]
+    },
+    "posts_word[প্রশিক্ষণ]||tokens_ft": {
+      "median_ms": 1.259,
+      "runs_ms": [
+        1.259,
+        1.216,
+        1.305
+      ]
+    },
+    "posts_word[প্রশিক্ষণ]||like_pct": {
+      "median_ms": 0.498,
+      "runs_ms": [
+        0.498,
+        0.481,
+        0.587
+      ]
+    },
+    "posts_word[শ্রমিক]||ft_nl": {
+      "median_ms": 0.342,
+      "runs_ms": [
+        0.342,
+        0.341,
+        0.372
+      ]
+    },
+    "posts_word[শ্রমিক]||ft_bool": {
+      "median_ms": 0.343,
+      "runs_ms": [
+        0.343,
+        0.323,
+        0.409
+      ]
+    },
+    "posts_word[শ্রমিক]||ft_bool_wild": {
+      "median_ms": 0.286,
+      "runs_ms": [
+        0.286,
+        0.282,
+        0.909
+      ]
+    },
+    "posts_word[শ্রমিক]||tokens_ft": {
+      "median_ms": 0.34,
+      "runs_ms": [
+        0.33,
+        0.34,
+        0.463
+      ]
+    },
+    "posts_word[শ্রমিক]||like_pct": {
+      "median_ms": 2.443,
+      "runs_ms": [
+        2.443,
+        2.324,
+        2.671
+      ]
+    },
+    "posts_partial[রক্তদা]||ft_nl": {
+      "median_ms": 0.165,
+      "runs_ms": [
+        0.165,
+        0.133,
+        0.199
+      ]
+    },
+    "posts_partial[রক্তদা]||ft_bool": {
+      "median_ms": 0.133,
+      "runs_ms": [
+        0.144,
+        0.114,
+        0.133
+      ]
+    },
+    "posts_partial[রক্তদা]||ft_bool_wild": {
+      "median_ms": 0.926,
+      "runs_ms": [
+        0.926,
+        0.877,
+        1.057
+      ]
+    },
+    "posts_partial[রক্তদা]||tokens_ft": {
+      "median_ms": 1.313,
+      "runs_ms": [
+        1.313,
+        1.242,
+        1.397
+      ]
+    },
+    "posts_partial[রক্তদা]||like_pct": {
+      "median_ms": 0.549,
+      "runs_ms": [
+        0.539,
+        0.549,
+        0.571
+      ]
+    },
+    "posts_partial[শীতব]||ft_nl": {
+      "median_ms": 0.138,
+      "runs_ms": [
+        0.138,
+        0.127,
+        0.152
+      ]
+    },
+    "posts_partial[শীতব]||ft_bool": {
+      "median_ms": 0.123,
+      "runs_ms": [
+        0.123,
+        0.132,
+        0.121
+      ]
+    },
+    "posts_partial[শীতব]||ft_bool_wild": {
+      "median_ms": 0.286,
+      "runs_ms": [
+        0.274,
+        0.286,
+        0.296
+      ]
+    },
+    "posts_partial[শীতব]||tokens_ft": {
+      "median_ms": 0.465,
+      "runs_ms": [
+        0.465,
+        0.434,
+        0.746
+      ]
+    },
+    "posts_partial[শীতব]||like_pct": {
+      "median_ms": 1.783,
+      "runs_ms": [
+        1.755,
+        1.783,
+        1.997
+      ]
+    },
+    "posts_partial[বৃত্ত]||ft_nl": {
+      "median_ms": 0.136,
+      "runs_ms": [
+        0.136,
+        0.13,
+        0.309
+      ]
+    },
+    "posts_partial[বৃত্ত]||ft_bool": {
+      "median_ms": 0.118,
+      "runs_ms": [
+        0.118,
+        0.11,
+        0.228
+      ]
+    },
+    "posts_partial[বৃত্ত]||ft_bool_wild": {
+      "median_ms": 0.516,
+      "runs_ms": [
+        0.497,
+        0.516,
+        0.585
+      ]
+    },
+    "posts_partial[বৃত্ত]||tokens_ft": {
+      "median_ms": 0.606,
+      "runs_ms": [
+        0.606,
+        0.578,
+        0.859
+      ]
+    },
+    "posts_partial[বৃত্ত]||like_pct": {
+      "median_ms": 1.057,
+      "runs_ms": [
+        1.049,
+        1.057,
+        1.107
+      ]
+    },
+    "posts_partial[রক]||ft_nl": {
+      "median_ms": 0.133,
+      "runs_ms": [
+        0.133,
+        0.131,
+        0.157
+      ]
+    },
+    "posts_partial[রক]||ft_bool": {
+      "median_ms": 0.112,
+      "runs_ms": [
+        0.112,
+        0.112,
+        0.121
+      ]
+    },
+    "posts_partial[রক]||ft_bool_wild": {
+      "median_ms": 1.048,
+      "runs_ms": [
+        1.048,
+        0.986,
+        1.062
+      ]
+    },
+    "posts_partial[রক]||tokens_ft": {
+      "median_ms": 0.157,
+      "runs_ms": [
+        0.157,
+        0.143,
+        0.186
+      ]
+    },
+    "posts_partial[রক]||like_pct": {
+      "median_ms": 0.197,
+      "runs_ms": [
+        0.197,
+        0.191,
+        0.217
+      ]
+    },
+    "posts_partial[র] (1-char edge)||ft_nl": {
+      "median_ms": 0.122,
+      "runs_ms": [
+        0.116,
+        0.135,
+        0.122
+      ]
+    },
+    "posts_partial[র] (1-char edge)||ft_bool": {
+      "median_ms": 0.112,
+      "runs_ms": [
+        0.111,
+        0.121,
+        0.112
+      ]
+    },
+    "posts_partial[র] (1-char edge)||ft_bool_wild": {
+      "median_ms": 0.994,
+      "runs_ms": [
+        0.994,
+        0.977,
+        1.05
+      ]
+    },
+    "posts_partial[র] (1-char edge)||tokens_ft": {
+      "median_ms": 0.14,
+      "runs_ms": [
+        0.14,
+        0.139,
+        0.162
+      ]
+    },
+    "posts_partial[র] (1-char edge)||like_pct": {
+      "median_ms": 0.091,
+      "runs_ms": [
+        0.099,
+        0.082,
+        0.091
+      ]
+    },
+    "posts_spelling[সাতানিপাড়া]||ft_nl": {
+      "median_ms": 2.58,
+      "runs_ms": [
+        2.58,
+        2.43,
+        2.656
+      ]
+    },
+    "posts_spelling[সাতানিপাড়া]||ft_bool": {
+      "median_ms": 3.163,
+      "runs_ms": [
+        3.163,
+        3.153,
+        3.226
+      ]
+    },
+    "posts_spelling[সাতানিপাড়া]||ft_bool_wild": {
+      "median_ms": 3.167,
+      "runs_ms": [
+        3.167,
+        3.131,
+        3.206
+      ]
+    },
+    "posts_spelling[সাতানিপাড়া]||tokens_ft": {
+      "median_ms": 2.963,
+      "runs_ms": [
+        2.963,
+        2.921,
+        4.015
+      ]
+    },
+    "posts_spelling[সাতানিপাড়া]||like_pct": {
+      "median_ms": 0.291,
+      "runs_ms": [
+        0.225,
+        0.362,
+        0.291
+      ]
+    },
+    "posts_spelling[শাতানিপাড়া]||ft_nl": {
+      "median_ms": 0.514,
+      "runs_ms": [
+        0.311,
+        0.514,
+        0.614
+      ]
+    },
+    "posts_spelling[শাতানিপাড়া]||ft_bool": {
+      "median_ms": 0.378,
+      "runs_ms": [
+        0.347,
+        0.378,
+        0.509
+      ]
+    },
+    "posts_spelling[শাতানিপাড়া]||ft_bool_wild": {
+      "median_ms": 0.364,
+      "runs_ms": [
+        0.338,
+        0.364,
+        0.553
+      ]
+    },
+    "posts_spelling[শাতানিপাড়া]||tokens_ft": {
+      "median_ms": 0.322,
+      "runs_ms": [
+        0.304,
+        0.322,
+        0.448
+      ]
+    },
+    "posts_spelling[শাতানিপাড়া]||like_pct": {
+      "median_ms": 2.31,
+      "runs_ms": [
+        2.264,
+        2.31,
+        2.445
+      ]
+    },
+    "posts_spelling[সাতানীপাড়া]||ft_nl": {
+      "median_ms": 0.35,
+      "runs_ms": [
+        0.307,
+        0.35,
+        0.506
+      ]
+    },
+    "posts_spelling[সাতানীপাড়া]||ft_bool": {
+      "median_ms": 0.328,
+      "runs_ms": [
+        0.324,
+        0.328,
+        0.492
+      ]
+    },
+    "posts_spelling[সাতানীপাড়া]||ft_bool_wild": {
+      "median_ms": 0.343,
+      "runs_ms": [
+        0.343,
+        0.331,
+        0.396
+      ]
+    },
+    "posts_spelling[সাতানীপাড়া]||tokens_ft": {
+      "median_ms": 0.336,
+      "runs_ms": [
+        0.315,
+        0.336,
+        0.34
+      ]
+    },
+    "posts_spelling[সাতানীপাড়া]||like_pct": {
+      "median_ms": 2.293,
+      "runs_ms": [
+        2.293,
+        2.268,
+        2.432
+      ]
+    },
+    "posts_spelling[মাদ্রাসা]||ft_nl": {
+      "median_ms": 0.326,
+      "runs_ms": [
+        0.326,
+        0.281,
+        0.413
+      ]
+    },
+    "posts_spelling[মাদ্রাসা]||ft_bool": {
+      "median_ms": 0.281,
+      "runs_ms": [
+        0.276,
+        0.281,
+        0.379
+      ]
+    },
+    "posts_spelling[মাদ্রাসা]||ft_bool_wild": {
+      "median_ms": 0.275,
+      "runs_ms": [
+        0.275,
+        0.258,
+        0.29
+      ]
+    },
+    "posts_spelling[মাদ্রাসা]||tokens_ft": {
+      "median_ms": 0.279,
+      "runs_ms": [
+        0.282,
+        0.26,
+        0.279
+      ]
+    },
+    "posts_spelling[মাদ্রাসা]||like_pct": {
+      "median_ms": 2.884,
+      "runs_ms": [
+        2.884,
+        2.863,
+        3.733
+      ]
+    },
+    "posts_spelling[মাদরাসা]||ft_nl": {
+      "median_ms": 0.318,
+      "runs_ms": [
+        0.305,
+        0.318,
+        0.571
+      ]
+    },
+    "posts_spelling[মাদরাসা]||ft_bool": {
+      "median_ms": 0.312,
+      "runs_ms": [
+        0.312,
+        0.302,
+        0.394
+      ]
+    },
+    "posts_spelling[মাদরাসা]||ft_bool_wild": {
+      "median_ms": 0.309,
+      "runs_ms": [
+        0.309,
+        0.293,
+        0.362
+      ]
+    },
+    "posts_spelling[মাদরাসা]||tokens_ft": {
+      "median_ms": 0.308,
+      "runs_ms": [
+        0.296,
+        0.308,
+        0.358
+      ]
+    },
+    "posts_spelling[মাদরাসা]||like_pct": {
+      "median_ms": 2.539,
+      "runs_ms": [
+        2.539,
+        2.505,
+        3.01
+      ]
+    },
+    "posts_spelling[রক্ত দান]||ft_nl": {
+      "median_ms": 0.607,
+      "runs_ms": [
+        0.574,
+        0.607,
+        0.693
+      ]
+    },
+    "posts_spelling[রক্ত দান]||ft_bool": {
+      "median_ms": 0.448,
+      "runs_ms": [
+        0.44,
+        0.448,
+        0.577
+      ]
+    },
+    "posts_spelling[রক্ত দান]||ft_bool_wild": {
+      "median_ms": 0.637,
+      "runs_ms": [
+        0.637,
+        0.634,
+        0.712
+      ]
+    },
+    "posts_spelling[রক্ত দান]||tokens_ft": {
+      "median_ms": 0.748,
+      "runs_ms": [
+        0.748,
+        0.728,
+        0.841
+      ]
+    },
+    "posts_spelling[রক্ত দান]||like_pct": {
+      "median_ms": 2.316,
+      "runs_ms": [
+        2.316,
+        2.311,
+        2.371
+      ]
+    },
+    "posts_spelling[শীত বস্ত্র]||ft_nl": {
+      "median_ms": 0.424,
+      "runs_ms": [
+        0.416,
+        0.424,
+        0.488
+      ]
+    },
+    "posts_spelling[শীত বস্ত্র]||ft_bool": {
+      "median_ms": 0.429,
+      "runs_ms": [
+        0.428,
+        0.429,
+        0.621
+      ]
+    },
+    "posts_spelling[শীত বস্ত্র]||ft_bool_wild": {
+      "median_ms": 0.432,
+      "runs_ms": [
+        0.425,
+        0.432,
+        0.514
+      ]
+    },
+    "posts_spelling[শীত বস্ত্র]||tokens_ft": {
+      "median_ms": 0.648,
+      "runs_ms": [
+        0.648,
+        0.643,
+        0.728
+      ]
+    },
+    "posts_spelling[শীত বস্ত্র]||like_pct": {
+      "median_ms": 1.86,
+      "runs_ms": [
+        1.838,
+        1.86,
+        1.942
+      ]
+    },
+    "posts_mixed[Blood Donation]||ft_nl": {
+      "median_ms": 0.983,
+      "runs_ms": [
+        0.941,
+        0.983,
+        1.083
+      ]
+    },
+    "posts_mixed[Blood Donation]||ft_bool": {
+      "median_ms": 0.976,
+      "runs_ms": [
+        0.959,
+        0.976,
+        1.231
+      ]
+    },
+    "posts_mixed[Blood Donation]||ft_bool_wild": {
+      "median_ms": 0.953,
+      "runs_ms": [
+        0.942,
+        0.953,
+        1.071
+      ]
+    },
+    "posts_mixed[Blood Donation]||tokens_ft": {
+      "median_ms": 1.226,
+      "runs_ms": [
+        1.115,
+        1.31,
+        1.226
+      ]
+    },
+    "posts_mixed[Blood Donation]||like_pct": {
+      "median_ms": 0.673,
+      "runs_ms": [
+        0.654,
+        0.77,
+        0.673
+      ]
+    },
+    "posts_mixed[SSC বৃত্তি]||ft_nl": {
+      "median_ms": 1.16,
+      "runs_ms": [
+        1.1,
+        1.16,
+        1.161
+      ]
+    },
+    "posts_mixed[SSC বৃত্তি]||ft_bool": {
+      "median_ms": 0.354,
+      "runs_ms": [
+        0.347,
+        0.399,
+        0.354
+      ]
+    },
+    "posts_mixed[SSC বৃত্তি]||ft_bool_wild": {
+      "median_ms": 0.322,
+      "runs_ms": [
+        0.322,
+        0.315,
+        0.328
+      ]
+    },
+    "posts_mixed[SSC বৃত্তি]||tokens_ft": {
+      "median_ms": 0.332,
+      "runs_ms": [
+        0.327,
+        0.333,
+        0.332
+      ]
+    },
+    "posts_mixed[SSC বৃত্তি]||like_pct": {
+      "median_ms": 6.154,
+      "runs_ms": [
+        6.154,
+        5.923,
+        6.223
+      ]
+    },
+    "posts_mixed[Scholarship]||ft_nl": {
+      "median_ms": 0.71,
+      "runs_ms": [
+        0.71,
+        0.601,
+        0.763
+      ]
+    },
+    "posts_mixed[Scholarship]||ft_bool": {
+      "median_ms": 0.63,
+      "runs_ms": [
+        0.619,
+        0.63,
+        0.675
+      ]
+    },
+    "posts_mixed[Scholarship]||ft_bool_wild": {
+      "median_ms": 0.602,
+      "runs_ms": [
+        0.583,
+        0.602,
+        0.742
+      ]
+    },
+    "posts_mixed[Scholarship]||tokens_ft": {
+      "median_ms": 0.763,
+      "runs_ms": [
+        0.763,
+        0.712,
+        1.001
+      ]
+    },
+    "posts_mixed[Scholarship]||like_pct": {
+      "median_ms": 1.074,
+      "runs_ms": [
+        1.007,
+        1.074,
+        1.395
+      ]
+    },
+    "posts_mixed[the]||ft_nl": {
+      "median_ms": 0.166,
+      "runs_ms": [
+        0.14,
+        0.166,
+        0.261
+      ]
+    },
+    "posts_mixed[the]||ft_bool": {
+      "median_ms": 0.121,
+      "runs_ms": [
+        0.115,
+        0.121,
+        0.262
+      ]
+    },
+    "posts_mixed[the]||ft_bool_wild": {
+      "median_ms": 0.112,
+      "runs_ms": [
+        0.109,
+        0.112,
+        0.207
+      ]
+    },
+    "posts_mixed[the]||tokens_ft": {
+      "median_ms": 0.127,
+      "runs_ms": [
+        0.127,
+        0.11,
+        0.192
+      ]
+    },
+    "posts_mixed[the]||like_pct": {
+      "median_ms": 5.704,
+      "runs_ms": [
+        5.672,
+        5.704,
+        7.668
+      ]
+    },
+    "posts_relevance[রক্তদান শিবির]||ft_nl": {
+      "median_ms": 0.653,
+      "runs_ms": [
+        0.634,
+        0.653,
+        0.94
+      ]
+    },
+    "posts_relevance[রক্তদান শিবির]||ft_bool": {
+      "median_ms": 0.809,
+      "runs_ms": [
+        0.625,
+        1.407,
+        0.809
+      ]
+    },
+    "posts_relevance[রক্তদান শিবির]||ft_bool_wild": {
+      "median_ms": 0.728,
+      "runs_ms": [
+        0.611,
+        0.766,
+        0.728
+      ]
+    },
+    "posts_relevance[রক্তদান শিবির]||tokens_ft": {
+      "median_ms": 0.845,
+      "runs_ms": [
+        0.715,
+        0.856,
+        0.845
+      ]
+    },
+    "posts_relevance[রক্তদান শিবির]||like_pct": {
+      "median_ms": 1.364,
+      "runs_ms": [
+        1.199,
+        1.364,
+        1.422
+      ]
+    },
+    "posts_relevance[শীতবস্ত্র বিতরণ]||ft_nl": {
+      "median_ms": 0.756,
+      "runs_ms": [
+        0.589,
+        0.866,
+        0.756
+      ]
+    },
+    "posts_relevance[শীতবস্ত্র বিতরণ]||ft_bool": {
+      "median_ms": 0.489,
+      "runs_ms": [
+        0.404,
+        0.489,
+        0.536
+      ]
+    },
+    "posts_relevance[শীতবস্ত্র বিতরণ]||ft_bool_wild": {
+      "median_ms": 0.478,
+      "runs_ms": [
+        0.418,
+        0.494,
+        0.478
+      ]
+    },
+    "posts_relevance[শীতবস্ত্র বিতরণ]||tokens_ft": {
+      "median_ms": 0.574,
+      "runs_ms": [
+        0.451,
+        0.715,
+        0.574
+      ]
+    },
+    "posts_relevance[শীতবস্ত্র বিতরণ]||like_pct": {
+      "median_ms": 1.882,
+      "runs_ms": [
+        1.788,
+        2.068,
+        1.882
+      ]
+    },
+    "persons[মোহাম্মদ]||ft_nl": {
+      "median_ms": 0.366,
+      "runs_ms": [
+        0.308,
+        0.405,
+        0.366
+      ]
+    },
+    "persons[মোহাম্মদ]||ft_bool": {
+      "median_ms": 0.285,
+      "runs_ms": [
+        0.273,
+        0.285,
+        0.343
+      ]
+    },
+    "persons[মোহাম্মদ]||ft_bool_wild": {
+      "median_ms": 0.279,
+      "runs_ms": [
+        0.221,
+        0.331,
+        0.279
+      ]
+    },
+    "persons[মোহাম্মদ]||tokens_ft": {
+      "median_ms": 0.283,
+      "runs_ms": [
+        0.234,
+        0.283,
+        0.412
+      ]
+    },
+    "persons[মোহাম্মদ]||like_pct": {
+      "median_ms": 0.807,
+      "runs_ms": [
+        0.779,
+        0.807,
+        0.887
+      ]
+    },
+    "persons[রহিম]||ft_nl": {
+      "median_ms": 0.267,
+      "runs_ms": [
+        0.24,
+        0.267,
+        0.479
+      ]
+    },
+    "persons[রহিম]||ft_bool": {
+      "median_ms": 0.243,
+      "runs_ms": [
+        0.24,
+        0.243,
+        0.39
+      ]
+    },
+    "persons[রহিম]||ft_bool_wild": {
+      "median_ms": 0.24,
+      "runs_ms": [
+        0.222,
+        0.24,
+        0.29
+      ]
+    },
+    "persons[রহিম]||tokens_ft": {
+      "median_ms": 0.242,
+      "runs_ms": [
+        0.216,
+        0.242,
+        0.262
+      ]
+    },
+    "persons[রহিম]||like_pct": {
+      "median_ms": 0.799,
+      "runs_ms": [
+        0.766,
+        1.033,
+        0.799
+      ]
+    },
+    "persons[চক্রবর্তী]||ft_nl": {
+      "median_ms": 0.337,
+      "runs_ms": [
+        0.316,
+        0.508,
+        0.337
+      ]
+    },
+    "persons[চক্রবর্তী]||ft_bool": {
+      "median_ms": 0.384,
+      "runs_ms": [
+        0.355,
+        0.384,
+        0.392
+      ]
+    },
+    "persons[চক্রবর্তী]||ft_bool_wild": {
+      "median_ms": 0.302,
+      "runs_ms": [
+        0.271,
+        0.302,
+        0.312
+      ]
+    },
+    "persons[চক্রবর্তী]||tokens_ft": {
+      "median_ms": 0.338,
+      "runs_ms": [
+        0.287,
+        0.338,
+        0.342
+      ]
+    },
+    "persons[চক্রবর্তী]||like_pct": {
+      "median_ms": 0.473,
+      "runs_ms": [
+        0.473,
+        0.371,
+        0.561
+      ]
+    },
+    "persons[শিক্ষক]||ft_nl": {
+      "median_ms": 0.164,
+      "runs_ms": [
+        0.164,
+        0.146,
+        0.253
+      ]
+    },
+    "persons[শিক্ষক]||ft_bool": {
+      "median_ms": 0.139,
+      "runs_ms": [
+        0.119,
+        0.139,
+        0.169
+      ]
+    },
+    "persons[শিক্ষক]||ft_bool_wild": {
+      "median_ms": 0.127,
+      "runs_ms": [
+        0.109,
+        0.15,
+        0.127
+      ]
+    },
+    "persons[শিক্ষক]||tokens_ft": {
+      "median_ms": 0.121,
+      "runs_ms": [
+        0.111,
+        0.128,
+        0.121
+      ]
+    },
+    "persons[শিক্ষক]||like_pct": {
+      "median_ms": 1.095,
+      "runs_ms": [
+        1.018,
+        1.095,
+        1.134
+      ]
+    },
+    "persons[Mohammad]||ft_nl": {
+      "median_ms": 0.283,
+      "runs_ms": [
+        0.283,
+        0.275,
+        0.335
+      ]
+    },
+    "persons[Mohammad]||ft_bool": {
+      "median_ms": 0.271,
+      "runs_ms": [
+        0.242,
+        0.271,
+        0.306
+      ]
+    },
+    "persons[Mohammad]||ft_bool_wild": {
+      "median_ms": 0.25,
+      "runs_ms": [
+        0.218,
+        0.25,
+        0.261
+      ]
+    },
+    "persons[Mohammad]||tokens_ft": {
+      "median_ms": 0.245,
+      "runs_ms": [
+        0.245,
+        0.24,
+        0.288
+      ]
+    },
+    "persons[Mohammad]||like_pct": {
+      "median_ms": 0.649,
+      "runs_ms": [
+        0.63,
+        0.684,
+        0.649
+      ]
+    },
+    "persons[মোহা]||ft_nl": {
+      "median_ms": 0.143,
+      "runs_ms": [
+        0.127,
+        0.143,
+        0.143
+      ]
+    },
+    "persons[মোহা]||ft_bool": {
+      "median_ms": 0.13,
+      "runs_ms": [
+        0.13,
+        0.126,
+        0.144
+      ]
+    },
+    "persons[মোহা]||ft_bool_wild": {
+      "median_ms": 0.232,
+      "runs_ms": [
+        0.225,
+        0.249,
+        0.232
+      ]
+    },
+    "persons[মোহা]||tokens_ft": {
+      "median_ms": 0.254,
+      "runs_ms": [
+        0.227,
+        0.254,
+        0.33
+      ]
+    },
+    "persons[মোহা]||like_pct": {
+      "median_ms": 0.664,
+      "runs_ms": [
+        0.648,
+        0.664,
+        0.756
+      ]
+    },
+    "persons_prefix[মোহাম্মদ] (LIKE 'term%')||ft_bool_wild": {
+      "median_ms": 0.279,
+      "runs_ms": [
+        0.221,
+        0.331,
+        0.279
+      ]
+    },
+    "persons_prefix[মোহাম্মদ] (LIKE 'term%')||tokens_ft": {
+      "median_ms": 0.283,
+      "runs_ms": [
+        0.234,
+        0.283,
+        0.412
+      ]
+    },
+    "persons_prefix[মোহাম্মদ] (LIKE 'term%')||like_prefix": {
+      "median_ms": 0.158,
+      "runs_ms": [
+        0.144,
+        0.161,
+        0.158
+      ]
+    },
+    "posts_prefix[শিক্ষা] (LIKE 'term%')||ft_bool_wild": {
+      "median_ms": 2.495,
+      "runs_ms": [
+        2.224,
+        2.899,
+        2.495
+      ]
+    },
+    "posts_prefix[শিক্ষা] (LIKE 'term%')||tokens_ft": {
+      "median_ms": 3.069,
+      "runs_ms": [
+        2.731,
+        3.069,
+        3.254
+      ]
+    },
+    "posts_prefix[শিক্ষা] (LIKE 'term%')||like_prefix": {
+      "median_ms": 0.174,
+      "runs_ms": [
+        0.168,
+        0.174,
+        0.293
+      ]
+    },
+    "activities[বৃত্তি]||ft_nl": {
+      "median_ms": 0.384,
+      "runs_ms": [
+        0.357,
+        0.384,
+        0.943
+      ]
+    },
+    "activities[বৃত্তি]||ft_bool": {
+      "median_ms": 0.302,
+      "runs_ms": [
+        0.293,
+        0.302,
+        0.611
+      ]
+    },
+    "activities[বৃত্তি]||ft_bool_wild": {
+      "median_ms": 0.272,
+      "runs_ms": [
+        0.243,
+        0.272,
+        0.425
+      ]
+    },
+    "activities[বৃত্তি]||tokens_ft": {
+      "median_ms": 0.292,
+      "runs_ms": [
+        0.26,
+        0.292,
+        0.308
+      ]
+    },
+    "activities[বৃত্তি]||like_pct": {
+      "median_ms": 0.86,
+      "runs_ms": [
+        0.78,
+        1.027,
+        0.86
+      ]
+    },
+    "activities[শীতবস্ত্র]||ft_nl": {
+      "median_ms": 0.522,
+      "runs_ms": [
+        0.435,
+        0.574,
+        0.522
+      ]
+    },
+    "activities[শীতবস্ত্র]||ft_bool": {
+      "median_ms": 0.373,
+      "runs_ms": [
+        0.333,
+        0.373,
+        0.388
+      ]
+    },
+    "activities[শীতবস্ত্র]||ft_bool_wild": {
+      "median_ms": 0.297,
+      "runs_ms": [
+        0.297,
+        0.348,
+        0.285
+      ]
+    },
+    "activities[শীতবস্ত্র]||tokens_ft": {
+      "median_ms": 0.321,
+      "runs_ms": [
+        0.275,
+        0.321,
+        0.326
+      ]
+    },
+    "activities[শীতবস্ত্র]||like_pct": {
+      "median_ms": 0.613,
+      "runs_ms": [
+        0.613,
+        0.657,
+        0.586
+      ]
+    },
+    "activities[রক্তদান]||ft_nl": {
+      "median_ms": 0.389,
+      "runs_ms": [
+        0.349,
+        0.399,
+        0.389
+      ]
+    },
+    "activities[রক্তদান]||ft_bool": {
+      "median_ms": 0.402,
+      "runs_ms": [
+        0.348,
+        0.486,
+        0.402
+      ]
+    },
+    "activities[রক্তদান]||ft_bool_wild": {
+      "median_ms": 0.359,
+      "runs_ms": [
+        0.305,
+        0.359,
+        0.412
+      ]
+    },
+    "activities[রক্তদান]||tokens_ft": {
+      "median_ms": 0.32,
+      "runs_ms": [
+        0.31,
+        0.32,
+        0.363
+      ]
+    },
+    "activities[রক্তদান]||like_pct": {
+      "median_ms": 0.438,
+      "runs_ms": [
+        0.423,
+        0.523,
+        0.438
+      ]
+    }
+  },
+  "top_results": {
+    "রক্তদান শিবির||ft_nl": "155\t1.9055\tBlood Donation Camp — রক্তদান শিবির\n738\t1.9055\tরক্তদান শিবির নতুন পাড়া\n1293\t1.9055\tরক্তদান শিবির স্কুল পাড়া\n1747\t1.9055\tরক্তদান শিবির নতুন পাড়া\n385\t1.9055\tরক্তদান শিবির পশ্চিম পাড়া",
+    "রক্তদান শিবির||ft_bool_wild": "155\t1.9055\tBlood Donation Camp — রক্তদান শিবির\n738\t1.9055\tরক্তদান শিবির নতুন পাড়া\n1293\t1.9055\tরক্তদান শিবির স্কুল পাড়া\n1747\t1.9055\tরক্তদান শিবির নতুন পাড়া\n385\t1.9055\tরক্তদান শিবির পশ্চিম পাড়া",
+    "রক্তদান শিবির||tokens_ft": "155\t1.6053\tBlood Donation Camp — রক্তদান শিবির\n738\t1.6053\tরক্তদান শিবির নতুন পাড়া\n1293\t1.6053\tরক্তদান শিবির স্কুল পাড়া\n1747\t1.6053\tরক্তদান শিবির নতুন পাড়া\n385\t1.6053\tরক্তদান শিবির পশ্চিম পাড়া",
+    "রক্তদান শিবির||like_pct": "32\tরক্তদান শিবির মধ্য পাড়া\n55\tরক্তদান শিবির স্কুল পাড়া\n79\tরক্তদান শিবির মধ্য পাড়া\n82\tরক্তদান শিবির পূর্ব পাড়া\n83\tরক্তদান শিবির উত্তর পাড়া",
+    "শীতবস্ত্র বিতরণ||ft_nl": "364\t2.7592\tশীতবস্ত্র বিতরণ কর্মসূচি 2025\n1555\t2.7592\tশীতবস্ত্র বিতরণ কর্মসূচি 2023\n647\t2.7592\tশীতবস্ত্র বিতরণ কর্মসূচি 2024\n20\t2.7592\tশীতবস্ত্র বিতরণ কর্মসূচি 2025\n1257\t2.7592\tশীতবস্ত্র বিতরণ কর্মসূচি 2023",
+    "শীতবস্ত্র বিতরণ||ft_bool_wild": "364\t2.7592\tশীতবস্ত্র বিতরণ কর্মসূচি 2025\n1555\t2.7592\tশীতবস্ত্র বিতরণ কর্মসূচি 2023\n647\t2.7592\tশীতবস্ত্র বিতরণ কর্মসূচি 2024\n20\t2.7592\tশীতবস্ত্র বিতরণ কর্মসূচি 2025\n1257\t2.7592\tশীতবস্ত্র বিতরণ কর্মসূচি 2023",
+    "শীতবস্ত্র বিতরণ||tokens_ft": "364\t2.0000\tশীতবস্ত্র বিতরণ কর্মসূচি 2025\n1555\t2.0000\tশীতবস্ত্র বিতরণ কর্মসূচি 2023\n647\t2.0000\tশীতবস্ত্র বিতরণ কর্মসূচি 2024\n20\t2.0000\tশীতবস্ত্র বিতরণ কর্মসূচি 2025\n1257\t2.0000\tশীতবস্ত্র বিতরণ কর্মসূচি 2023",
+    "শীতবস্ত্র বিতরণ||like_pct": "14\tশীতবস্ত্র বিতরণ কর্মসূচি 2023\n20\tশীতবস্ত্র বিতরণ কর্মসূচি 2025\n30\tশীতবস্ত্র বিতরণ কর্মসূচি 2026\n89\tশীতবস্ত্র বিতরণ কর্মসূচি 2026\n92\tশীতবস্ত্র বিতরণ কর্মসূচি 2025",
+    "precision_probe_ft_nl_রক্তদান_top20": "top20 ids=['155', '738', '1293', '1747', '385', '924', '1483', '55', '590', '1149', '1593', '208', '744', '1343', '1754', '398', '929', '1487', '79', '604'] genuine(LIKE-containing)=20/20"
+  },
+  "explain": {
+    "ft_nl_word": "1\tSIMPLE\tposts\tfulltext\tft_posts\tft_posts\t0\t\t1\tUsing where",
+    "ft_bool_wild_prefix": "1\tSIMPLE\tposts\tfulltext\tft_posts\tft_posts\t0\t\t1\tUsing where",
+    "tokens_ft": "1\tSIMPLE\tposts\tfulltext\tft_posts_tokens\tft_posts_tokens\t0\t\t1\tUsing where",
+    "like_pct": "1\tSIMPLE\tposts\tALL\tNULL\tNULL\tNULL\tNULL\t1060\tUsing where",
+    "like_prefix_btree": "1\tSIMPLE\tpersons\trange\tidx_persons_name_bn,ft_persons\tidx_persons_name_bn\t1022\tNULL\t37\tUsing where; Using index",
+    "ft_bool_2char_wild": "1\tSIMPLE\tposts\tfulltext\tft_posts\tft_posts\t0\t\t1\tUsing where"
+  },
+  "app_level": {
+    "load_posts": {
+      "rows": 1800,
+      "bytes": 1003964,
+      "load_ms": 29.0
+    },
+    "load_persons": {
+      "rows": 1500,
+      "bytes": 79279,
+      "load_ms": 17.5
+    },
+    "load_activities": {
+      "rows": 600,
+      "bytes": 219592,
+      "load_ms": 18.4
+    },
+    "posts_word[রক্তদান]": {
+      "median_ms": 0.897,
+      "runs_ms": [
+        0.985,
+        0.897,
+        0.897
+      ],
+      "rows_matched": 112
+    },
+    "posts_word[বৃত্তি]": {
+      "median_ms": 0.842,
+      "runs_ms": [
+        0.867,
+        0.842,
+        0.839
+      ],
+      "rows_matched": 142
+    },
+    "posts_word[শীতবস্ত্র]": {
+      "median_ms": 0.86,
+      "runs_ms": [
+        0.872,
+        0.856,
+        0.86
+      ],
+      "rows_matched": 50
+    },
+    "posts_word[মসজিদ]": {
+      "median_ms": 0.863,
+      "runs_ms": [
+        0.883,
+        0.863,
+        0.853
+      ],
+      "rows_matched": 108
+    },
+    "posts_word[প্রশিক্ষণ]": {
+      "median_ms": 0.849,
+      "runs_ms": [
+        0.853,
+        0.849,
+        0.847
+      ],
+      "rows_matched": 316
+    },
+    "posts_word[শ্রমিক]": {
+      "median_ms": 0.874,
+      "runs_ms": [
+        0.896,
+        0.874,
+        0.871
+      ],
+      "rows_matched": 58
+    },
+    "posts_partial[রক্তদা]": {
+      "median_ms": 0.868,
+      "runs_ms": [
+        0.901,
+        0.868,
+        0.862
+      ],
+      "rows_matched": 282
+    },
+    "posts_partial[শীতব]": {
+      "median_ms": 0.867,
+      "runs_ms": [
+        0.886,
+        0.862,
+        0.867
+      ],
+      "rows_matched": 50
+    },
+    "posts_partial[বৃত্ত]": {
+      "median_ms": 0.85,
+      "runs_ms": [
+        0.921,
+        0.85,
+        0.83
+      ],
+      "rows_matched": 142
+    },
+    "posts_partial[রক]": {
+      "median_ms": 0.904,
+      "runs_ms": [
+        0.916,
+        0.891,
+        0.904
+      ],
+      "rows_matched": 704
+    },
+    "posts_partial[র] (1-char edge)": {
+      "median_ms": 0.594,
+      "runs_ms": [
+        0.679,
+        0.594,
+        0.592
+      ],
+      "rows_matched": 1800
+    },
+    "posts_spelling[সাতানিপাড়া]": {
+      "median_ms": 0.83,
+      "runs_ms": [
+        0.845,
+        0.828,
+        0.83
+      ],
+      "rows_matched": 928
+    },
+    "posts_spelling[শাতানিপাড়া]": {
+      "median_ms": 0.858,
+      "runs_ms": [
+        0.858,
+        0.878,
+        0.848
+      ],
+      "rows_matched": 54
+    },
+    "posts_spelling[সাতানীপাড়া]": {
+      "median_ms": 0.875,
+      "runs_ms": [
+        0.875,
+        0.876,
+        0.866
+      ],
+      "rows_matched": 54
+    },
+    "posts_spelling[মাদ্রাসা]": {
+      "median_ms": 0.888,
+      "runs_ms": [
+        0.888,
+        0.89,
+        0.859
+      ],
+      "rows_matched": 38
+    },
+    "posts_spelling[মাদরাসা]": {
+      "median_ms": 0.884,
+      "runs_ms": [
+        0.9,
+        0.868,
+        0.884
+      ],
+      "rows_matched": 51
+    },
+    "posts_spelling[রক্ত দান]": {
+      "median_ms": 0.896,
+      "runs_ms": [
+        0.897,
+        0.896,
+        0.883
+      ],
+      "rows_matched": 53
+    },
+    "posts_spelling[শীত বস্ত্র]": {
+      "median_ms": 0.855,
+      "runs_ms": [
+        0.874,
+        0.846,
+        0.855
+      ],
+      "rows_matched": 56
+    },
+    "posts_mixed[Blood Donation]": {
+      "median_ms": 0.891,
+      "runs_ms": [
+        0.886,
+        0.891,
+        0.891
+      ],
+      "rows_matched": 215
+    },
+    "posts_mixed[SSC বৃত্তি]": {
+      "median_ms": 0.869,
+      "runs_ms": [
+        0.877,
+        0.869,
+        0.866
+      ],
+      "rows_matched": 0
+    },
+    "posts_mixed[Scholarship]": {
+      "median_ms": 0.877,
+      "runs_ms": [
+        0.886,
+        0.861,
+        0.877
+      ],
+      "rows_matched": 154
+    },
+    "posts_mixed[the]": {
+      "median_ms": 0.961,
+      "runs_ms": [
+        0.95,
+        0.988,
+        0.961
+      ],
+      "rows_matched": 0
+    },
+    "posts_relevance[রক্তদান শিবির]": {
+      "median_ms": 0.883,
+      "runs_ms": [
+        0.883,
+        0.885,
+        0.862
+      ],
+      "rows_matched": 112
+    },
+    "posts_relevance[শীতবস্ত্র বিতরণ]": {
+      "median_ms": 0.855,
+      "runs_ms": [
+        0.855,
+        0.856,
+        0.836
+      ],
+      "rows_matched": 50
+    },
+    "persons[মোহাম্মদ]": {
+      "median_ms": 0.611,
+      "runs_ms": [
+        0.611,
+        0.624,
+        0.56
+      ],
+      "rows_matched": 37
+    },
+    "persons[রহিম]": {
+      "median_ms": 0.584,
+      "runs_ms": [
+        0.599,
+        0.584,
+        0.584
+      ],
+      "rows_matched": 33
+    },
+    "persons[চক্রবর্তী]": {
+      "median_ms": 0.577,
+      "runs_ms": [
+        0.583,
+        0.562,
+        0.577
+      ],
+      "rows_matched": 58
+    },
+    "persons[শিক্ষক]": {
+      "median_ms": 0.563,
+      "runs_ms": [
+        0.554,
+        0.581,
+        0.563
+      ],
+      "rows_matched": 0
+    },
+    "persons[Mohammad]": {
+      "median_ms": 0.608,
+      "runs_ms": [
+        0.608,
+        0.622,
+        0.595
+      ],
+      "rows_matched": 37
+    },
+    "persons[মোহা]": {
+      "median_ms": 0.636,
+      "runs_ms": [
+        0.636,
+        0.633,
+        0.636
+      ],
+      "rows_matched": 37
+    },
+    "persons_prefix[মোহাম্মদ] (LIKE 'term%')": {
+      "median_ms": 0.585,
+      "runs_ms": [
+        0.624,
+        0.585,
+        0.567
+      ],
+      "rows_matched": 37
+    },
+    "posts_prefix[শিক্ষা] (LIKE 'term%')": {
+      "median_ms": 0.861,
+      "runs_ms": [
+        0.877,
+        0.861,
+        0.844
+      ],
+      "rows_matched": 792
+    },
+    "activities[বৃত্তি]": {
+      "median_ms": 0.282,
+      "runs_ms": [
+        0.292,
+        0.271,
+        0.282
+      ],
+      "rows_matched": 46
+    },
+    "activities[শীতবস্ত্র]": {
+      "median_ms": 0.27,
+      "runs_ms": [
+        0.415,
+        0.268,
+        0.27
+      ],
+      "rows_matched": 49
+    },
+    "activities[রক্তদান]": {
+      "median_ms": 0.272,
+      "runs_ms": [
+        0.299,
+        0.272,
+        0.268
+      ],
+      "rows_matched": 66
+    }
+  },
+  "pagination": {
+    "ft_nl সাতানিপাড়া": {
+      "total_matching": 928,
+      "pages": {
+        "0": {
+          "ms": 19.12,
+          "ids": [
+            22,
+            81,
+            144,
+            212,
+            277,
+            334,
+            388,
+            470,
+            539,
+            610
+          ]
+        },
+        "10": {
+          "ms": 20.83,
+          "ids": [
+            664,
+            735,
+            799,
+            857,
+            915,
+            988,
+            1059,
+            1116,
+            1178,
+            1221
+          ]
+        },
+        "20": {
+          "ms": 21.33,
+          "ids": [
+            1277,
+            1336,
+            1391,
+            1457,
+            1507,
+            1560,
+            1632,
+            1692,
+            1763,
+            40
+          ]
+        }
+      },
+      "overlap_between_pages": []
+    },
+    "ft_bool_wild সাতানিপাড়া*": {
+      "total_matching": 928,
+      "pages": {
+        "0": {
+          "ms": 19.7,
+          "ids": [
+            22,
+            81,
+            144,
+            212,
+            277,
+            334,
+            388,
+            470,
+            539,
+            610
+          ]
+        },
+        "10": {
+          "ms": 22.7,
+          "ids": [
+            664,
+            735,
+            799,
+            857,
+            915,
+            988,
+            1059,
+            1116,
+            1178,
+            1221
+          ]
+        },
+        "20": {
+          "ms": 26.12,
+          "ids": [
+            1277,
+            1336,
+            1391,
+            1457,
+            1507,
+            1560,
+            1632,
+            1692,
+            1763,
+            40
+          ]
+        }
+      },
+      "overlap_between_pages": []
+    }
+  },
+  "insert_maintenance": {
+    "insert_100_rows_main_ft_only_ms": 35.9,
+    "insert_100_rows_with_tokens_ms": 47.8,
+    "note": "single multi-row INSERT of 100 rows each, wall time incl. client round-trip; tokens variant includes the precomputed search_tokens value in the INSERT (Python tokenise time NOT included — it is <1 ms/row at this scale)"
+  },
+  "notes": [],
+  "environment": {
+    "version": "11.8.9-MariaDB",
+    "ft_vars": "3\t4\t1\t84\tutf8mb4\tutf8mb4_unicode_ci\t3307\t67108864",
+    "default_stopword_rows": "36",
+    "client": "/home/hatch/workspace/satanipara-mariadb/work-b/mariadb-11.8/bin/mariadb",
+    "socket": "/home/hatch/workspace/satanipara-mariadb/work-b/run/mariadb.sock",
+    "host": "127.0.0.1",
+    "port": "3307",
+    "database": "bench",
+    "date": "2026-11-14",
+    "seed_md5": "b2164ed52f58e36d3954a42cebacad40"
+  },
+  "probe": {
+    "ft_index_words": [
+      "and",
+      "blood",
+      "brown",
+      "camp",
+      "donation",
+      "face",
+      "fox",
+      "quick",
+      "time",
+      "you",
+      "করুন",
+      "কর্মসূচি",
+      "গুরুত্ব",
+      "জীবন",
+      "দান",
+      "প্রশিক্ষণ",
+      "বাঁচান",
+      "বিতরণ",
+      "মাদ্রাসা",
+      "রক্ত",
+      "রক্তদান",
+      "রক্তদান",
+      "শিক্ষার",
+      "শিক্ষার্থীদের",
+      "শিবির",
+      "শিবির",
+      "শীতবস্ত্র",
+      "সংবর্ধনা"
+    ],
+    "NL whole রক্তদান": 2,
+    "BOOL whole রক্তদান": 2,
+    "BOOL wild রক্তদা*": 2,
+    "BOOL wild রক* (2-char prefix)": 3,
+    "BOOL exact রক (2-char, no wild)": 0,
+    "NL exact রক (2-char)": 0,
+    "NL 1-char র": 0,
+    "BOOL stopword the": 0,
+    "NL stopword the": 0,
+    "BOOL stopword about": 0,
+    "BOOL +the +quick (stopword kills +)": 0,
+    "BOOL +রক্তদান +শিবির (AND)": 2,
+    "BOOL রক্ত দান (OR)": 1,
+    "BOOL phrase \"রক্তদান শিবির\"": 2,
+    "NL রক্তদান শিবির": 2,
+    "BOOL wild শিক্ষা*": 2
+  },
+  "tokenisation": {
+    "posts_words_রক্ত_শিক্ষ": "রক্ত\nরক্তদ\nরক্তদা\nরক্তদাত\nরক্তদাতা\nরক্তদাতার\nরক্তদাতারা\nরক্তদাতারান\nরক্তদাতারানি\nরক্তদাতারানিব\nরক্তদাতারানিবন\nরক্তদাতারানিবন্\nরক্তদাতারানিবন্ধ\nরক্তদাতারানিবন্ধন\nরক্তদান\nরক্তদানশ\nরক্তদানশি\nরক্তদানশিব\nরক্তদানশিবি\nরক্তদানশিবির",
+    "word_রক_indexed": "0",
+    "word_the_indexed": "0",
+    "word_রক্তদান_index_docs": "165"
+  },
+  "tokens_stats": {
+    "posts": {
+      "rows": 1800,
+      "tokens_bytes_total": 12723131,
+      "tokens_bytes_avg": 7068.4
+    },
+    "persons": {
+      "rows": 1500,
+      "tokens_bytes_total": 749390,
+      "tokens_bytes_avg": 499.6
+    },
+    "activities": {
+      "rows": 600,
+      "tokens_bytes_total": 2555391,
+      "tokens_bytes_avg": 4259.0
+    },
+    "populate_ms": 79899.7
+  },
+  "sizes_baseline": {
+    "activities": {
+      "rows": 600,
+      "data_length": 311296,
+      "index_length": 0
+    },
+    "persons": {
+      "rows": 1500,
+      "data_length": 278528,
+      "index_length": 0
+    },
+    "posts": {
+      "rows": 1750,
+      "data_length": 1589248,
+      "index_length": 0
+    }
+  },
+  "sizes_indexed": {
+    "activities": {
+      "rows": 600,
+      "data_length": 294912,
+      "index_length": 16384
+    },
+    "persons": {
+      "rows": 1500,
+      "data_length": 294912,
+      "index_length": 147456
+    },
+    "posts": {
+      "rows": 1727,
+      "data_length": 1589248,
+      "index_length": 262144
+    }
+  },
+  "sizes_tokens": {
+    "activities": {
+      "rows": 333,
+      "data_length": 4734976,
+      "index_length": 16384
+    },
+    "persons": {
+      "rows": 1452,
+      "data_length": 1572864,
+      "index_length": 147456
+    },
+    "posts": {
+      "rows": 1060,
+      "data_length": 24641536,
+      "index_length": 262144
+    }
+  },
+  "fts_sizes": {
+    "activities": {
+      "fts_bytes": 1736704,
+      "fts_bytes_by_index": {
+        "ft_activities": 475136,
+        "ft_activities_tokens": 933888
+      },
+      "fts_aux_tables_bytes": 327680,
+      "table_ibd_bytes": 12582912
+    },
+    "persons": {
+      "fts_bytes": 3194880,
+      "fts_bytes_by_index": {
+        "ft_persons": 442368,
+        "ft_persons_tokens": 2424832
+      },
+      "fts_aux_tables_bytes": 327680,
+      "table_ibd_bytes": 9437184
+    },
+    "posts": {
+      "fts_bytes": 5505024,
+      "fts_bytes_by_index": {
+        "ft_posts": 655360,
+        "ft_posts_tokens": 4521984
+      },
+      "fts_aux_tables_bytes": 327680,
+      "table_ibd_bytes": 32505856
+    }
+  }
+}

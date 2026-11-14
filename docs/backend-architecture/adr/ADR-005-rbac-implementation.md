@@ -49,9 +49,9 @@ The system needs role-based access control. Phase 1 has only two admin roles (`s
 - A maintained, MIT-licensed package with a clear upgrade path (v8 requires PHP 8.3+ and Laravel 12/13). Upgrades follow the package's releases.
 - Role/permission seeders are version-controlled; permission changes in production go through the deployment process (or, when a UI exists, through an audited admin action).
 
-## MySQL 8.4 note (Phase 0.1)
+## MariaDB 11.8.9 note (amended 2026-11-14; see 16-MARIADB-ADDENDUM.md)
 
-Spatie Permission's migrations run on MySQL 8.4 (InnoDB `DYNAMIC` row format is the MySQL 8.4 default). If error 1071 ("Specified key was too long") appears at scaffold time, apply the vendor-documented fix and record it; the scaffold-time assertion is that the Spatie migration runs cleanly (Doc 15, CK-27).
+Spatie Permission's migrations run on MariaDB 11.8.9 (InnoDB `DYNAMIC` row format is the MariaDB default). If error 1071 ("Specified key was too long") appears at scaffold time, apply the vendor-documented fix and record it; the scaffold-time assertion is that the Spatie migration runs cleanly (Doc 15, CK-27 as amended by 16-MARIADB-ADDENDUM.md).
 
 ## Final recommendation
 

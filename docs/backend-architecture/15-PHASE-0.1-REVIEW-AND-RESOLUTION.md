@@ -1,5 +1,7 @@
 # 15 — Phase 0.1 Review and Resolution
 
+> **MariaDB addendum note (2026-11-14):** the database decision recorded in this document — MySQL 8.4 LTS + InnoDB, Confirmed Phase 0.1 — was superseded the same day by Fahim's decision that **MariaDB 11.8.9 is the production engine** (see 16-MARIADB-ADDENDUM.md). This document remains the verbatim Phase 0.1/0.1.1 record: its narrative, measurements (all on MySQL 8.0.46), and counts (48/50/58 tables after the `sequences` definition, 134 endpoints) stand as history, except where §22 records an amendment. The still-operative rows amended by the addendum are: §1 authoritative numbers, §6 history rows (count parentheticals), §9.5 re-test checklist, §10 C-1/C-2/C-24, §11 REG-TECH-03/REG-ORG-14, §12 check 5 and §17 inventory row (count parentheticals — the check records themselves stand), §13 RK-1/RK-14 (RK-2's re-test now runs via the amended §9.5), §19 ADR rows, §21.3/§21.5 check 6/§21.6, and §22 itself. §17's CK rows stand as the Phase 0.1 record; the hash/ledger/search items they point to are re-pointed via §9.5, §22 and Doc 10. Do not read any other "MySQL 8.4 is the standard" sentence in this document as current.
+
 | | |
 |---|---|
 | Document | Satanipara Community — Phase 0 Backend Blueprint, Doc 15 |
@@ -15,7 +17,7 @@ Phase 0 published a complete Laravel backend blueprint (Docs 01–14, 13 ADRs, 4
 
 Phase 0.1 applied **every correction** from findings A–E — 401 scripted replacements across Docs 01–14, the ADRs, the diagrams, the backend README, and the root README (scripts S1–S5b, each exact-match with count assertions), plus two tables added to the schema and the ERD, 25 new API endpoints, and two rewritten ADRs (ADR-003 and ADR-010). **Published 2026-11-14T12:29:01Z as commit `d05cbc70d383587cb5bf4083bec9b9fca06c8a5f` on `main` ("Phase 0.1: reconcile architecture, security and database blueprint", 34 files changed, 1182 insertions, 526 deletions).** The staging copy at `~/workspace/satanipara-phase0-1/publish/` and the push plan `~/workspace/satanipara-phase0-1/PUSH_PLAN-0.1.md` are the pre-publication record of that push, retained as history — they are no longer the deliverable.
 
-The authoritative numbers after Phase 0.1 (updated Phase 0.1.1 — see §21) are: **MySQL 8.4 LTS + InnoDB** (Confirmed, Fahim); **47 application tables** (49 defined incl. 2 Spatie pivots; 57 physical incl. 8 Laravel framework tables); **134 endpoints**; **13 ADRs** (all Confirmed or Recommended, none open); **21 Awaiting Organisation decisions** (AO-01–AO-21) plus the merged owner-decision register in §11.
+The authoritative numbers after Phase 0.1 (updated Phase 0.1.1 — see §21; amended 2026-11-14 — see §22) are: **MariaDB 11.8.9 + InnoDB** (Confirmed, Fahim, 2026-11-14 — supersedes MySQL 8.4 LTS + InnoDB; see 16-MARIADB-ADDENDUM.md); **48 application tables** (50 defined incl. 2 Spatie pivots; 58 physical incl. 8 Laravel framework tables — `sequences` defined as the 48th table, 2026-11-14); **134 endpoints**; **14 ADRs** (13 Phase 0.1 + ADR-014 MariaDB 11.8.9; ADR-003 superseded by ADR-014); **21 Awaiting Organisation decisions** (AO-01–AO-21) plus the merged owner-decision register in §11.
 
 The gate assessment is in §20. In one line: the blueprint is now **internally consistent and verified by Batch 6**, with the remaining work being owner decisions (Fahim / the organisation), not blueprint errors.
 
@@ -57,7 +59,7 @@ Every document in the blueprint was affected except Doc 01's audit record itself
 | 03 — Dynamic Content Inventory | Homepage/settings rows → `settings` keys, no draft workflow (M-07); notification templates → code constants (M-06); Facility/landmark split (M-23); service catalogue → `service_types` table + S1–S5 (M-22/C §3); finance rows → approve-and-publish one step, computed-on-read summaries (M-08); contact permissions; `finance.publish` → `finance.reports.publish`; plan-phase labels. |
 | 04 — User Roles & Permissions | ERT mapping (§1.1); go-live expectation of two Super Admins (§3.1/§3.2, no-self-removal absolute); permission catalogue (`accept`/`advance` replace `update`, `service_types.manage` added, `reports.publish` deleted); password policy §5.1 (single policy); throttling §5.2; mobile tokens 30 days (§5.4); mediated reset §5.5; audit two-user design §5.7; MFA TOTP behind flag §5.8; finance §6.1 (approve IS publish, deadlock warning, reversal rule); tracking §7.2/§7.3/§7.4 rewrite; §8.1 `finance.reports.publish`; §8.7 content editor; §8.15 REG-AUTH-01; §10 items; §11 RBAC-1–RBAC-5 (RBAC-5 closed). |
 | 05 — Backend Architecture | §3 fully rewritten as the MySQL decision (§§3.1–3.5); §1 L16; §2.3/§2.4 version lines; §4.2 module→phase table; §5.2 password parenthetical; §5.5 DDL-not-transactional note; §6.2 client phases; §8.2 token 30 days; §9.1 4-node timeline rule + guest confirm-close; §9.3 review checkpoint; §10.1 SKIP LOCKED (MySQL ≥ 8.0.1); §10.4 search (boolean mode, E measured); §13 `mysqldump` + three-tier retention; §15 agreement/divergence lines; ARCH-2. |
-| 06 — Database Design | §1.4 counts rewritten (39 + 8 = 47 application; 49 defined; 57 physical); `users` (`member_no`, `member_type`, Q-20 annotation); `member` role example deleted (E-07); `persons` denormalised search snapshots + ngram FULLTEXT incl. `profession_bn`/`area_bn` (E); institutions/activities/posts FULLTEXT; landmarks `status` + `location_note_bn` (M-24); committee generated-column designs (§4.1/§4.2); new `constitution_versions` (§4.6); `posts` fields (M-20); `media` `JSON`; `service_requests` (service_type_id + snapshots, tracking-secret columns, backup-helper columns); ERT + blood_donors `person_id` FKs; new `service_types` (§6.8); `ledger_entries` (status enum, reject + discard columns, CHECKs, trigger/REVOKE/`sequences` enforcement); `ledger_reversals` (approver rule); `notifications_log` (two sources of truth); `activity_log` (JSON, two-user + trigger); framework tables (§8.6); monthly summary computed on read (M-08); CHECK sentence; migration order steps 0–12 (media before organisation); §11.5 (`phone_hash` destruction, ledger payee AO-11); §12 (computed summary, `sequences`); §13 (`mysqldump`, three-tier retention); §15 rewritten; §16 DB-1 decided, DB-3 open until runbook adopts. |
+| 06 — Database Design | §1.4 counts rewritten (39 + 8 = 47 application; 49 defined; 57 physical — now 48/50/58: `sequences` defined as the 48th table 2026-11-14, see Doc 16); `users` (`member_no`, `member_type`, Q-20 annotation); `member` role example deleted (E-07); `persons` denormalised search snapshots + ngram FULLTEXT incl. `profession_bn`/`area_bn` (E); institutions/activities/posts FULLTEXT; landmarks `status` + `location_note_bn` (M-24); committee generated-column designs (§4.1/§4.2); new `constitution_versions` (§4.6); `posts` fields (M-20); `media` `JSON`; `service_requests` (service_type_id + snapshots, tracking-secret columns, backup-helper columns); ERT + blood_donors `person_id` FKs; new `service_types` (§6.8); `ledger_entries` (status enum, reject + discard columns, CHECKs, trigger/REVOKE/`sequences` enforcement); `ledger_reversals` (approver rule); `notifications_log` (two sources of truth); `activity_log` (JSON, two-user + trigger); framework tables (§8.6); monthly summary computed on read (M-08); CHECK sentence; migration order steps 0–12 (media before organisation); §11.5 (`phone_hash` destruction, ledger payee AO-11); §12 (computed summary, `sequences`); §13 (`mysqldump`, three-tier retention); §15 rewritten; §16 DB-1 decided, DB-3 open until runbook adopts. |
 | 07 — API Architecture | §6 search (boolean mode); §7 password → Doc 04 §5.1; §8.2 token 30 days; §8.3 tracking-secret design; §9 rate limits; §12 two sources of truth + guest no-notification; §14 intro count 108 → 132; A1 (423 rule, `remember?` deleted); A5 (`pending`, Side B login); A6 (mediated temp password, `members.reset_password`); P7–P11 new public endpoints; C2 → C2a/C2b/C2c; C3 `kind` discriminator; C4 decided `visibility=private`; C7/C8 `community.infrastructure.manage`; C9–C11 new; J1/J2 employer/deadline; G3 `media.manage`; X1 rewritten; X2 replaced by `POST /expatriate-requests/track`; X7 `accept`/`advance`; X8 `expatriate.expenses.create`; X11/X12 added; B2/B5/B6/B7/B8/B9 fixes; F3 field names; F4 approve IS publish + dual control mandatory; F5 deleted; F6a reject added; F8 `finance.reports.publish`; F10 added; T4 hard delete; T5 `device_name?`; M2 default decided + M4–M7; §14.12 D1–D11 → AD1–AD11 + AD12/AD13; new §14.13 service catalogue S1–S5; §16 traceability; §17 rewritten. |
 | 08 — Security Architecture | §3.1 SUPERUSER → MySQL granular privileges; §5 session timeouts cite Doc 04 §5.4 in full (T-12); backup ref Doc 11 §7 (B-06); §14 open items updated (items 2/3/5/8 decided, items 1/4/6/7 open). |
 | 09 — Admin Dashboard | §3.1 `dashboard.view_admin`/`view_helper` (T-01); §3.2 password per Doc 04 §5.1, permissions `members.*` + `users.manage_roles`, self-lockout guard mandatory; §3.4/§3.15 AD2/AD3/AD8 (R-15); §3.11 finance (approve-and-publish one step, reject, status enum, dual control mandatory, `finance.publish` removed). |
@@ -66,10 +68,10 @@ Every document in the blueprint was affected except Doc 01's audit record itself
 | 12 — Development Roadmap | Phase vocabulary box + canonical module→phase table (§1.5); Phase 0 scope/deliverables corrected (R-03); Phase 2 AD4–AD5 (R-15); Phase 5 M9 remainder + tracking-boundary risk; Phase 6 dual control mandatory + acceptance warning (R-06/R-16); Phase 7 M9 remainder; Phase 9 canonical restore sentence; L68/L78. |
 | 13 — Open Questions & Assumptions | Q-01 ref fixed (B-02); Q-02 tracking boundary (mechanism decided, AO-04 open); Q-05 password policy (decided except AO-01); Q-11 dual control (decided in part); Q-13 Bengali search (measured, re-test open); Q-22 service catalogue (table + seed candidates); Q-26 CLOSED (MySQL 8.4 LTS, Fahim 2026-11-14); A-06 rewritten; new AO register section (AO-01–AO-17). |
 | 14 — Acceptance Criteria | §4 retitled + "Doc 12 equivalent" column + governing sentence (R-02); AC-M1-03 (Side B login); AC-M5-09 (Tier-S + 4-node rule); AC-M7-05 (review checkpoint); AC-X-BKP-02 (canonical restore sentence); M12 heading (Future Mobile); G-18 and P0-09 unticked with exception lists (R-08); P0-07 numbers corrected (132 endpoints, 8 added tables). |
-| ADRs 001–013 | ADR-001 (vector search unavailable on MySQL); ADR-002 (effective PHP floor 8.4 + reason); ADR-003 full rewrite from A §4.1 with two Phase 0.1 adjustments (monthly summary computed on read, not a snapshot; FTS fallback = E's measured ngram+boolean result); ADR-005 (Spatie MySQL 1071 note); ADR-007 (Doc 11 §7 refs); ADR-008 (SKIP LOCKED MySQL ≥ 8.0.1); ADR-010 full rewrite (Scout database engine in BOOLEAN MODE, E measured basis); ADR-012 (MySQL 8.4, cPanel sentence rewritten, Doc 11 §7.2 ref); ADR-013 (`mysqldump`, binary-log PITR, PHP floor 8.4, Doc 11 §7 refs); ADR-004/009/011 one-line "no database dependency — verified Phase 0.1" notes; adr/README (ADR-003 Confirmed). |
-| Diagrams | API-FLOW: 5× "participant DB as PostgreSQL" → "MySQL 8.4" (the sixth occurrence cited by A was the engine-neutral money-rules line, L171 — it stays); "4-step Meridian timeline" → 4-node rule. ERD: `jsonb` → `json`; §2.8 ref → §1/§3.7; ERT cardinality one-to-many (E-04); count sentence (39 named + 8 additions = 47 application; 49 defined; 57 physical); two new boxes (`service_types`, `constitution_versions`) with relationships; `service_requests` box updated (`service_type_id` + snapshots). SYSTEM-ARCHITECTURE: PG node → MySQL 8.4 LTS (InnoDB) node, `SVC --> DB`, L121/L140/L162 MySQL. |
-| Backend README | Version line (MySQL 8.4 LTS); table counts (47/49/57); phase vocabulary box (§3); ERD line. |
-| Root README | Stack line (MySQL 8.4); PostgreSQL bullet → MySQL bullet; search bullet (Scout BOOLEAN MODE); backup bullet (monthly check + quarterly rehearsal); "What the plan changed" (47 application tables, 132 endpoints); module→phase table (both columns + canonical sentence); M12/Future Mobile; status table (Direction D "Under review", website Doc 12 Phase 7, tracking/forgot-password rows updated); "Next steps" item 4 (Doc 12 Phase 2); documentation list (MySQL 8.4 LTS, 47 tables, 132 endpoints, Doc 15 added). |
+| ADRs 001–013 | ADR-001 (vector search unavailable on MySQL — corrected 2026-11-14: available natively on MariaDB 11.7+; see Doc 16 §7); ADR-002 (effective PHP floor 8.4 + reason); ADR-003 full rewrite from A §4.1 with two Phase 0.1 adjustments (monthly summary computed on read, not a snapshot; FTS fallback = E's measured ngram+boolean result); ADR-005 (Spatie MySQL 1071 note); ADR-007 (Doc 11 §7 refs); ADR-008 (SKIP LOCKED MySQL ≥ 8.0.1); ADR-010 full rewrite (Scout database engine in BOOLEAN MODE, E measured basis); ADR-012 (MySQL 8.4, cPanel sentence rewritten, Doc 11 §7.2 ref); ADR-013 (`mysqldump`, binary-log PITR, PHP floor 8.4, Doc 11 §7 refs); ADR-004/009/011 one-line "no database dependency — verified Phase 0.1" notes; adr/README (ADR-003 Confirmed). |
+| Diagrams | API-FLOW: 5× "participant DB as PostgreSQL" → "MySQL 8.4" (the sixth occurrence cited by A was the engine-neutral money-rules line, L171 — it stays); "4-step Meridian timeline" → 4-node rule. ERD: `jsonb` → `json`; §2.8 ref → §1/§3.7; ERT cardinality one-to-many (E-04); count sentence (39 named + 8 additions = 47 application; 49 defined; 57 physical — now 48/50/58, see Doc 16); two new boxes (`service_types`, `constitution_versions`) with relationships; `service_requests` box updated (`service_type_id` + snapshots). SYSTEM-ARCHITECTURE: PG node → MySQL 8.4 LTS (InnoDB) node, `SVC --> DB`, L121/L140/L162 MySQL. |
+| Backend README | Version line (MySQL 8.4 LTS); table counts (47/49/57 — now 48/50/58, see Doc 16); phase vocabulary box (§3); ERD line. |
+| Root README | Stack line (MySQL 8.4); PostgreSQL bullet → MySQL bullet; search bullet (Scout BOOLEAN MODE); backup bullet (monthly check + quarterly rehearsal); "What the plan changed" (47 application tables, 132 endpoints — now 48 application tables, 134 endpoints, see Doc 16); module→phase table (both columns + canonical sentence); M12/Future Mobile; status table (Direction D "Under review", website Doc 12 Phase 7, tracking/forgot-password rows updated); "Next steps" item 4 (Doc 12 Phase 2); documentation list (MySQL 8.4 LTS, 47 tables, 132 endpoints, Doc 15 added — now MariaDB 11.8.9, 48 tables, 134 endpoints, see Doc 16). |
 
 ## 6. Corrections made
 
@@ -144,7 +146,7 @@ These are the editor's recommendations, recorded as **Recommended** — implemen
 
 ## 9. Bengali full-text search — methodology, dataset, measured results, recommendation
 
-Investigator E measured Bengali search on **MySQL 8.0.46, not 8.4**. Nothing in this section is a claim about 8.4 performance. The 8.0 → 8.4 ngram feature-set equivalence was verified from the MySQL 8.4 manual (§14.9.8); timings on 8.4 were not measured and are required before launch (re-test checklist below).
+Investigator E measured Bengali search on **MySQL 8.0.46, not 8.4**. Nothing in this section is a claim about 8.4 performance. **Superseded for production 2026-11-14:** MariaDB 11.8.9 has no ngram parser, so the §9.4 ngram recommendation does NOT transfer — the adopted approach is default-parser FULLTEXT + BOOLEAN MODE with `+term*` wildcards as a model scope (see §22 and 16-MARIADB-ADDENDUM.md §3.4). This section stays verbatim as the Phase 0.1 measurement record. The 8.0 → 8.4 ngram feature-set equivalence was verified from the MySQL 8.4 manual (§14.9.8); timings on 8.4 were not measured and are required before launch (re-test checklist below).
 
 **Reproducibility package (Phase 0.1.1):** the generator, schema, queries list, runner, README and 8.4 run guide are published as `docs/backend-architecture/benchmark/` (`README.md`, `generate_dataset.py`, `schema.sql`, `queries.md`, `run_benchmark.py`, `RUN-ON-8.4.md` — 77 KB of text; no generated datasets, no binaries). The generated `seed.sql` (~1.8 MB) and the raw 8.0.46 result files stay out of the repo by design and are regenerated on demand. The package was verified end-to-end on 2026-11-14 (Worker D): the generator reproduces the Phase 0.1 `seed.sql` byte-for-byte (md5 `b2164ed52f58e36d3954a42cebacad40`), and the packaged runner re-run on MySQL 8.0.46 reproduced all 133 count pairs exactly (see the package `README.md` and the Phase 0.1.1 test log).
 
@@ -196,7 +198,7 @@ Other cases:
 
 ### 9.5 Re-test checklist (before launch)
 
-- [ ] Re-run the full benchmark on **MySQL 8.4** using `docs/backend-architecture/benchmark/` (follow `benchmark/RUN-ON-8.4.md`) and record whether the 8.0 results hold. File the 8.4 `raw_results.json/.md` as a dated, version-labelled artefact; do not overwrite the 8.0.46 summary above in place.
+- [ ] Re-validate the search approach on **MariaDB 11.8.9** (the ngram benchmark cannot be re-run as-is — MariaDB has no ngram parser; the MariaDB benchmark is measured: 35 cases / 171 timed queries in `benchmark-mariadb/` — re-run it on production per `benchmark-mariadb/RUN-ON-PRODUCTION.md`) and record whether the 8.0 MySQL results hold in any form. File the production MariaDB `raw_results.json/.md` as a dated, version-labelled artefact; do not overwrite the 8.0.46 summary above in place.
 - [ ] Re-run on a **real-data snapshot** (real Bengali names/notices, with consent) — synthetic data cannot validate relevance.
 - [ ] Verify the boolean query-builder rules (§9.4 item 4) in the actual search implementation, including operator escaping.
 - [ ] 50k-row scale check — re-measure index build times and query latencies at an order of magnitude more rows.
@@ -208,8 +210,8 @@ These are **Confirmed** after Phase 0.1. A Confirmed decision is closed unless F
 
 | # | Decision | Authority |
 |---|---|---|
-| C-1 | Database: **MySQL 8.4 LTS + InnoDB**. PostgreSQL superseded everywhere; historical mentions explicitly marked superseded, never presented as current. | Fahim, 2026-11-14 (Doc 13 Q-26 closed; ADR-003 Confirmed) |
-| C-2 | Authoritative counts: **47 application tables** (49 defined, 57 physical); **134 endpoints**. | | Mechanically verified (C; Batch 6 §12) |
+| C-1 | Database: **MariaDB 11.8.9 + InnoDB** (supersedes MySQL 8.4 LTS + InnoDB, itself the Phase 0.1 decision). PostgreSQL superseded everywhere; historical mentions explicitly marked superseded, never presented as current. | Fahim, 2026-11-14 (Doc 13 Q-26 closed, then superseded; ADR-003 as superseded by 16-MARIADB-ADDENDUM.md) |
+| C-2 | Authoritative counts: **48 application tables** (50 defined, 58 physical); **134 endpoints**. (`sequences` defined as the 48th table, 2026-11-14 — see Doc 16 §3.10.) | | Mechanically verified (C; Batch 6 §12) |
 | C-3 | Phase 1 admin roles: exactly **Super Admin + Expatriate Helper**; the Expatriate Helper IS the ERT operational role (no third role). No OTP. | Decision Sheet; REG-SCOPE-01 |
 | C-4 | Direction D is the approved **working** frontend direction; the client's formal Design OK is still pending (REG-ORG-09). | Decision Sheet; Doc 13 A-01 |
 | C-5 | Password policy (single, authoritative in Doc 04 §5.1): 12 chars minimum all accounts, **16 enforced for Super Admin**, no composition rules, mandatory breach screening (HIBP k-anonymity 2s timeout + local ≥10,000 list always enforced + context blocklist), Argon2id m=19 MiB t=2 p=1 (bcrypt cost ≥12 fallback with >72-byte rejection), history 5, no expiry, temp passwords random ≥16 chars single-use 24h. Documented deviation from the NIST 800-63B-4 15-char single-factor floor (primary-verified at https://doi.org/10.6028/NIST.SP.800-63B-4, §3.1.1.2). | B §3.1; NIST SP 800-63B-4 (primary) |
@@ -231,7 +233,7 @@ These are **Confirmed** after Phase 0.1. A Confirmed decision is closed unless F
 | C-21 | Login throttling: 5/15 min, then 10 → 30-min lock growing 30 → 60 → 240 min; A1 423 only after a correct password. | B §3.1/§4.2; Doc 04 §5.2 |
 | C-22 | Password-reset mechanism: Super-Admin-mediated, system-generated single-use temporary password, 24 h expiry, no reset link, no `new_password` field. (The delivery channel / identity-verification procedure is AO-05.) | B §3.6.5; Doc 04 §5.5 |
 | C-23 | Migration order (13 steps, C §5): media before organisation; counter table step 1; `service_types` step 3; `constitution_versions` step 6; deferred FKs step 11; seeders step 12; production `migrate:rollback` is staging-only. | C §5; Doc 06 §10 |
-| C-24 | Bengali search: ngram `FULLTEXT` + BOOLEAN MODE as primary; natural-language mode must NOT be the default; Scout database engine in boolean mode if adopted. | E; §9 |
+| C-24 | Bengali search: ngram `FULLTEXT` + BOOLEAN MODE as primary **on MySQL only — SUPERSEDED for production** (MariaDB 11.8.9 has no ngram parser); natural-language mode must NOT be the default; Scout database engine in boolean mode if adopted. The MariaDB search approach is decided in 16-MARIADB-ADDENDUM.md. | E; §9; 16-MARIADB-ADDENDUM.md |
 | C-25 | Effective PHP floor is **8.4** (spatie/laravel-backup v10.4.0 requires `php ^8.4`); PHP target 8.4/8.5, floor 8.3, never 8.2. The 8.4-vs-8.5 pick is open (REG-TECH-02a). | A (Packagist metadata); ADR-002, ADR-013 |
 | C-26 | No prices anywhere in the blueprint (quotation is separate, recommendations only, not final, not sent). | Task constraint; root README |
 
@@ -278,7 +280,7 @@ Merged from B §6.2 (AO-01–AO-17), D §4 (REG-*), and the C/D open items, dedu
 | REG-PROD-17 | Video gallery scope (G4–G5). | Organisation + Fahim (Sprint 1) | Phase 4 (as placeholder); build = plan Phase 2. |
 | REG-PROD-18 | Swagger/OpenAPI UI exposed on production or not (Recommended: not exposed, §8 R-9). | Build team / Fahim | Phase 1. |
 | REG-TECH-02a | PHP 8.4 (conservative) vs 8.5 (longest runway). | Build team at scaffold | Phase 1. Host PHP availability + package resolution at scaffold; record in runbook. |
-| REG-TECH-03 | Database version/pinning detail under MySQL (exact 8.4 LTS patch, charset/collation for Bengali, `innodb` settings). | Build team + Fahim | Phase 1. MySQL 8.4 LTS lifecycle check at scaffold; Bengali collation decision (`utf8mb4` + collation) recorded. |
+| REG-TECH-03 | Database version/pinning detail under MariaDB 11.8.9 (exact 11.8 patch as verified on the host, charset `utf8mb4` / collation `utf8mb4_unicode_ci` for Bengali, `innodb` settings). | Build team + Fahim | Phase 1. MariaDB 11.8 LTS lifecycle check at scaffold; Bengali collation decision (`utf8mb4` + `utf8mb4_unicode_ci`) recorded in 16-MARIADB-ADDENDUM.md. |
 | REG-OPS-03 | Log retention (audit logs for life of system; app logs 90 days — Proposed, §8 R-21). | Organisation | Phase 1. |
 | REG-OPS-04 | Concurrent-session policy (one session per user? multiple?). Session/timeout values are decided (C-20). | Build team / Fahim | Phase 2. |
 | REG-OPS-05 | CSP `unsafe-inline` exception for a named dependency (if any). | Build team | Phase 7. |
@@ -301,7 +303,7 @@ Merged from B §6.2 (AO-01–AO-17), D §4 (REG-*), and the C/D open items, dedu
 | REG-ORG-11 | Hosting/domain/store account ownership (all in organisation's name/email, never the developer's). | Organisation (Doc 13 Q-27) | Phase 1. Handover includes full access + restore drill. |
 | REG-ORG-12 | Online donation/payment in future? (Phase 2, merchant-account readiness) + Apple Developer account. | Organisation (Doc 13 Q-12/Q-23, deferred) | No Phase 1 block. |
 | REG-ORG-13 | Office-holder contact-display rules (committee contact details shown under org's rules). | Organisation (Doc 13 Q-06 part) | Phase 3. |
-| REG-ORG-14 | Bengali FTS test data (real Bengali names/notices for the search-quality test). | Organisation (Doc 13 Q-13 / REG-TECH-10) | Phases 3–4. Real Bengali corpus; test run on MySQL 8.4. |
+| REG-ORG-14 | Bengali FTS test data (real Bengali names/notices for the search-quality test). | Organisation (Doc 13 Q-13 / REG-TECH-10) | Phases 3–4. Real Bengali corpus; test run on MariaDB 11.8.9. |
 | DB-3 | Restore-test cadence: the cadence is decided (C-13); the **runbook adoption** is the remaining step. | Build team (runbook) | Phase 1 (backup job) / Phase 9 (rehearsal). Stays open until the runbook records the adopted cadence. |
 
 ## 12. Verification evidence (Batch 6)
@@ -318,7 +320,7 @@ Checks (all executed, none claimed). The full diff was read end to end (3,198 li
 | 2 | Markdown lint + structure (C9) | PASS | `mdl`/`markdownlint` unavailable; Python `markdown` module not installed — stated, not assumed. Structure check by script: code fences balanced, no heading jumps, in all 35 staging files. |
 | 3 | Broken internal links (C1) | PASS | 13 links checked (targets resolved in staging, falling back to the clone for repo paths such as `index.html`/`alternatives/`); 0 broken. |
 | 4 | Endpoint count + duplicate IDs (C2) | PASS | 132 endpoint rows in Doc 07 §14, 132 unique IDs, no duplicates. (Batch 6, Phase 0.1. Phase 0.1.1 adds F3a/F3b → 134 rows, re-verified in §21.) |
-| 5 | Table inventory + ERD/schema reconciliation (C3) | PASS | Doc 06 headings: 47 application tables (3 combined sections: §2.2 covers roles/permissions/model_has_roles + 2 pivots, §3.8 and §5.8 cover 2 each); 2 pivots named in §2.2; 8 framework rows in §8.6; ERD: 49 boxes; §16: 57 tables. All three sets agree. |
+| 5 | Table inventory + ERD/schema reconciliation (C3) | PASS | Doc 06 headings: 47 application tables (3 combined sections: §2.2 covers roles/permissions/model_has_roles + 2 pivots, §3.8 and §5.8 cover 2 each); 2 pivots named in §2.2; 8 framework rows in §8.6; ERD: 49 boxes; §16: 57 tables. All three sets agree. (Now 48/50/58 — `sequences` defined as the 48th table 2026-11-14; see Doc 16 §3.10.) |
 | 6 | ADR status consistency (C4) | PASS | 13 ADR files vs the backend README table vs the adr/README table agree: 8 Confirmed, 5 Recommended. |
 | 7 | Stale/contradictory terminology (C5) | PASS | 0 unclassified hits after the 39 Batch 6 fixes. Remaining hits are classified: Doc 15's own change record quoting superseded values; 'deleted' notes (Doc 05 'e.g. 300', Doc 13 `finance.publish`); Doc 14 P0-09's explanation of the false claim. |
 | 8 | PostgreSQL mentions (C6) | PASS | 42 mentions; 0 live recommendations. All are explicitly marked superseded, or limitation comparisons naming what MySQL lacks (vector search, native FTS configurability). Zero `pg_` tokens outside this document's own history (§4) and checklist (§17) rows. |
@@ -361,7 +363,7 @@ Batch 6 found 39 further issues in two rounds (listed in §6); every issue was f
 | Area | ERD | Database Schema (Doc 06) | API (Doc 07) | RBAC (Doc 04) | Roadmap (Doc 12) | Status |
 |---|---|---|---|---|---|---|
 | Database engine | MySQL 8.4 node | MySQL 8.4 LTS + InnoDB (§1.4) | — | MySQL granular privileges (§3.1) | MySQL 8.4 scaffold step | Reconciled |
-| Table inventory | 49 boxes (47 app + 2 pivots) | 47 app / 49 defined / 57 physical (§1.4) | — | — | — | Reconciled (§16) |
+| Table inventory | 49 boxes (47 app + 2 pivots) | 47 app / 49 defined / 57 physical (§1.4) | — | — | — | Reconciled (§16). Now 50 boxes / 48/50/58 — `sequences` defined 2026-11-14; see Doc 16 §3.10. |
 | Service catalogue | `service_types` box + `catalogues` relation | §6.8 + `service_requests.service_type_id` + snapshots | S1–S5 (§14.13) | `service_types.manage` (§4.2) | Phase 5 (M5) | Reconciled |
 | Persons as source of truth | `person_id` FKs on `blood_donors` / `emergency_team_members` | §6.4/§6.5 nullable FKs | B-series / X-series use `person_id` | — | Phase 5 | Reconciled |
 | Finance ledger | `ledger_entries` / `ledger_reversals` boxes | §7.1/§7.2 (enum, CHECKs, trigger, REVOKE) | F3/F4/F6/F6a/F8/F10 | `finance.create`/`approve`/`reverse`/`reports.publish` (§4.2, §6.1) | Phase 6 (dual control mandatory) | Reconciled |
@@ -376,7 +378,7 @@ Batch 6 found 39 further issues in two rounds (listed in §6); every issue was f
 
 ## 16. Authoritative table inventory
 
-The single authoritative inventory. Doc 06 §1.4, the ERD, and this section agree: **47 application tables, 49 defined, 57 physical.**
+The single authoritative inventory. Doc 06 §1.4, the ERD, and this section agree: **48 application tables, 50 defined, 58 physical.** (`sequences` defined as the 48th table, 2026-11-14 — see Doc 16 §3.10.)
 
 ### 16.1 The 39 plan tables (corrected — the plan text says 38 but names 39)
 
@@ -403,12 +405,12 @@ The single authoritative inventory. Doc 06 §1.4, the ERD, and this section agre
 | `service_types` | Services | §6.8 | Phase 0.1 (C §3) — the admin-managed service catalogue. |
 | `constitution_versions` | Organisation | §4.6 | Phase 0.1 (C M-05) — the versioned constitution. |
 
-**39 (plan, corrected) + 8 (additions) = 47 application tables.**
+**39 (plan, corrected) + 8 (additions) + 1 (`sequences`, defined 2026-11-14) = 48 application tables.**
 
 ### 16.3 Pivots and framework tables
 
-- **2 Spatie pivot tables** (drawn in the ERD, counted in "defined"): `role_has_permissions`, `model_has_permissions`. 47 + 2 = **49 defined tables**.
-- **8 Laravel framework tables** (listed in Doc 06 §8.6 and ERD §1/§3.7, not drawn in full): `personal_access_tokens`, `notifications`, `jobs`, `failed_jobs`, `cache`, `sessions`, `password_reset_tokens`, `migrations`. 49 + 8 = **57 physical tables**.
+- **2 Spatie pivot tables** (drawn in the ERD, counted in "defined"): `role_has_permissions`, `model_has_permissions`. 48 + 2 = **50 defined tables**.
+- **8 Laravel framework tables** (listed in Doc 06 §8.6 and ERD §1/§3.7, not drawn in full): `personal_access_tokens`, `notifications`, `jobs`, `failed_jobs`, `cache`, `sessions`, `password_reset_tokens`, `migrations`. 50 + 8 = **58 physical tables**.
 
 ## 17. MySQL compatibility checklist (A CK-01–CK-31)
 
@@ -478,20 +480,23 @@ Every B finding, its Phase 0.1 disposition, and where it lives now. "Applied" me
 
 ## 19. ADR status summary
 
+
+> **MariaDB note (2026-11-14):** the ADR statuses in this table are the Phase 0.1 record. ADR-003 (MySQL 8.4 LTS, Confirmed) is superseded by 16-MARIADB-ADDENDUM.md (new ADR-014, MariaDB 11.8.9, Confirmed); ADR-010's search recommendation is superseded for production (rewritten for MariaDB 11.8.9); ADR-012's deployment model is superseded by the actual shared host. See the addendum for the current status of each.
+
 | ADR | Title | Status | Phase 0.1 change |
 |---|---|---|---|
-| ADR-001 | Laravel 13 | Confirmed | Vector-search-unavailable-on-MySQL note added. |
+| ADR-001 | Laravel 13 | Confirmed | Vector-search-unavailable-on-MySQL note added. (Corrected 2026-11-14: vector search IS available natively on MariaDB 11.7+ via Laravel 13 — no Phase 1 use case; see 16-MARIADB-ADDENDUM.md §7.) |
 | ADR-002 | PHP version | Confirmed | Effective floor 8.4 recorded + reason (backup v10.4.0). |
-| ADR-003 | Database (MySQL 8.4 LTS) | **Confirmed** | **Full rewrite** from A §4.1 (was: PostgreSQL Recommended, pending hosting confirmation). Two Phase 0.1 adjustments (§7 item 17). |
+| ADR-003 | Database (MySQL 8.4 LTS) | **Confirmed, then Superseded 2026-11-14 — see 16-MARIADB-ADDENDUM.md** | **Full rewrite** from A §4.1 (was: PostgreSQL Recommended, pending hosting confirmation). Two Phase 0.1 adjustments (§7 item 17). |
 | ADR-004 | Sanctum auth | Confirmed | "No database dependency — verified Phase 0.1" note. |
 | ADR-005 | Spatie Permission | Confirmed | MySQL 1071 index-length note added. |
 | ADR-006 | REST API-first | Confirmed | — |
 | ADR-007 | Media storage | Recommended | Doc 11 §7 refs (B-09). |
 | ADR-008 | Queue driver | Recommended | SKIP LOCKED MySQL ≥ 8.0.1 note. |
 | ADR-009 | Cache driver | Recommended | "No database dependency — verified Phase 0.1" note. |
-| ADR-010 | Search | Recommended | **Full rewrite** — Scout database engine in BOOLEAN MODE, on E's measured basis. |
+| ADR-010 | Search | Recommended | **Full rewrite** — Scout database engine in BOOLEAN MODE, on E's measured basis. **Rewritten 2026-11-14 for MariaDB 11.8.9** (default-parser FULLTEXT + BOOLEAN MODE with `+term*` wildcards as a model scope, NOT Scout — see 16-MARIADB-ADDENDUM.md §3.4). |
 | ADR-011 | Filament admin | Confirmed | "No database dependency — verified Phase 0.1" note. |
-| ADR-012 | Deployment | Recommended (pending hosting/domain confirmation) | MySQL 8.4; cPanel sentence rewritten; Doc 11 §7.2 ref. |
+| ADR-012 | Deployment | Recommended (pending hosting/domain confirmation) | MySQL 8.4; cPanel sentence rewritten; Doc 11 §7.2 ref. (Deployment model since superseded by the actual Hostinger shared host — see addendum.) |
 | ADR-013 | Backup strategy | Confirmed | `mysqldump`, binary-log PITR, PHP floor 8.4, Doc 11 §7 refs. |
 
 No ADR is open. ADR-007/008/009/010/012 are Recommended (not Confirmed) because they carry a scaffold-time or hosting confirmation; the distinction is recorded in each ADR.
@@ -534,14 +539,14 @@ Phase 0.1.1 applies the four Phase 0.1.1 workers' drafted edits to the Phase 0.1
 
 - **Endpoints: 134** (108 at Phase 0 + 25 added in Phase 0.1 + 2 added in Phase 0.1.1 (F3a/F3b) − 1 deleted in Phase 0.1). Doc 07 §14 contains 134 endpoint rows, 134 unique IDs, no duplicates. Updated everywhere the count is stated (Doc 07 intro/§16/§17, Doc 05, Doc 14 G-09/P0-07, backend README, root README, ADR-006, Doc 15 §1/§6/§10 C-2/§12/§14/§15/§20). Historical Phase 0.1 record rows (§5 table, §6 Batch 6 record, §7 item 20, Doc 14 P0-09 exception list) are left verbatim as the Phase 0.1 record, with Phase 0.1.1 parentheticals where the statement would otherwise read as current.
 - **Decisions: R-1–R-25 (25 Recommended/Proposed), C-1–C-26 (26 Confirmed), AO-01–AO-21 (21 Awaiting Organisation, in both Doc 15 §11 and Doc 13 §AO), CK-01–CK-31 (31), RK-1–RK-14 (14).**
-- **Tables: 47 application / 49 defined / 57 physical — unchanged** (no table added or removed; two columns added to existing tables only). ERD: 49 boxes (47 app + 2 pivots), agreeing with Doc 06 §1.4 and §16.
+- **Tables: 47 application / 49 defined / 57 physical — unchanged** (no table added or removed; two columns added to existing tables only). ERD: 49 boxes (47 app + 2 pivots), agreeing with Doc 06 §1.4 and §16. (48/50/58 after the `sequences` definition, 2026-11-14 — see Doc 16 §3.10.)
 
 ### 21.4 Test evidence summary (worker-reported, except where noted as editor-verified)
 
 - **Worker A (Item 1):** MySQL 8.0.46, scratch database `satanipara_test_a`. Pass/fail summary: 17 rows — 16 PASS, 1 NOT REPRODUCED (S1-clean trailing-space claim, recorded honestly; the design is immune either way). Proves: `UNIQUE` on `TEXT` fails (1170), prefix unique ≠ full-value unique, both hash designs work end to end (1062 on duplicates, upsert refreshes, hash-lookup + full-value verify, `NULL` semantics, CHECK coupling 3819). Laravel's non-deterministic encryption premise was demonstrated logically (different ciphertexts hash differently), not executed against Laravel.
 - **Worker B (Item 2):** MySQL 8.0.46, scratch database `satanipara_test_b`. Results §3: 14 trigger/CHECK cases, all PASS (draft edit, dual-control publish, published-row update/delete refused 1644 incl. as root, second reversal refused 1062, CHECK violations 3819, discard + discarded-row immutability, link-row immutability). Privilege tests §4–§5: 5 attempts as the restricted app user, all as designed (DELETE/TRUNCATE/DROP TRIGGER refused 1142; draft INSERT succeeds; published UPDATE stopped by the trigger 1644). **T5 (`trg_ledger_reversals_bi`, BEFORE INSERT on `ledger_reversals`) was NOT executed — stays Unverified** (TESTS.md T-LED-13).
 - **Worker C (Item 3):** no database tests (documentation reconciliation only).
-- **Worker D (Item 5):** generator + packaged runner re-runs pass on MySQL 8.0.46; 8.4 pending. **Editor-verified independently (2026-11-14, this phase):** the packaged generator reproduces the Phase 0.1 `seed.sql` byte-for-byte (md5 `b2164ed52f58e36d3954a42cebacad40`, 3,900 INSERTs); the packaged runner re-run on local MySQL 8.0.46 produced 133 timed queries, 133 count pairs (+ the `rows` line = 134 count keys), 35 distinct case labels, and `persons[শিক্ষক]` ngram-NL = 175. No MySQL 8.4 instance exists in this environment — nothing was measured on 8.4.
+- **Worker D (Item 5):** generator + packaged runner re-runs pass on MySQL 8.0.46; 8.4 pending. **Editor note 2026-11-14:** the 8.4 re-run is closed — MariaDB 11.8.9 is the engine; the MariaDB production re-run is the open item (see §22). **Editor-verified independently (2026-11-14, this phase):** the packaged generator reproduces the Phase 0.1 `seed.sql` byte-for-byte (md5 `b2164ed52f58e36d3954a42cebacad40`, 3,900 INSERTs); the packaged runner re-run on local MySQL 8.0.46 produced 133 timed queries, 133 count pairs (+ the `rows` line = 134 count keys), 35 distinct case labels, and `persons[শিক্ষক]` ngram-NL = 175. No MySQL 8.4 instance exists in this environment — nothing was measured on 8.4.
 
 ### 21.5 Item 6 verification summary (editor, 2026-11-14)
 
@@ -554,13 +559,13 @@ Full method + evidence: `~/workspace/satanipara-phase0-1-1/work/VERIFICATION-LOG
 | 3 | Public-tracking privacy reconciliation | **PASS** — re-run 2026-11-14 after the coordinator's two one-line fixes (Doc 12 Phase 5 risk line now lists AO-03/AO-04/AO-18–AO-21; RBAC-MATRIX `expatriate.track` row now states the secret-authenticated Tier-S allowlist); the canonical allowlist wording is identical in Docs 04, 07, 08, 13, 15 |
 | 4 | Password-policy consistency | **PASS** — only Doc 04 §5.1 states the production policy; no ≥8/≥6 production minimum and no composition rule remains anywhere |
 | 5 | Internal-link validation | **PASS** — re-run 2026-11-14 after T-LED-01–T-LED-34 were added to Doc 10 §4.4: 667 Doc § + 128 ADR + 53 Doc Q references resolve, 0 broken, 0 dangling (the `Doc 10 T-LED-14` citation in Doc 06 §7.1 now resolves). No markdown linter is installed (`markdownlint`/`mdl` absent) — structure was checked by script (code fences balanced, no heading jumps), not by a linter |
-| 6 | ERD/schema + count consistency | **PASS** — ERD 49 boxes; endpoints 134/134 unique; R 1–25, C 1–26, AO 1–21, CK 1–31; tables 47/49/57 agree |
+| 6 | ERD/schema + count consistency | **PASS** — ERD 49 boxes; endpoints 134/134 unique; R 1–25, C 1–26, AO 1–21, CK 1–31; tables 47/49/57 agree. (Now 48/50/58 — `sequences` defined 2026-11-14; see Doc 16 §3.10.) |
 | 7 | Documentation diff review | **PASS** — 19 files changed + `benchmark/` new, all within `docs/backend-architecture/` (+ root `README.md`); 188 insertions, 127 deletions, 1,092 diff lines read in full; no Laravel code, no migrations, no UI files; `index.html`, `alternatives/`, `docs/direction-d|redesign|v1` untouched |
 
 ### 21.6 Remaining risks
 
-- **RK-1 / RK-14 (8.4 re-run required):** the hash-column designs, ledger triggers/CHECKs, and Bengali search timings are proven on MySQL 8.0.46 only. Re-run on a real MySQL 8.4 instance at scaffold (benchmark: `benchmark/RUN-ON-8.4.md`; ledger: Doc 10 T-LED-14; hash designs: CK-31).
-- **T5 untested:** the BEFORE INSERT trigger on `ledger_reversals` (`trg_ledger_reversals_bi`) is specified, not executed (Worker B TESTS.md T-LED-13). It must be executed before it is claimed as enforced.
+- **RK-1 / RK-14 (MariaDB 11.8.9 re-run required):** the hash-column designs, ledger triggers/CHECKs, and Bengali search timings are proven on MySQL 8.0.46 only. Re-run/re-validate on a real MariaDB 11.8.9 instance at scaffold (search: `benchmark-mariadb/RUN-ON-PRODUCTION.md` / 16-MARIADB-ADDENDUM.md; ledger: Doc 10 T-LED-14 as replaced by the provisioned-database re-run; hash designs: CK-31). Ledger note: T5 was executed 2026-11-14 on MariaDB 11.8.9 (43/43 suite PASS — see §22).
+- **T5 — EXECUTED 2026-11-14 on MariaDB 11.8.9:** the BEFORE INSERT trigger on `ledger_reversals` (`trg_ledger_reversals_bi`) was executed and all four branches proven (43/43 suite PASS — `tests/ledger-suite/TEST-RESULTS.md` §2; Doc 10 T-LED-13 updated). The Phase 0.1.1 record above ("T5 untested") is superseded by this result.
 - **Laravel encrypted-cast non-determinism:** the `fcm_token_hash` design depends on Laravel's encryption being non-deterministic (random IV) — confirm at scaffold that the cast behaves as assumed; if it ever became deterministic, the generated-column alternative would need revisiting.
 - **T-LED tests (fixed by the coordinator, 2026-11-14):** T-LED-01–T-LED-34 are now in Doc 10 §4.4 (state-machine, privilege, CHECK and contract tests); the `Doc 10 T-LED-14` citation in Doc 06 §7.1 resolves. (Worker B's list was T-LED-01–T-LED-34: 01–31 state-machine/privilege/CHECK tests + 32–34 contract tests.)
 - **"Two database users" staleness (fixed by the coordinator, 2026-11-14):** Doc 15 §10 C-18, §18 CK-21 and §18 S-20, Doc 06 §13 item 7, ADR-003, Doc 04 §5.7 and Doc 06 §8.2 now state the canonical four-user matrix (`satanipara_app`, `satanipara_migrate`, `satanipara_backup`, `satanipara_report`). (The ADR-003 and §5.7/§8.2 "two-user design" phrases were found by the coordinator's re-run grep, not by the editor — fixed in the same pass.) The two remaining "two-user" mentions in Doc 15 §4 are the historical record of what Phase 0.1 changed, and stay as history.
@@ -569,3 +574,27 @@ Full method + evidence: `~/workspace/satanipara-phase0-1-1/work/VERIFICATION-LOG
 ### 21.7 Gate statement
 
 > **Gate status: COMPLETE (2026-11-14).** All Item 6 checks pass after the coordinator's three fixes (two Tier-S one-liners, T-LED-01–T-LED-34 added to Doc 10 §4.4, four-user wording in C-18/CK-21/S-20 and Doc 06 §13) and the re-run of checks 3 and 5. The §11 register (now AO-01–AO-21) and §13 risks (now RK-1–RK-14) are carried forward as owner/scaffold items, not as blueprint defects.
+
+---
+
+## 22. MariaDB addendum (2026-11-14) — what this record no longer states as current
+
+Fahim confirmed on 2026-11-14 that **MariaDB 11.8.9 on Hostinger Shared Hosting is the production database engine**, superseding the MySQL 8.4 LTS decision recorded in this document. The full decision record is `16-MARIADB-ADDENDUM.md`; the new ADR is `adr/ADR-014-mariadb-11-8-9.md` (ADR-003 is superseded by ADR-014; its body is kept verbatim as the Phase 0.1 record).
+
+**What changed (and where it is recorded):**
+
+- **Engine:** MySQL 8.4 LTS + InnoDB → **MariaDB 11.8.9 + InnoDB** (Doc 16 §1, §3.1; ADR-014). Lifecycle: GA 4 Jun 2025; community binaries to 4 Jun 2028; source security fixes to 2030 — the LTS upgrade must be planned before June 2028.
+- **Counts:** **48 application / 50 defined / 58 physical tables** (`sequences` defined as the 48th application table, Doc 06 §7.5 — a pre-existing-gap correction, not a MariaDB change; Doc 16 §3.10). Endpoints unchanged at **134**. ADRs now **14** (ADR-014 added).
+- **Search:** the ngram `FULLTEXT` + BOOLEAN MODE recommendation (§9, C-24, ADR-010) does NOT transfer to MariaDB (no ngram parser). The adopted approach is default-parser FULLTEXT + BOOLEAN MODE with `+term*` wildcards as an Eloquent model scope (NOT Scout), autocomplete via `LIKE 'term%'` on a B-tree, explicit ordering (never MATCH relevance), `LIKE '%term%'` fallback only for 1-char/mid-word cases; the `search_tokens` column is conditional on an explicit product decision (Awaiting Organisation). Measured on MariaDB 11.8.9: **35 cases / 171 timed queries** (`benchmark-mariadb/`). Production re-run + real-data snapshot + scale check still open (Doc 13 Q-13).
+- **Collation:** pinned `utf8mb4_unicode_ci` (not `utf8mb4_0900_ai_ci`). **Resolved:** `utf8mb4_0900_ai_ci` EXISTS on MariaDB 11.8.9 (ID 255) — the pin stands regardless (Doc 16 §3.2, §6).
+- **Generated column:** `push_subscriptions.endpoint_hash` drops `NOT NULL`, gains a named `CHECK (endpoint_hash IS NOT NULL)` — **verified** on MariaDB 11.8.9: the `NOT NULL` form fails with ERROR 1064; the CHECK form works (Doc 16 §6, F-02).
+- **Error codes:** CHECK violations are **4025** on MariaDB, not MySQL's 3819 (Doc 10 T-LED-27/28/29/30 updated).
+- **Ledger:** both `approved_by` FKs use `ON DELETE RESTRICT` (a CHECK may not reference a column whose FK uses `ON DELETE SET NULL` — ERROR 1901; fallback documented in Doc 06 §7.1/§7.2). **T5 EXECUTED 2026-11-14 on MariaDB 11.8.9** — all four branches proven, 43/43 suite PASS (`tests/ledger-suite/TEST-RESULTS.md`). T-LED-14 is replaced by the provisioned-database re-run.
+- **Server defaults (measured on local MariaDB 11.8.9):** `sql_mode` has no `ONLY_FULL_GROUP_BY`; `innodb_snapshot_isolation = 1` (ON); `innodb_ft_min_token_size = 3` (Doc 16 §6).
+- **Backup binary:** `mariadb-dump` **verified present** on the host at `/usr/bin/mariadb-dump` (client 11.8.9-MariaDB). `DB_CONNECTION=mariadb`.
+- **Vector search:** available natively on MariaDB 11.7+ via Laravel 13 — no Phase 1 use case; the old "PostgreSQL-only / unavailable" claims are corrected (Doc 16 §7).
+- **Deployment:** current deployment is Hostinger shared hosting (Server Foundation Report); the Docker/VPS model in Doc 11 §§2.2–2.3 and ADR-012 is a future migration target, not current.
+
+**Still Unverified (provisioning probes):** U-03 per-table revokes on shared hosting, U-05 restore rehearsal with triggers, U-08 full migration suite, and the production re-runs (search, ledger suite, identities as applied). **Live check added by this addendum:** zero live "MySQL 8.4 is the standard" claims remain; the MySQL 8.4 sentences in this document's §§1–21 are the marked Phase 0.1/0.1.1 history, and §17's MySQL checklist is the Phase 0.1 record.
+
+**This section is the amendment record.** The narrative above (§§1–21) stays verbatim as the Phase 0.1/0.1.1 history; where a still-operative row was amended, the amendment is in place (see the banner at the top of this document for the list).

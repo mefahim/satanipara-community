@@ -174,8 +174,7 @@
 
 ### 8.2 Consequence: deviation from the confirmed blueprint decision
 
-The Phase 0.1 blueprint confirms **MySQL 8.4 LTS + InnoDB**. This host
-provides **MariaDB 11.8.9**. Laravel 13 supports MariaDB 10.3+, so the
+The Phase 0.1 blueprint confirmed **MySQL 8.4 LTS + InnoDB** (superseded 2026-11-14 — see 16-MARIADB-ADDENDUM.md). This host provides **MariaDB 11.8.9**. Laravel 13 supports MariaDB 10.3+, so the
 application runs, but the following blueprint items need a documented
 reconciliation before Phase 1 development:
 
@@ -189,16 +188,12 @@ reconciliation before Phase 1 development:
 | Storage engine | InnoDB | MariaDB uses InnoDB (default engine). |
 | Strict mode | `STRICT_TRANS_TABLES` etc. | MariaDB default includes strict mode; Laravel also enforces it via config. |
 
-**Decision required from Fahim (REQUIRES OWNER ACTION):** accept MariaDB
-11.8.9 on this host (with the search-strategy and collation notes above
-recorded as a blueprint addendum), or provision an external MySQL 8.4
-server. The foundation does not depend on this choice — Laravel runs on
-either — but Phase 1 migrations must target one of them.
+**Decision made by Fahim (2026-11-14): MariaDB 11.8.9 on this host is accepted** (with the search-strategy and collation notes above recorded as a blueprint addendum — see 16-MARIADB-ADDENDUM.md). The external-MySQL-8.4 alternative is closed. Phase 1 migrations target MariaDB 11.8.9.
 
 ### 8.3 Proposed database configuration (to apply once the database exists)
 
 - Engine InnoDB, charset `utf8mb4`, collation `utf8mb4_unicode_ci`
-  (MariaDB) or `utf8mb4_0900_ai_ci` (MySQL 8.4, if that path is chosen).
+  (MariaDB 11.8.9 — the chosen engine; the MySQL 8.4 alternative is closed, see 16-MARIADB-ADDENDUM.md).
 - Strict SQL mode on; timezone `Asia/Dhaka` (`APP_TIMEZONE` already set).
 - Least-privilege users, separate identities:
   application runtime / migrations / backup / reporting.
@@ -226,6 +221,8 @@ either — but Phase 1 migrations must target one of them.
 **Database connectivity: NOT VERIFIED** — no credentials exist yet, so no
 connection was attempted. **No migrations were run against any production
 database. No benchmark scripts were run against production.**
+
+**Backup binary verified 2026-11-14:** `/usr/bin/mariadb-dump` is present on the host (client 11.8.9-MariaDB). The `.env` switch uses `DB_CONNECTION=mariadb` (Laravel's dedicated MariaDB driver, not `mysql`) with charset `utf8mb4` / collation `utf8mb4_unicode_ci` (see 16-MARIADB-ADDENDUM.md).
 
 ## 9. Tailwind readiness — VERIFIED
 
@@ -286,9 +283,7 @@ database. No benchmark scripts were run against production.**
 
 ## 11. Unresolved issues
 
-1. **Database engine deviation (MariaDB 11.8.9 vs confirmed MySQL 8.4)** —
-   REQUIRES OWNER ACTION: Fahim decides (accept MariaDB + record addendum,
-   or external MySQL 8.4). Blocks Phase 1 migrations, not the foundation.
+1. **Database engine deviation (MariaDB 11.8.9 vs confirmed MySQL 8.4)** — RESOLVED 2026-11-14: Fahim accepted MariaDB 11.8.9 + addendum recorded (see 16-MARIADB-ADDENDUM.md). No longer blocks Phase 1 migrations.
 2. **No database / credentials yet** — REQUIRES OWNER ACTION: create the
    database + four users in hPanel (§8.4), then the server `.env` switches
    from sqlite to MariaDB.
@@ -314,7 +309,7 @@ database. No benchmark scripts were run against production.**
 
 ## 12. Exact next steps
 
-1. **Fahim:** decide MariaDB 11.8.9 vs external MySQL 8.4 (§8.2).
+1. **Fahim:** ~~decide MariaDB 11.8.9 vs external MySQL 8.4 (§8.2)~~ — DONE 2026-11-14: MariaDB 11.8.9 accepted (see 16-MARIADB-ADDENDUM.md).
 2. **Fahim:** create the database + four users in hPanel (§8.4) and share
    access through the secure vault.
 3. Agent: switch server `.env` from sqlite to MariaDB, run

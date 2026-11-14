@@ -2,10 +2,32 @@
 
 | | |
 |---|---|
-| Status | **Confirmed** |
+| Status | **Superseded by ADR-014 (MariaDB addendum)** |
 | Date | 2026-11-14 (supersedes the 2026-11-14 "Recommended — PostgreSQL, narrow lean" version) |
 | Decided by | Fahim (confirmed decision, Phase 0.1) |
 | Sources | MySQL 8.4 Reference Manual (dev.mysql.com/doc/refman/8.4); laravel.com/docs/13.x/database (MySQL 5.7+ floor — MySQL 8.4 far exceeds it); Decision Sheet (as updated Phase 0.1); Engineering Plan v1.1 (which specified PostgreSQL 16 — version and engine superseded, see below); Investigator A MySQL Reconciliation (Phase 0.1, `~/workspace/satanipara-phase0-1/A-mysql-reconciliation.md`) |
+
+## Supersession note (2026-11-14)
+
+**This ADR is superseded by ADR-014 (MariaDB 11.8.9 LTS + InnoDB, Hostinger
+Shared Hosting), confirmed by Fahim on 2026-11-14.** The full decision
+record is `docs/backend-architecture/16-MARIADB-ADDENDUM.md`.
+
+What changed: the provisioned host (Hostinger shared hosting,
+`us-bos-web1454.main-hosting.eu`) provides MariaDB 11.8.9 at
+`127.0.0.1:3306` (proven from the handshake banner — Server Foundation
+Report §8.1); no MySQL 8.4 server exists on this hosting plan, so the
+MySQL 8.4 decision in this ADR cannot be executed there. MariaDB 11.8.9
+is therefore the production engine.
+
+What did NOT change: the reasoning in this ADR that is engine-neutral
+(decimal integrity, foreign keys, CHECK constraints, generated columns,
+triggers, the four-database-user model, the DDL discipline) carries over
+to ADR-014 unchanged. The MySQL-specific claims below (ngram FULLTEXT,
+native JSON, functional indexes, error 3819, `utf8mb4_0900_ai_ci`,
+`mysqldump`, the 8-year LTS runway) are historical record as of
+2026-11-14 and must not be quoted as current. Where a MySQL-specific
+claim has a MariaDB replacement, ADR-014 and Doc 16 name it.
 
 ## Context
 

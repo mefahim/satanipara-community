@@ -9,6 +9,8 @@ what the benchmark is and what the 8.0.46 results say.
 > the measured version (the runner records it automatically) and file
 > them separately from the 8.0.46 summary in `README.md`.
 
+> **SUPERSEDED for production 2026-11-14 — see 16-MARIADB-ADDENDUM.md.** MariaDB 11.8.9 has no ngram parser; the steps below (ngram plugin check, `ngram_token_size`, `mysql:8.4` image, `utf8mb4_0900_ai_ci`) cannot execute on the production engine. This file is retained verbatim as the MySQL run record. The MariaDB run guide is `../benchmark-mariadb/RUN-ON-PRODUCTION.md`.
+
 ## 0. Prerequisites
 
 - A MySQL **8.4 LTS** server you may drop/recreate a scratch database

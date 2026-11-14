@@ -37,6 +37,9 @@ This is a starting size for a small community platform (a few thousand users), n
 
 ### 2.2 Operating system and runtime
 
+
+> **Status note (2026-11-14):** the current deployment is **Hostinger shared hosting** per `docs/server-setup/SERVER-FOUNDATION-REPORT.md` (LiteSpeed, no Docker, no root, MariaDB 11.8.9) — not the single-VPS Docker Compose model described in this section. The Docker/VPS model below is a **future migration target**, not current. The database line is corrected by 16-MARIADB-ADDENDUM.md; the hosting-architecture re-decision is pending (see ADR-012).
+
 - **Ubuntu 24.04 LTS** (per Engineering Plan v1.1). Long-term support, security updates enabled, automatic security updates configured for the OS packages.
 - **PHP 8.4 or 8.5** (per Decision Sheet; floor 8.3, never 8.2 — EOL 31 Dec 2026). The exact version is pinned at scaffold time and recorded.
 - **MySQL 8.4 LTS** — pinned (verify the lifecycle at dev.mysql.com at scaffold time; do not assert a patch number here). The database runs on the same VPS to start.
@@ -44,6 +47,9 @@ This is a starting size for a small community platform (a few thousand users), n
 - **Docker Compose** orchestrating the services below (per Engineering Plan v1.1).
 
 ### 2.3 Containers (Docker Compose)
+
+
+> **Status note (2026-11-14):** there is **no `db` container on the live host** — the database is the Hostinger shared-host MariaDB 11.8.9 service, provisioned in hPanel (see the Server Foundation Report §8). The Compose table below describes the future VPS migration target, not the current deployment.
 
 | Service | Image / role | Notes |
 |---|---|---|
@@ -54,7 +60,7 @@ This is a starting size for a small community platform (a few thousand users), n
 | `redis` | Redis | **Only when adopted** (per Decision Sheet: database queue/cache to start; Redis + Horizon v5 only when latency/volume justifies it). The Compose file includes it commented out, not running |
 | `nginx` | Nginx | TLS termination, static-asset serving, reverse proxy to `app` |
 
-- **Database users (provisioned at scaffold, recorded in the runbook, never in git):** `satanipara_app` (application runtime), `satanipara_migrate` (deploy pipeline only — migrations and trigger creation), `satanipara_backup` (nightly `mysqldump`), `satanipara_report` (`SELECT`-only, created only when the Finance Auditor role is needed). Full per-table grants: Doc 06 §7.1 / Doc 08 §3.1. The migration user's credentials are held only by the deploy pipeline; the application container never has them at runtime. The post-deploy smoke test asserts the four ledger triggers exist (schema-drift check).
+- **Database users (provisioned at scaffold, recorded in the runbook, never in git):** `satanipara_app` (application runtime), `satanipara_migrate` (deploy pipeline only — migrations and trigger creation), `satanipara_backup` (nightly `mysqldump` via the MariaDB client), `satanipara_report` (`SELECT`-only, created only when the Finance Auditor role is needed). Full per-table grants: Doc 06 §7.1 / Doc 08 §3.1. The migration user's credentials are held only by the deploy pipeline; the application container never has them at runtime. The post-deploy smoke test asserts the four ledger triggers exist (schema-drift check).
 
 - One image, three roles (`app`/`worker`/`scheduler`) — the same build is deployed everywhere, so a bug cannot exist in one role and not the others.
 - Container logs go to the host's log collection (see §5); a container that exits is restarted automatically, and repeated restarts alert.
@@ -79,7 +85,7 @@ Pull request → gates (§4.1) → merge to main → staging auto-deploy → UAT
 
 1. Pint (style).
 2. Larastan (static analysis).
-3. Unit + feature + API contract tests on MySQL 8.4.
+3. Unit + feature + API contract tests on MariaDB 11.8.9.
 4. Authorisation matrix completeness (Doc 10 §5).
 5. Coverage ≥ 80% of business logic.
 6. Dependency audit (no critical vulnerabilities).
@@ -98,7 +104,7 @@ A pull request that fails any gate does not merge. No gate is skipped by a devel
 
 - A production deploy is triggered by a named person approving the release in GitHub Actions. Approval requires: the staging deploy succeeded, the smoke tests passed, the UAT sign-off for the phase exists (Doc 10 §10), and the pre-deploy backup (§6) completed.
 - The production deploy: takes the pre-deploy backup, deploys the new image, runs migrations, clears caches, restarts the worker/scheduler, and runs the same smoke tests against production.
-- **Migrations:** run automatically as part of the deploy. DDL is not transactional on MySQL: a failed migration does NOT roll back automatically — one DDL statement per migration, idempotent migrations, and the pre-deploy backup is the only rollback (Doc 06 §10, ADR-003). A migration that fails stops the deploy.
+- **Migrations:** run automatically as part of the deploy. DDL is not transactional on MariaDB 11.8.9: a failed migration does NOT roll back automatically — one DDL statement per migration, idempotent migrations, and the pre-deploy backup is the only rollback (Doc 06 §10, ADR-003 as superseded by 16-MARIADB-ADDENDUM.md). A migration that fails stops the deploy.
 - **Rollback:** the previous release is kept available (previous image + previous code). If the smoke tests fail after a production deploy, the deploy is rolled back to the previous release; if data changed, the pre-deploy backup is restored following the restore procedure (§6). Rollback is rehearsed, not improvised.
 
 ## 5. Secrets

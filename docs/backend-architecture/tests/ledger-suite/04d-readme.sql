@@ -1,0 +1,16 @@
+-- ============================================================================
+-- Satanipara Community — Ledger / Trigger / Privilege test suite (Worker C)
+-- File 04d: privilege attempts AS BACKUP and REPORTING users (T-LED-24/25)
+-- ----------------------------------------------------------------------------
+-- Backup user run:
+--   MYSQL_PWD='test-only-bkp-pass' mariadb -u satanipara_backup_test --force \
+--     < 04d1-privilege-attempts-backup.sql
+-- Reporting user run:
+--   MYSQL_PWD='test-only-rep-pass' mariadb -u satanipara_report_test --force \
+--     < 04d2-privilege-attempts-report.sql
+-- The mysqldump leg (P-BKP-01) is run from the shell, not from SQL:
+--   MYSQL_PWD='test-only-bkp-pass' mysqldump -u satanipara_backup_test \
+--     --single-transaction --routines --triggers satanipara_test_c > /tmp/dump.sql
+-- ============================================================================
+-- (This file is documentation only — the two runnable files are 04d1 and 04d2.)
+SELECT 'See 04d1-privilege-attempts-backup.sql and 04d2-privilege-attempts-report.sql.' AS note;

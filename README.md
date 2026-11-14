@@ -158,7 +158,7 @@ the page.
 - New expatriate requests trigger a browser notification to Super Admin and all Helpers (simulated in
   this prototype).
 - No backend, database, payment, or real OTP in this phase — this is a static HTML/CSS/JS prototype.
-  Real development (Laravel + MySQL 8.4 + Next.js + Flutter) is a separate, later phase.
+  Real development (Laravel + MariaDB 11.8.9 + Next.js + Flutter) is a separate, later phase.
 
 ## Planned Laravel backend architecture
 
@@ -166,7 +166,7 @@ the page.
 > describes what will be built, so that the prototype is not mistaken for the product.
 
 The backend is a **Laravel 13 modular monolith** (`^13.0`, PHP 8.4 or 8.5, floor 8.3) with a
-**MySQL 8.4 LTS (InnoDB)** database, a **Sanctum**-secured REST API (`/api/v1`, `^4.0`), a **Filament 5** admin
+**MariaDB 11.8.9 (InnoDB)** database — see 16-MARIADB-ADDENDUM.md — a **Sanctum**-secured REST API (`/api/v1`, `^4.0`), a **Filament 5** admin
 panel (`^5.0`), and **Spatie Laravel Permission v8** (`^8.0`) for role-based access control — one API
 and one database serving the public website (Next.js), the mobile app (Flutter, later), and the admin
 panel. The full blueprint is in `docs/backend-architecture/` (see Documentation below).
@@ -177,7 +177,7 @@ resolved from Packagist at scaffold time, never asserted here):
 - **Modular monolith, not microservices** — 12 modules (M1–M12), each with its own models, controllers,
   policies, and tests; modules communicate through service classes, never by querying each other's
   tables.
-- **MySQL 8.4 LTS + InnoDB (Confirmed, Phase 0.1 — Fahim)** — project standard; ubiquitous on cheap Bangladeshi shared/cPanel hosting, same decimal integrity, `CHECK` constraints, generated columns, `FULLTEXT`. The Phase 0 PostgreSQL lean is superseded (ADR-003). Bengali FTS measured on MySQL 8.0.46 (ngram FULLTEXT + BOOLEAN MODE recommended — Doc 15 §9); re-test on 8.4 required.
+- **MariaDB 11.8.9 + InnoDB (Confirmed, 2026-11-14 — Fahim; supersedes the Phase 0.1 MySQL 8.4 LTS decision)** — project standard; see 16-MARIADB-ADDENDUM.md. The Phase 0 PostgreSQL lean is superseded (ADR-003) and the Phase 0.1 MySQL 8.4 decision is superseded by the addendum. Bengali FTS was measured on MySQL 8.0.46 (ngram FULLTEXT + BOOLEAN MODE recommended — Doc 15 §9); that recommendation does NOT transfer to MariaDB (no ngram parser) — re-validation on MariaDB 11.8.9 is required before any search claim (see 16-MARIADB-ADDENDUM.md).
 - **Auth:** Sanctum cookie auth for the first-party web SPA (same top-level domain) and personal access
   tokens for the Flutter app. No refresh-token flow and no per-device session list exist in Sanctum
   itself — the design works around that.
@@ -201,11 +201,11 @@ resolved from Packagist at scaffold time, never asserted here):
   Larastan for static analysis, Telescope for local development only.
 
 **What the plan changed:** this architecture follows Engineering Plan v1.1 (Laravel modular monolith +
-REST API, MySQL 8.4 LTS, Sanctum, Spatie, Filament, Next.js, Flutter, one API/DB, 47 application tables (49 defined, 57 physical), 134
+REST API, MariaDB 11.8.9, Sanctum, Spatie, Filament, Next.js, Flutter, one API/DB, 48 application tables (50 defined, 58 physical), 134
 endpoints, expatriate state machine, immutable ledger, RPO/RTO) except for three explicit divergences:
 Laravel 12 → 13 (Laravel 12 bug fixes ended 2026-08-13, security-only until 2027-02-24); the plan's
 design tokens/fonts → Direction D tokens (above); and the plan's pinned versions (Filament 3 → 5,
-PostgreSQL 16 → MySQL 8.4 LTS (Phase 0.1, Confirmed — Fahim), Redis/Horizon and S3 as day-one → deferred until justified, Next.js 15 /
+PostgreSQL 16 → MySQL 8.4 LTS (Phase 0.1, Confirmed — Fahim) → MariaDB 11.8.9 (2026-11-14, Confirmed — Fahim; see 16-MARIADB-ADDENDUM.md), Redis/Horizon and S3 as day-one → deferred until justified, Next.js 15 /
 Flutter 3.x → verify current at build time).
 
 ## Major modules (M1–M12)
@@ -331,8 +331,8 @@ python3 -m http.server 8000
   `02-PRODUCT-REQUIREMENTS.md` (vision, users, modules M1–M12, numbered requirements),
   `03-DYNAMIC-CONTENT-INVENTORY.md` (every content item that must become dynamic),
   `04-USER-ROLES-PERMISSIONS.md` (Super Admin governance, granular permissions, Role–Permission
-  Matrix), `05-BACKEND-ARCHITECTURE.md` (Laravel 13, MySQL 8.4 LTS, Sanctum, state machines),
-  `06-DATABASE-DESIGN.md` (47 application tables, migration order, financial integrity, privacy),
+  Matrix), `05-BACKEND-ARCHITECTURE.md` (Laravel 13, MariaDB 11.8.9, Sanctum, state machines),
+  `06-DATABASE-DESIGN.md` (48 application tables, migration order, financial integrity, privacy),
   `07-API-ARCHITECTURE.md` (134-endpoint inventory), `08-SECURITY-ARCHITECTURE.md` (OWASP threat
   model), `09-ADMIN-DASHBOARD-REQUIREMENTS.md` (functional spec, planning only),
   `10-TESTING-QUALITY-STRATEGY.md` (testing, CI/CD, observability),

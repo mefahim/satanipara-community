@@ -24,7 +24,7 @@ There are two things in this project that must never be confused:
    It is **Implemented** as a prototype: it renders, its flows can be clicked through, and it was verified
    live on 2026-11-14 with 0 console errors. It has no server, no database, no real authentication, and
    no persistence. Every name, figure, and record in it is **demo data**.
-2. **The planned backend** — a Laravel 13 modular monolith with a MySQL 8.4 LTS (InnoDB) database, a Sanctum-secured
+2. **The planned backend** — a Laravel 13 modular monolith with a MariaDB 11.8.9 (InnoDB) database (see 16-MARIADB-ADDENDUM.md), a Sanctum-secured
    REST API (`/api/v1`), and a Filament 5 admin panel, as specified in this document set. It is **Planned**,
    not built. Nothing in these documents describes backend work as implemented.
 
@@ -111,8 +111,8 @@ create migrations, build a dashboard UI, or redesign Direction D.
 | 02 | `02-PRODUCT-REQUIREMENTS.md` | Product requirements: vision, users, modules M1–M12, numbered testable requirements, non-functional targets, constraints, and out-of-scope list. |
 | 03 | `03-DYNAMIC-CONTENT-INVENTORY.md` | Every content item that must become dynamic, per module, with fields, workflow, states, permissions, and retention. |
 | 04 | `04-USER-ROLES-PERMISSIONS.md` | User roles and permissions — RBAC and governance; Phase 1 two-role model, granular permission catalogue, full Role–Permission Matrix. |
-| 05 | `05-BACKEND-ARCHITECTURE.md` | Backend architecture: Laravel 13 modular monolith, MySQL 8.4 LTS, Sanctum auth, state machines, queues, media, notifications. |
-| 06 | `06-DATABASE-DESIGN.md` | Database design: 47 application tables in 7 domains (49 defined, 57 physical), per-table schema, migration order, financial integrity, privacy, backup/recovery. |
+| 05 | `05-BACKEND-ARCHITECTURE.md` | Backend architecture: Laravel 13 modular monolith, MariaDB 11.8.9, Sanctum auth, state machines, queues, media, notifications. |
+| 06 | `06-DATABASE-DESIGN.md` | Database design: 48 application tables in 7 domains (50 defined, 58 physical), per-table schema, migration order, financial integrity, privacy, backup/recovery. |
 | 07 | `07-API-ARCHITECTURE.md` | API architecture: `/api/v1`, response/error envelopes, pagination, rate limits, and the full 134-endpoint inventory. |
 | 08 | `08-SECURITY-ARCHITECTURE.md` | Security architecture: OWASP Top 10 threat model, controls, encryption, uploads, incident response, acceptance. |
 | 09 | `09-ADMIN-DASHBOARD-REQUIREMENTS.md` | Admin dashboard functional requirements (planning only — no UI): per-module screens, actions, filters, permissions, states. |
@@ -128,7 +128,7 @@ create migrations, build a dashboard UI, or redesign Direction D.
 |---|---|---|
 | `adr/ADR-001-laravel-version.md` | Laravel version (13) | Confirmed |
 | `adr/ADR-002-php-version.md` | PHP version (8.4 / 8.5, floor 8.3) | Confirmed |
-| `adr/ADR-003-database.md` | Database (MySQL 8.4 LTS + InnoDB) | Confirmed |
+| `adr/ADR-003-database.md` | Database (MySQL 8.4 LTS + InnoDB — superseded by MariaDB 11.8.9, see 16-MARIADB-ADDENDUM.md) | Confirmed, then Superseded 2026-11-14 |
 | `adr/ADR-004-authentication.md` | Authentication (Sanctum) | Confirmed |
 | `adr/ADR-005-rbac-implementation.md` | RBAC implementation (Spatie Permission v8) | Confirmed |
 | `adr/ADR-006-api-architecture.md` | API architecture (REST, API-first, `/api/v1`) | Confirmed |
@@ -139,6 +139,7 @@ create migrations, build a dashboard UI, or redesign Direction D.
 | `adr/ADR-011-admin-frontend-strategy.md` | Admin frontend strategy (Filament 5) | Confirmed |
 | `adr/ADR-012-deployment-architecture.md` | Deployment architecture (single VPS, Docker, GitHub Actions) | Recommended |
 | `adr/ADR-013-backup-strategy.md` | Backup strategy (spatie/laravel-backup v10, off-server, restore tests) | Confirmed |
+| `adr/ADR-014-mariadb-11-8-9.md` | Database (MariaDB 11.8.9 LTS + InnoDB, Hostinger Shared Hosting — supersedes ADR-003) | Confirmed |
 
 `adr/README.md` is the ADR index: purpose, status vocabulary, and how to write a new ADR.
 
@@ -146,8 +147,8 @@ create migrations, build a dashboard UI, or redesign Direction D.
 
 | Document | Contents |
 |---|---|
-| `diagrams/SYSTEM-ARCHITECTURE.md` | System architecture (Mermaid): clients → Laravel 13 API → MySQL 8.4 LTS, queue/cache, storage, push services. |
-| `diagrams/ERD.md` | Entity Relationship Diagram (Mermaid `erDiagram`) for all 47 application tables, plus a written relationship guide. |
+| `diagrams/SYSTEM-ARCHITECTURE.md` | System architecture (Mermaid): clients → Laravel 13 API → MariaDB 11.8.9, queue/cache, storage, push services. |
+| `diagrams/ERD.md` | Entity Relationship Diagram (Mermaid `erDiagram`) for all 48 application tables, plus a written relationship guide. |
 | `diagrams/RBAC-MATRIX.md` | Role–Permission Matrix (Mermaid + tables): Phase 1 roles, Member, Public; deferred roles in a marked future section. |
 | `diagrams/API-FLOW.md` | API flows (Mermaid sequence diagrams): expatriate lifecycle, login, blood consent, finance entry, content publish. |
 
@@ -203,9 +204,9 @@ fallback language where a translation is missing (per Engineering Plan v1.1 §7)
 
 This blueprint **agrees with** Engineering Plan v1.1 on its core architecture, and cites it throughout:
 
-- Laravel modular monolith + REST API; MySQL 8.4 LTS + InnoDB; Sanctum; Spatie Permission; Filament admin; Next.js
+- Laravel modular monolith + REST API; MariaDB 11.8.9 + InnoDB; Sanctum; Spatie Permission; Filament admin; Next.js
   public web; Flutter app; one API and one database (plan §3–§4, §6–§8).
-- 39 tables named in 7 domains in the plan (§7 — the plan states 38; the mechanical count is 39, Doc 06 §1.4), extended to 47 application tables in this blueprint
+- 39 tables named in 7 domains in the plan (§7 — the plan states 38; the mechanical count is 39, Doc 06 §1.4), extended to 48 application tables in this blueprint (`sequences` defined as the 48th table, 2026-11-14)
   (doc 06); 134 endpoints under `/api/v1` in the full inventory (doc 07), against the plan's ~70
   estimate (§8).
 - Expatriate state machine `pending → accepted → in_progress → completed → closed`, with
@@ -231,7 +232,7 @@ reason (per the Decision Sheet):
    `#C49A4A`, Cool White `#FBFBF8`, Ivory `#F7F4EA`; Anek Bangla variable (workhorse), Tiro Bangla
    italic (pull-quotes only), Manrope (English). Direction D is the approved frontend direction.
 3. **Versions the plan pinned that are now superseded.** Filament 3 → Filament 5 (`^5.0`); PostgreSQL 16
-   → MySQL 8.4 LTS (Phase 0.1, Confirmed — Fahim; ADR-003); Redis 7 + Horizon as
+   → MySQL 8.4 LTS (Phase 0.1, Confirmed — Fahim; ADR-003) → MariaDB 11.8.9 (2026-11-14, Confirmed — Fahim; see 16-MARIADB-ADDENDUM.md); Redis 7 + Horizon as
    day-one infrastructure → deferred until latency or volume justifies them (database queue/cache to
    start, per the research notes); Next.js 15 / Flutter 3.x → verify the current stable release at
    build time, do not assert. S3-compatible storage as the day-one media store → local `public` disk

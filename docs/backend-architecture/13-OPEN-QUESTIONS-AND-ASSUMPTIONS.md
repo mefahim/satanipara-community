@@ -1,6 +1,6 @@
 # 13 — Open Questions and Assumptions
 
-**Status:** Mixed — read each question's own **Status** line; the header does not override it. **Decided (Phase 0.1, 2026-11-14):** Q-26 (MySQL 8.4 LTS + InnoDB, by Fahim) and Q-05 (password policy, Doc 04 §5.1) except AO-01. **Decided in part:** Q-02 (tracking mechanism + Tier-S allowlist; open AO-03, AO-04, AO-18–AO-21), Q-11 (dual control mandatory, approve IS publish; open only the public summary level), Q-13 (Bengali search measured on MySQL 8.0.46, ngram + BOOLEAN MODE recommended; re-test on 8.4 + real data still open), Q-22 (service catalogue is a table with seed candidates; open only the final list). **Recommended, pending Fahim's confirmation:** Q-16 (404 for unknown activity ID — Doc 15 §8 R-8 / §11 REG-PROD-06). **Open:** Q-01, Q-03, Q-04 (in part — see its Status line), Q-06–Q-10, Q-12, Q-14–Q-15, Q-17–Q-21, Q-23–Q-25, Q-27, and the AO register (§AO). Every open question needs an answer from the named decision-maker before the affected work is built. Nothing in this document is resolved by guessing.
+**Status:** Mixed — read each question's own **Status** line; the header does not override it. **Decided (Phase 0.1, 2026-11-14; Q-26 superseded 2026-11-14):** Q-26 was decided as MySQL 8.4 LTS + InnoDB by Fahim, then superseded the same day by the MariaDB 11.8.9 decision (see 16-MARIADB-ADDENDUM.md); Q-05 (password policy, Doc 04 §5.1) except AO-01. **Decided in part:** Q-02 (tracking mechanism + Tier-S allowlist; open AO-03, AO-04, AO-18–AO-21), Q-11 (dual control mandatory, approve IS publish; open only the public summary level), Q-13 (Bengali search measured on MariaDB 11.8.9, default-parser FULLTEXT + BOOLEAN MODE with `+term*` wildcards as a model scope; production re-run + real-data snapshot + scale check still open), Q-22 (service catalogue is a table with seed candidates; open only the final list). **Recommended, pending Fahim's confirmation:** Q-16 (404 for unknown activity ID — Doc 15 §8 R-8 / §11 REG-PROD-06). **Open:** Q-01, Q-03, Q-04 (in part — see its Status line), Q-06–Q-10, Q-12, Q-14–Q-15, Q-17–Q-21, Q-23–Q-25, Q-27, and the AO register (§AO). Every open question needs an answer from the named decision-maker before the affected work is built. Nothing in this document is resolved by guessing.
 **Sources:** the repository audit (document 01), Engineering Plan v1.1 §17 (its ten open decisions,
 reproduced in §2), the Decision Sheet (including the unresolved D11), and the research notes
 (unverified items, §9).
@@ -147,13 +147,13 @@ when it is fully closed (as Q-26 is kept here as a closed record, not deleted, s
 
 ### Q-13 — Bengali full-text search quality
 
-- **Question:** does MySQL full-text search handle Bengali names and notices well enough, or is
+- **Question:** does MariaDB 11.8.9 full-text search handle Bengali names and notices well enough, or is
   Meilisearch (or another engine) needed? (Research notes §6, §9 item 7.)
 - **Why it matters:** member, notice, and activity search is a core public feature. Search quality
   cannot be claimed until it is tested.
-- **What was measured (Phase 0.1, Doc 15 §9):** ngram `FULLTEXT` + **BOOLEAN MODE** on MySQL 8.0.46 (synthetic dataset, 3,900 rows) — boolean counts identical to `LIKE '%term%'` in every single-word case; recommended as the primary approach. Natural-language mode must NOT be the default (matched ~100% of rows). The PostgreSQL trigram-search fallback is dead (PostgreSQL superseded). Re-test on MySQL 8.4 + a real-data snapshot is required before launch (re-test checklist, Doc 15 §9).
+- **What was measured (MariaDB 11.8.9, 2026-11-14, `benchmark-mariadb/`):** default-parser `FULLTEXT` + **BOOLEAN MODE** with `+term*` wildcards as an Eloquent model scope (NOT Scout) — 35 cases / 171 timed queries, synthetic dataset, 3,900 rows; whole words exact, word-prefix fragments exact vs LIKE, multi-word AND exact; autocomplete via `LIKE 'term%'` on a B-tree; explicit ordering (never MATCH relevance); stopwords stripped from `+`-terms; terms ≥ 2 characters; `LIKE '%term%'` fallback only for 1-char/mid-word cases; `search_tokens` column conditional on explicit product decision (Awaiting Organisation). Natural-language mode must NOT be the default. The Phase 0.1 MySQL 8.0.46 measurement (ngram `FULLTEXT` + BOOLEAN MODE, Doc 15 §9) does NOT transfer to MariaDB (no ngram parser). The PostgreSQL trigram-search fallback is dead (PostgreSQL superseded). Production re-run + a real-data snapshot + a scale check are required before launch (re-test checklist, Doc 15 §9 as amended by 16-MARIADB-ADDENDUM.md §3.4).
 - **Decided by:** the build team, by measurement — not by opinion.
-- **Status:** Partially resolved by measurement (Phase 0.1); re-test on 8.4 + real-data snapshot still open.
+- **Status:** Partially resolved by measurement on MariaDB 11.8.9 (2026-11-14, local); production re-run + real-data snapshot + scale check still open.
 
 ### Q-14 — Reverb database driver
 
@@ -277,9 +277,9 @@ when it is fully closed (as Q-26 is kept here as a closed record, not deleted, s
 - **Decided by:** the organisation.
 - **Status:** Open — awaiting the organisation.
 
-### Q-26 — Database choice: PostgreSQL or MySQL? — CLOSED (Decided 2026-11-14 by Fahim)
+### Q-26 — Database choice: PostgreSQL or MySQL? — CLOSED, THEN SUPERSEDED (Decided 2026-11-14 by Fahim; superseded 2026-11-14 by Fahim — see 16-MARIADB-ADDENDUM.md)
 
-- **Decision:** **MySQL 8.4 LTS + InnoDB** (ADR-003, Confirmed). The PostgreSQL lean is superseded; the MySQL/MariaDB portability argument decided it.
+- **Decision (superseded):** **MySQL 8.4 LTS + InnoDB** (ADR-003, Confirmed). The PostgreSQL lean is superseded; the MySQL/MariaDB portability argument decided it. **Current decision: MariaDB 11.8.9 + InnoDB (2026-11-14, Fahim) — see 16-MARIADB-ADDENDUM.md.**
 - **Why it matters:** it is the one infrastructure decision that is expensive to reverse after data
   exists. It is recorded explicitly, with the deciding constraint named (ubiquitous on cheap Bangladeshi shared/cPanel hosting; same decimal integrity, `CHECK` constraints, generated columns, `FULLTEXT`).
 - **Decided by:** Fahim (Phase 0.1).
@@ -339,7 +339,7 @@ An assumption is not a fact; if it is invalidated, the affected requirement or d
 | A-03 | Two admin roles (Super Admin + Expatriate Helper) are sufficient for Phase 1, and the deferred roles (President, GS, Treasurer) can wait until after launch. | The organisation requires a committee role to approve or enter data in Phase 1. | The organisation, with Fahim. |
 | A-04 | Login with mobile number + password (no OTP) is acceptable to the organisation and its members, with rate limiting and temporary lockout as the main defence. | The organisation requires OTP, or members cannot reliably use password login. | The organisation, with Fahim. |
 | A-05 | Browser/push notification (Web Push) is sufficient for helper alerts, and helpers will grant notification permission at first dashboard login. | Helpers refuse permission, change browsers frequently, or need SMS. Mitigation in the plan: the dashboard bell badge showing unread requests is the backup. | The organisation (helpers). |
-| A-06 | The database is MySQL 8.4 LTS (InnoDB). If the project ever needs PostgreSQL-only features (notably Laravel native vector search), that is a new decision with a migration cost, not a reversion. | Fahim reverses the database decision. | Fahim (Decided 2026-11-14, Phase 0.1; ADR-003). |
+| A-06 | The database is MariaDB 11.8.9 (InnoDB). If the project ever needs PostgreSQL-only features (notably Laravel native vector search), that is a new decision with a migration cost, not a reversion. (Previously: MySQL 8.4 LTS, decided 2026-11-14 Phase 0.1; superseded 2026-11-14 — see 16-MARIADB-ADDENDUM.md.) | Fahim reverses the database decision. | Fahim (Decided 2026-11-14, Phase 0.1; superseded 2026-11-14; ADR-003 as superseded by 16-MARIADB-ADDENDUM.md). |
 | A-07 | The 7 demo services in the prototype's `SVC` object are close to the final service list, and the list can be finalised without changing the request workflow. | The organisation wants a materially different service catalogue (see Q-22). | The organisation. |
 | A-08 | **CLOSED (superseded, Phase 0.1).** The public tracking page showed at least the request status and timeline without login, as the prototype did. Phase 0.1 decided tracking is **secret-authenticated** (Request ID + 128-bit tracking secret, POST only — Doc 04 §7.4, Doc 07 X2), so the assumption's trigger has fired and the assumption no longer governs anything. The Tier-S allowlist is the live rule. | — (closed) | — |
 | A-09 | Finance figures can be published as a monthly/project summary once audited, and the organisation will supply audited figures. | The organisation decides finance is members-only, or cannot supply audited figures. | The organisation. |

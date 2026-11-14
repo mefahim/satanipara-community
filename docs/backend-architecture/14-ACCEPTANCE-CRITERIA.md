@@ -36,7 +36,7 @@ The Phase 0 blueprint is accepted when **all** of the following hold:
 - [x] **G-11 — Privacy and consent rules documented.** (Doc 06 §11, doc 08 §8, doc 04 §9.)
 - [x] **G-12 — Admin dashboard functional requirements completed.** (Doc 09 — planning only, no UI.)
 - [x] **G-13 — Testing and quality strategy completed.** (Doc 10.)
-- [x] **G-14 — Architecture decisions documented.** (Doc `adr/`: 13 ADRs.)
+- [x] **G-14 — Architecture decisions documented.** (Doc `adr/`: 14 ADRs, incl. ADR-014 MariaDB 11.8.9.)
 - [x] **G-15 — Development roadmap prepared.** (Doc 12.)
 - [x] **G-16 — Open questions and assumptions documented.** (Doc 13.)
 - [x] **G-17 — Root README updated.** (Root `README.md`, updated from the approved draft in this set.)
@@ -72,13 +72,13 @@ These checks were applied across the whole set in addition to the §17 gate:
       "তথ্য হালনাগাদ হচ্ছে" rule, not by a number.
 - [x] **P0-06 — No prices.** No document in the set contains a price, a quotation, or a cost figure.
 - [x] **P0-07 — Divergences explicit.** Every place where the blueprint diverges from Engineering Plan
-      v1.1 (Laravel 12 → 13; design tokens/fonts; Filament 3 → 5; PostgreSQL 16 → MySQL 8.4 LTS (Phase 0.1, Confirmed — Fahim);
+      v1.1 (Laravel 12 → 13; design tokens/fonts; Filament 3 → 5; PostgreSQL 16 → MySQL 8.4 LTS (Phase 0.1, Confirmed — Fahim) → MariaDB 11.8.9 (2026-11-14, Confirmed — Fahim; see 16-MARIADB-ADDENDUM.md);
       Redis/Horizon and S3 as day-one → deferred; endpoint inventory 134 vs the plan's ~70 estimate;
       8 added tables) is stated explicitly with its reason, and every agreement with the plan cites
       the plan section.
 - [x] **P0-08 — Open questions open.** Every open question (document 13) is listed with a named
       decision-maker; none is resolved by guessing. D11 (wizard 3 vs 4 steps) is listed as open.
-- [x] **P0-09 — Terminology consistent.** Module names M1–M12, Request ID format `EXP-YYYY-####`, the status enum, `/api/v1`, the response/error envelopes, money as `numeric(12,2)`, role names, and permission names (`resource.action`) match the Decision Sheet exactly, in every document. **Unticked in Phase 0.1, re-ticked after Batch 6 passed (Doc 15 §12, 2026-11-14):** the claim was false — the endpoint count was cited inconsistently (108 vs the plan's ~70), the table count was wrong (44 vs 47 defined), and permission names `users.create` / `users.update` / `reports.publish` / `finance.publish` contradicted Doc 04. Corrected in Phase 0.1 (132 endpoints, 47 application tables, canonical permission names) and verified by Batch 6 (checks C2/C3/C5/C10).
+- [x] **P0-09 — Terminology consistent.** Module names M1–M12, Request ID format `EXP-YYYY-####`, the status enum, `/api/v1`, the response/error envelopes, money as `numeric(12,2)`, role names, and permission names (`resource.action`) match the Decision Sheet exactly, in every document. **Unticked in Phase 0.1, re-ticked after Batch 6 passed (Doc 15 §12, 2026-11-14):** the claim was false — the endpoint count was cited inconsistently (108 vs the plan's ~70), the table count was wrong (44 vs 47 defined), and permission names `users.create` / `users.update` / `reports.publish` / `finance.publish` contradicted Doc 04. Corrected in Phase 0.1 (132 endpoints at Phase 0.1, 134 endpoints after Phase 0.1.1 — see Doc 15 §21.3; 48 application tables after the `sequences` definition, 2026-11-14 — see Doc 16 §3.10; canonical permission names) and verified by Batch 6 (checks C2/C3/C5/C10).
 - [x] **P0-10 — No code, no mockups, no redesign.** The set contains no Laravel code, no migrations,
       no dashboard UI or mockups, and no redesign of Direction D.
 - [x] **P0-11 — Coordinator review.** The Phase 0 coordinator has reviewed the set against the Decision

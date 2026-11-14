@@ -34,7 +34,7 @@ flowchart TD
     end
 
     subgraph Data["Data layer (same VPS)"]
-        DB[("MySQL 8.4 LTS (InnoDB)<br/>One database, 7 domains<br/>Encrypted phone columns<br/>+ phone_hash (HMAC)")]
+        DB[("MariaDB 11.8.9 (InnoDB)<br/>One database, 7 domains<br/>Encrypted phone columns<br/>+ phone_hash (HMAC)")]
         CACHE[("Cache / sessions<br/>Database driver to start<br/>Redis only when adopted")]
         JOBS[("Jobs table<br/>Database queue")]
         STORE[("File storage<br/>public disk (local)<br/>private disk (local)")]

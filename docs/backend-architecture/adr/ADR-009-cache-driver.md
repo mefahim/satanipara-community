@@ -53,4 +53,4 @@ The application needs a cache for framework data (configuration, routes, compile
 
 Engineering Plan v1.1 specified Redis cache from day one; the timing is superseded (per the Decision Sheet's divergence rule). At this scale the database cache is sufficient, and it removes a service from the day-one surface. The risk — tag-dependent code breaking on the database driver — is real but is controlled by an explicit, review-enforced rule rather than by paying for Redis before it is needed.
 
-> Phase 0.1 note: no database dependency — verified 2026-11-14 (the MySQL 8.4 switch does not affect this ADR).
+> Phase 0.1 note: no database dependency — verified 2026-11-14 (the MySQL 8.4 switch does not affect this ADR; the MariaDB 11.8.9 standard likewise does not — see 16-MARIADB-ADDENDUM.md).

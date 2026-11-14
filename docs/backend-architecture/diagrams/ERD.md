@@ -355,6 +355,12 @@ erDiagram
         bigint created_by FK
         bigint approved_by FK
     }
+    sequences {
+        bigint id PK
+        varchar scope
+        smallint year
+        bigint next_value
+    }
     finance_categories {
         bigint id PK
         varchar name_bn
@@ -550,7 +556,7 @@ One paragraph per major relationship, with cardinalities and delete behaviours. 
 ### 3.7 System
 
 - **Users → notifications_log (one-to-many, optional).** A delivery-log row records a send to a user (or to a role broadcast, where `user_id` is null). Delete behaviour: `SET NULL` — the log survives the user's deletion, anonymised. Retention is 2 years, then archival (doc 06 §8.1).
-- **Users → activity_log (one-to-many, optional).** An audit row records an actor (`actor_id`, `SET NULL`) and the actor's role **at the time** (`actor_role` — roles change, the log must not). The subject is polymorphic (`subject_type`, `subject_id`) — **no FK**, by design, because the subject may be any table. The table is **append-only**: no `updated_at`, no `deleted_at`, no delete path, and the application database user has no `DELETE`/`UPDATE` privilege on it where the hosting allows it.
+- **Users → activity_log (one-to-many, optional).** An audit row records an actor (`actor_id`, `SET NULL`) and the actor's role **at the time** (`actor_role` — roles change, the log must not). The subject is polymorphic (`subject_type`, `subject_id`) — **no FK**, by design, because the subject may be any table. The table is **append-only**: no `updated_at`, no `deleted_at`, no delete path, and the application database user has no `DELETE`/`UPDATE` privilege on it (mandatory, four-user design — see 16-MARIADB-ADDENDUM.md).
 - **Users → contact_messages / data_requests / settings.** A contact message is replied to by a user (`replied_by`, `SET NULL`); a data-rights request is made by a user (optional, `SET NULL`) and handled by a user (`handled_by`, `SET NULL`); a setting records its last updater (`updated_by`, `SET NULL`). In all three cases the record survives the user's removal.
 - **Framework tables** (not drawn): `personal_access_tokens` belongs to `users` (Sanctum, `CASCADE`); `notifications` (Laravel database notifications) belongs to a notifiable (polymorphic — users in Phase 1); `jobs` / `failed_jobs` are standalone; `cache` and `sessions` are key-value stores with no application FKs; `password_reset_tokens` is keyed by email/phone per Laravel's structure.
 
@@ -558,7 +564,7 @@ One paragraph per major relationship, with cardinalities and delete behaviours. 
 
 ## 4. Changes from Engineering Plan v1.1
 
-This diagram follows Engineering Plan v1.1 §7 (39 tables named, 7 domains — the plan text says 38, corrected Phase 0.1) and adds the 8 tables doc 06 flags as `[ADDITION]`: `blood_consents`, `contact_messages`, `faqs`, `annual_reports`, `infrastructure_facilities`, `data_requests`, `service_types`, `constitution_versions` — 47 application tables in total (49 defined incl. the 2 Spatie pivots, 57 physical incl. the 8 Laravel framework tables). It also draws the Spatie pivots (`role_has_permissions`, `model_has_permissions`) that the plan's §7 lists only in part, and lists (but does not draw) the Laravel framework tables. Where this diagram and doc 06 disagree, doc 06 governs.
+This diagram follows Engineering Plan v1.1 §7 (39 tables named, 7 domains — the plan text says 38, corrected Phase 0.1) and adds the 8 tables doc 06 flags as `[ADDITION]`: `blood_consents`, `contact_messages`, `faqs`, `annual_reports`, `infrastructure_facilities`, `data_requests`, `service_types`, `constitution_versions` — 48 application tables in total (50 defined incl. the 2 Spatie pivots, 58 physical incl. the 8 Laravel framework tables). The 48th table is `sequences` (defined 2026-11-14, Doc 06 §7.5); it has no foreign keys — it is a standalone counter table, so it draws no relationship lines. It also draws the Spatie pivots (`role_has_permissions`, `model_has_permissions`) that the plan's §7 lists only in part, and lists (but does not draw) the Laravel framework tables. Where this diagram and doc 06 disagree, doc 06 governs.
 
 ---
 

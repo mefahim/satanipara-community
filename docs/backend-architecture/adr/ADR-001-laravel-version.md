@@ -21,7 +21,7 @@ The project needs a backend framework for a modular monolith (per Engineering Pl
 
 - **Full support runway:** 18 months of bug fixes and 2 years of security fixes from release (Laravel's published policy). A new project starts with the longest available runway instead of inheriting a countdown.
 - **Laravel 12 is already security-only:** choosing 12 would leave ~3 months of security support at the time of writing, with a major upgrade forced almost immediately.
-- **First-party features useful to this project:** JSON:API resources, native vector search — **unavailable** on MySQL 8.4 (requires PostgreSQL + pgvector; not a Phase 1 use case, see ADR-003), queue routing by class, `#[Authorize]`/`#[Middleware]` attributes, and the Laravel AI SDK — none of which is required on day one, but all of which are available without a framework change.
+- **First-party features useful to this project:** JSON:API resources, native vector search — **available natively on MariaDB 11.7+** via Laravel 13 (not a Phase 1 use case; see ADR-014 and 16-MARIADB-ADDENDUM.md §7 — the old "unavailable on MySQL 8.4" claim is superseded with ADR-003), queue routing by class, `#[Authorize]`/`#[Middleware]` attributes, and the Laravel AI SDK — none of which is required on day one, but all of which are available without a framework change.
 - **Ecosystem alignment:** Sanctum 4.x, Filament 5.x, and Spatie Permission v8 all declare Laravel 13 compatibility (Research Notes §§3–5), so the rest of the stack aligns on this major.
 - **Cheap upgrade path if it were ever needed:** the Laravel 13 upgrade guide estimates ~10 minutes for a typical 12.x → 13.0 app — but starting on 13 avoids the upgrade entirely.
 
@@ -39,7 +39,7 @@ The project needs a backend framework for a modular monolith (per Engineering Pl
 
 ## Scalability implications
 
-- None material at this scale. Laravel 13's queue routing by class is an option for later growth, not a requirement now. Native vector search is unavailable on MySQL 8.4 (see ADR-003). The framework is not the scaling bottleneck for a community platform of a few thousand users; the database and the hosting size are (see ADR-003, ADR-012).
+- None material at this scale. Laravel 13's queue routing by class is an option for later growth, not a requirement now. Native vector search is available natively on MariaDB 11.7+ via Laravel 13 (see ADR-014); it is not a Phase 1 use case and nothing is adopted. The framework is not the scaling bottleneck for a community platform of a few thousand users; the database and the hosting size are (see ADR-003, ADR-012).
 
 ## Maintenance implications
 

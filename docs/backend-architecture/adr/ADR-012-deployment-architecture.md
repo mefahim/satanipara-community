@@ -6,9 +6,11 @@
 | Date | 2026-11-14 |
 | Sources | Research Notes §7 (infrastructure); Decision Sheet; Engineering Plan v1.1 (Docker, GitHub Actions CI/CD, single VPS 4 vCPU/8 GB RAM/80 GB SSD, Ubuntu 24.04 LTS, Let's Encrypt, Cloudflare free tier — agreed); Doc 11 (Deployment & Operations) |
 
+> **Status note (2026-11-14):** the current deployment is **Hostinger shared hosting** per `docs/server-setup/SERVER-FOUNDATION-REPORT.md` (satanipara.asf.run, MariaDB 11.8.9, no Docker, no root). The single-VPS Docker Compose model recommended in this ADR is a **future migration target**, not current, and this ADR needs re-decision. Its database line is corrected by 16-MARIADB-ADDENDUM.md; its reasoning is otherwise left intact as the evaluated record.
+
 ## Context
 
-The platform starts as a small community system (a few thousand users) on infrastructure the organisation can afford and the team can operate. The deployment architecture must support: a Laravel API, a Filament admin panel, a Next.js public website, a MySQL 8.4 LTS database, a queue worker and scheduler, nightly backups, and a staging environment that is a production copy. No infrastructure exists yet — no server has been provisioned and no domain has been confirmed — so this ADR is Recommended, not Confirmed.
+The platform starts as a small community system (a few thousand users) on infrastructure the organisation can afford and the team can operate. The deployment architecture must support: a Laravel API, a Filament admin panel, a Next.js public website, a MySQL 8.4 LTS database, a queue worker and scheduler, nightly backups, and a staging environment that is a production copy. Infrastructure now exists — Hostinger shared hosting (satanipara.asf.run, MariaDB 11.8.9 — see docs/server-setup/SERVER-FOUNDATION-REPORT.md and 16-MARIADB-ADDENDUM.md) — so this ADR is Recommended, not Confirmed, and its single-VPS model needs re-decision (see the status note above).
 
 ## Options considered
 

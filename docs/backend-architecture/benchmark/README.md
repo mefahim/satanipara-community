@@ -1,5 +1,8 @@
 # Bengali search benchmark — reproducibility package
 
+
+> **MariaDB note (2026-11-14):** this package is the **MySQL 8.0.46 historical record** — its numbers are MySQL-only and are never to be relabelled as MariaDB results. MariaDB 11.8.9 has no ngram parser, so the ngram approaches in this package cannot run on the production engine. The MariaDB benchmark (35 cases / 171 timed queries, measured on MariaDB 11.8.9) is `../benchmark-mariadb/`; the search decision is recorded in `../16-MARIADB-ADDENDUM.md` §3.4. This package is kept intact as history.
+
 Satanipara Community backend blueprint, `docs/backend-architecture/benchmark/`.
 Phase 0.1.1. The scripts in this directory re-run Investigator E's
 Phase 0.1 Bengali full-text benchmark against a local MySQL server, so

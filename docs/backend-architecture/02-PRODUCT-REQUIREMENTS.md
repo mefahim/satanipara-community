@@ -262,7 +262,7 @@ labelled as such wherever it is repeated.
 | NFR-013 | Backup | Nightly database dump to off-server S3-compatible storage; three-tier retention — daily 30 days, weekly 12 weeks, monthly 12 months (Doc 06 §12); media with versioning, deleted files recoverable for 30 days; monthly automated restore check + quarterly full restore rehearsal, mandatory, documented (Doc 06 §13). | Backup/restore drill records. |
 | NFR-014 | Maintainability | Every schema change is a Laravel migration with a reversible `down()`; hand-run SQL on the production database is prohibited. | Code review; deployment checklist. |
 
-**Bengali search quality — measured on MySQL 8.0.46 (Phase 0.1, Investigator E).** ngram `FULLTEXT` + BOOLEAN MODE is the recommended primary (Doc 15 §9); NATURAL LANGUAGE MODE must NOT be the default. Measured on 8.0.46, not 8.4 — re-test on MySQL 8.4 with real Bengali text is required before any search-quality or performance claim (Doc 13 Q-13).
+**Bengali search quality — measured on MySQL 8.0.46 (Phase 0.1, Investigator E); that measurement does NOT transfer to MariaDB 11.8.9.** The ngram `FULLTEXT` + BOOLEAN MODE recommendation (Doc 15 §9) cannot be implemented on MariaDB (no ngram parser). NATURAL LANGUAGE MODE must NOT be the default. Re-validation on MariaDB 11.8.9 with real Bengali text is required before any search-quality or performance claim (Doc 13 Q-13; see 16-MARIADB-ADDENDUM.md).
 
 ## 6. Constraints
 
@@ -282,7 +282,7 @@ labelled as such wherever it is repeated.
    production. Real data replaces it only after client approval and (for people) individual consent.
 8. **Statistics are computed, never hand-typed.** Where data is unverified, show "তথ্য হালনাগাদ হচ্ছে".
 9. **Technology constraints (Decision Sheet, from research notes):** Laravel 13 (`^13.0`), PHP 8.4 or
-   8.5 (floor 8.3, never 8.2), MySQL 8.4 LTS + InnoDB (Confirmed, Phase 0.1 — Fahim; ADR-003; the PostgreSQL lean is superseded), Sanctum `^4.0`,
+   8.5 (floor 8.3, never 8.2), MariaDB 11.8.9 + InnoDB (Confirmed, 2026-11-14 — Fahim; see 16-MARIADB-ADDENDUM.md; the PostgreSQL lean and the Phase 0.1 MySQL 8.4 decision are both superseded), Sanctum `^4.0`,
    Spatie Laravel Permission v8 (`^8.0`), Filament 5 (`^5.0`), database queue/cache to start (Redis +
    Horizon deferred), Scout `database` engine to start, local `public` disk to start (S3-compatible
    later), spatie/laravel-backup v10 with a mandatory monthly automated restore check + quarterly
