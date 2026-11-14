@@ -1,0 +1,20 @@
+/* View-specific layout only. No tokens here. */
+.kv{display:grid;grid-template-columns:160px 1fr;gap:4px 16px;font-size:15px}
+.kv dt{color:var(--muted);min-width:0;overflow-wrap:anywhere}
+.kv dd{margin:0;min-width:0;overflow-wrap:anywhere}
+.detail-grid{display:grid;gap:20px}
+.detail-grid>*{min-width:0}
+.detail-grid>div,.detail-grid>aside{min-width:0}
+.detail-grid .card{min-width:0}
+@media(min-width:900px){.detail-grid{grid-template-columns:8fr 4fr}}
+.two-col{display:grid;gap:20px}
+.two-col>*{min-width:0}
+@media(min-width:900px){.two-col{grid-template-columns:1fr 1fr}}
+/* Narrow screens (360px viewport = 282px content after 18px gutters): the 160px
+   .kv label column leaves too little room for the value and the grid's default
+   min-width:auto propagates min-content widths up through .detail-grid, so
+   detail pages overflowed (households 395px, expatriate 702px). Narrow the label
+   column and let every grid child shrink below its content width. */
+@media(max-width:639px){.kv{grid-template-columns:104px 1fr;gap:4px 12px}}
+.notif-unread{font-weight:700}
+.login-state-links{margin-top:16px;font-size:14px;text-align:center}

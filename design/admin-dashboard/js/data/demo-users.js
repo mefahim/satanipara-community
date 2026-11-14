@@ -1,0 +1,23 @@
+// DEMO data only. No real people, no real phone numbers. DEMO flag on every collection.
+export const DEMO = true;
+export const users = [
+  { id:'u-sa1', name_bn:'সুপার অ্যাডমিন (ডেমো)', name_en:'Super Admin (Demo)', phone:'01990000000', role:'super-admin', area:'সাতানীপাড়া', status:'active', last_login:'2026-11-14T08:30:00+06:00', created_at:'2026-01-05T10:00:00+06:00' },
+  { id:'u-sa2', name_bn:'দ্বিতীয় সুপার অ্যাডমিন (ডেমো)', name_en:'Second Super Admin (Demo)', phone:'01990000002', role:'super-admin', area:'সাতানীপাড়া', status:'active', last_login:'2026-11-13T17:10:00+06:00', created_at:'2026-01-05T10:00:00+06:00' },
+  { id:'u-h1', name_bn:'সহায়ক ১ (ডেমো)', name_en:'Helper 1 (Demo)', phone:'01990000001', role:'expatriate-helper', area:'সাতানীপাড়া', status:'active', last_login:'2026-11-14T09:00:00+06:00', created_at:'2026-02-01T10:00:00+06:00' },
+  { id:'u-h2', name_bn:'সহায়ক ২ (ডেমো)', name_en:'Helper 2 (Demo)', phone:'01990000011', role:'expatriate-helper', area:'সাতানীপাড়া', status:'active', last_login:'2026-11-12T11:00:00+06:00', created_at:'2026-02-01T10:00:00+06:00' },
+  { id:'u-h3', name_bn:'সহায়ক ৩ (ডেমো)', name_en:'Helper 3 (Demo)', phone:'01990000012', role:'expatriate-helper', area:'সাতানীপাড়া', status:'active', last_login:'2026-11-10T11:00:00+06:00', created_at:'2026-03-01T10:00:00+06:00' }
+];
+export const members = [
+  { id:'m-1', member_id:'MB-2026-0001', name_bn:'সদস্য ১ (ডেমো)', name_en:'Member 1 (Demo)', phone:'01991000001', role:'member', area:'সাতানীপাড়া', type:'resident', status:'approved', donor_opt_in:true, household_id:'hh-1', family:[{name_bn:'পরিবারের সদস্য (ডেমো)', relation_bn:'স্ত্রী'}], created_at:'2026-01-10T10:00:00+06:00' },
+  { id:'m-2', member_id:'MB-2026-0002', name_bn:'সদস্য ২ (ডেমো)', name_en:'Member 2 (Demo)', phone:'01991000002', role:'member', area:'সাতানীপাড়া', type:'expat', status:'approved', donor_opt_in:false, household_id:'hh-1', family:[], created_at:'2026-01-12T10:00:00+06:00' },
+  { id:'m-3', member_id:'MB-2026-0003', name_bn:'সদস্য ৩ (ডেমো)', name_en:'Member 3 (Demo)', phone:'01991000003', role:'member', area:'সাতানীপাড়া', type:'student', status:'approved', donor_opt_in:true, household_id:'hh-2', family:[], created_at:'2026-02-02T10:00:00+06:00' },
+  { id:'m-4', member_id:'MB-2026-0004', name_bn:'সদস্য ৪ (ডেমো)', name_en:'Member 4 (Demo)', phone:'01991000004', role:'member', area:'সাতানীপাড়া', type:'resident', status:'approved', donor_opt_in:false, household_id:'hh-2', family:[], created_at:'2026-02-05T10:00:00+06:00' },
+  { id:'m-5', member_id:'MB-2026-0005', name_bn:'সদস্য ৫ (ডেমো)', name_en:'Member 5 (Demo)', phone:'01991000005', role:'member', area:'সাতানীপাড়া', type:'resident', status:'approved', donor_opt_in:false, family:[], created_at:'2026-03-01T10:00:00+06:00' },
+  { id:'m-6', member_id:'MB-2026-0006', name_bn:'সদস্য ৬ (ডেমো)', name_en:'Member 6 (Demo)', phone:'01991000006', role:'member', area:'সাতানীপাড়া', type:'expat', status:'approved', donor_opt_in:true, family:[], created_at:'2026-03-04T10:00:00+06:00' },
+  { id:'m-7', member_id:null, name_bn:'আবেদনকারী ১ (ডেমো)', name_en:'Applicant 1 (Demo)', phone:'01991000007', role:'member', area:'সাতানীপাড়া', type:'resident', status:'pending', donor_opt_in:false, family:[], created_at:'2026-11-10T10:00:00+06:00' },
+  { id:'m-8', member_id:null, name_bn:'আবেদনকারী ২ (ডেমো)', name_en:'Applicant 2 (Demo)', phone:'01991000008', role:'member', area:'সাতানীপাড়া', type:'student', status:'pending', donor_opt_in:false, family:[], created_at:'2026-11-11T10:00:00+06:00' },
+  { id:'m-9', member_id:null, name_bn:'আবেদনকারী ৩ (ডেমো)', name_en:'Applicant 3 (Demo)', phone:'01991000009', role:'member', area:'সাতানীপাড়া', type:'resident', status:'pending', donor_opt_in:false, family:[], created_at:'2026-11-12T10:00:00+06:00' },
+  { id:'m-10', member_id:null, name_bn:'আবেদনকারী ৪ (ডেমো)', name_en:'Applicant 4 (Demo)', phone:'01991000010', role:'member', area:'সাতানীপাড়া', type:'expat', status:'pending', donor_opt_in:false, family:[], created_at:'2026-11-13T10:00:00+06:00' },
+  { id:'m-11', member_id:null, name_bn:'আবেদনকারী ৫ (ডেমো)', name_en:'Applicant 5 (Demo)', phone:'01991000011', role:'member', area:'সাতানীপাড়া', type:'resident', status:'rejected', donor_opt_in:false, family:[], created_at:'2026-10-20T10:00:00+06:00', rejection_reason_bn:'প্রয়োজনীয় তথ্য অসম্পূর্ণ ছিল।' },
+  { id:'m-12', member_id:'MB-2026-0007', name_bn:'সদস্য ৭ (ডেমো)', name_en:'Member 7 (Demo)', phone:'01991000012', role:'member', area:'সাতানীপাড়া', type:'resident', status:'suspended', donor_opt_in:false, family:[], created_at:'2026-04-01T10:00:00+06:00' }
+];
