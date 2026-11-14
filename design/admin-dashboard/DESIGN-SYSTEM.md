@@ -105,7 +105,7 @@ never `prefers-color-scheme`). Theme toggle is manual and session-only
 ```css
 --touch-min:44px;
 --sidebar-w:264px; --rail-w:76px; --topbar-h:64px; --topbar-h-mobile:56px;
---bottomnav-h:60px; --container:1200px;
+--bottomnav-h:64px; --container:1200px;
 ```
 
 ## 2. Typography (`css/base.css`, `css/tokens.css`, `index.html`)
@@ -162,16 +162,24 @@ One nav implementation driven by role + viewport — not three designs.
 | 640–1199px | **Adaptive rail** (76px, icon + label, scrollable); group labels become hairline rules |
 | ≥ 1200px | **Collapsible sidebar** (264px); collapse button in sidebar head → rail (`.shell.nav-collapsed`) |
 
-**Bottom nav (mobile):** Super Admin — Dashboard, Requests
-(`#/expatriate`), Members, Finance, More. Helper — Dashboard, Requests,
-Notifications, Profile, More. Helper NEVER sees Super Admin destinations:
-nav data is role-split (`NAV_SA` 42 items / `NAV_EH` 4 items in
-`js/app.js`), the route guard enforces it, and QA verifies the Helper
+**Bottom nav (mobile, v3):** Super Admin — Dashboard, Requests,
+Members, Finance, More. Helper — Dashboard, Requests, Notifications,
+Profile, More. Labels are SHORT single-line forms (`nav.s.*`: ড্যাশবোর্ড /
+প্রবাসী / সদস্য / অর্থ / আরও — full labels stay in sidebar, rail and the
+More sheet); `white-space:nowrap` + ellipsis guard, so labels NEVER wrap
+to two lines. The Requests tab carries a pending-request count badge
+(`pendingRequests`, same no-clip rules as the bell badge; hidden at 0,
+live-updated by `shell.setCounts`). Helper NEVER sees Super Admin
+destinations: nav data is role-split (`NAV_SA` 42 items / `NAV_EH` 4 items
+in `js/app.js`), the route guard enforces it, and QA verifies the Helper
 sidebar has exactly 4 items and no SA labels.
 
-**Active destination:** ink-strong + `--surface-2` bg + 6px gold dot
-(never underline alone). `aria-current="page"` is set on the active item
-in sidebar, rail and bottom nav alike. **Breadcrumbs link to their REAL
+**Active destination (sidebar/rail):** ink-strong + `--surface-2` bg +
+6px gold dot (never underline alone). **Bottom nav active (v3):**
+Material-3 style indicator pill (`--nav-pill-bg` forest wash, 64×32px)
+behind the icon, forest icon + 800-weight forest label; the gold dot is
+NOT used on the bottom nav. `aria-current="page"` is set on the active
+item in sidebar, rail and bottom nav alike. **Breadcrumbs link to their REAL
 parent** (`crumbHref()` maps crumb keys through the nav tables; group keys
 resolve to the group's first item).
 

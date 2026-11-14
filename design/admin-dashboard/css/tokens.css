@@ -18,6 +18,7 @@
   --surface-float:#FFFFFF;     /* floating action surface (menus, toasts) */
   --surface-modal:#FFFFFF;     /* modal / bottom-sheet surface */
   --paper:#F7F4EA; --wash:#F0F2EF;
+  --nav-pill-bg:rgba(23,63,53,.10); /* bottom-nav active indicator pill (M3) */
   /* Ink / text */
   --ink:#1E2A25; --ink-strong:#102E27; --muted:#5A6B62;
   --line:#E3E6E1; --line-strong:#C9CFC9;
@@ -45,7 +46,7 @@
   /* Touch + chrome */
   --touch-min:44px;
   --sidebar-w:264px; --rail-w:76px; --topbar-h:64px; --topbar-h-mobile:56px;
-  --bottomnav-h:60px; --container:1200px;
+  --bottomnav-h:64px; --container:1200px;
 }
 [data-theme="dark"]{
   /* Brand on dark — forest lightens so it stays readable on deep surfaces */
@@ -58,6 +59,7 @@
   --surface-float:#1E352B;     /* floating action surface */
   --surface-modal:#1E352B;     /* modal / bottom-sheet surface */
   --paper:#122019; --wash:#16281F;
+  --nav-pill-bg:rgba(156,207,174,.16); /* bottom-nav active indicator pill (M3) */
   /* Ink / text on dark */
   --ink:#EDEFE7; --ink-strong:#FBFBF8; --muted:#A9BDB1;
   --line:#24443A; --line-strong:#3D5C4E;

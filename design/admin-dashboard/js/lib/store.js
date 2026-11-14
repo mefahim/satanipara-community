@@ -78,6 +78,7 @@ export function counts(){
     pendingMembers: store.members.filter(m => m.status === 'pending').length,
     totalMembers: store.members.filter(m => m.status === 'approved').length,
     openRequests: store.service_requests.filter(r => ['pending','accepted','in_progress'].includes(r.status)).length,
+    pendingRequests: store.service_requests.filter(r => r.status === 'pending').length,
     activeRequests: store.service_requests.filter(r => ['accepted','in_progress'].includes(r.status)).length,
     urgentRequests: store.service_requests.filter(r => r.urgency === 'urgent' && ['pending','accepted','in_progress'].includes(r.status)).length,
     unreadMessages: store.contact_messages.filter(m => m.status === 'new').length,

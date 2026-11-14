@@ -89,16 +89,16 @@ const NAV_EH = [
 ];
 // Bottom nav — primary destinations only (mobile <640px).
 const BOTTOM_SA = [
-  { key:'nav.dashboard', href:'#/dashboard', path:'/dashboard', icon:'dashboard' },
-  { key:'nav.expatriate', href:'#/expatriate', path:'/expatriate', icon:'expatriate' },
-  { key:'nav.members', href:'#/members', path:'/members', icon:'members' },
-  { key:'nav.financeOverview', href:'#/finance', path:'/finance', icon:'finance' }
+  { key:'nav.dashboard', shortKey:'nav.s.dashboard', href:'#/dashboard', path:'/dashboard', icon:'dashboard' },
+  { key:'nav.expatriate', shortKey:'nav.s.expatriate', href:'#/expatriate', path:'/expatriate', icon:'expatriate', badge:'pendingRequests' },
+  { key:'nav.members', shortKey:'nav.s.members', href:'#/members', path:'/members', icon:'members' },
+  { key:'nav.financeOverview', shortKey:'nav.s.finance', href:'#/finance', path:'/finance', icon:'finance' }
 ];
 const BOTTOM_EH = [
-  { key:'nav.dashboard', href:'#/dashboard', path:'/dashboard', icon:'dashboard' },
-  { key:'nav.expatriate', href:'#/expatriate', path:'/expatriate', icon:'expatriate' },
-  { key:'nav.notifications', href:'#/notifications', path:'/notifications', icon:'notifications' },
-  { key:'nav.profile', href:'#/profile', path:'/profile', icon:'profile' }
+  { key:'nav.dashboard', shortKey:'nav.s.dashboard', href:'#/dashboard', path:'/dashboard', icon:'dashboard' },
+  { key:'nav.expatriate', shortKey:'nav.s.expatriate', href:'#/expatriate', path:'/expatriate', icon:'expatriate', badge:'pendingRequests' },
+  { key:'nav.notifications', shortKey:'nav.s.notifications', href:'#/notifications', path:'/notifications', icon:'notifications' },
+  { key:'nav.profile', shortKey:'nav.s.profile', href:'#/profile', path:'/profile', icon:'profile' }
 ];
 
 let currentView = null;
@@ -111,7 +111,7 @@ let mobileSheetEl = null;
 export const shell = {
   setTitle(title){ currentTitle = title; const el = document.getElementById('page-title'); if(el) el.textContent = title; document.title = title ? `${title} — ${t('app.name')}` : t('app.name'); },
   setBreadcrumb(keys){ currentCrumbs = keys; renderCrumbs(); },
-  setCounts(c){ const el = document.getElementById('bell-count'); if(el){ const n = c.unreadNotifications ?? 0; el.textContent = n > 99 ? '99+' : String(n); el.style.display = n ? 'flex' : 'none'; } },
+  setCounts(c){ const el = document.getElementById('bell-count'); if(el){ const n = c.unreadNotifications ?? 0; el.textContent = n > 99 ? '99+' : String(n); el.style.display = n ? 'flex' : 'none'; } const b = document.getElementById('bottom-req-badge'); if(b){ const p = c.pendingRequests ?? 0; b.textContent = p > 99 ? '99+' : String(p); b.style.display = p ? 'flex' : 'none'; } },
   modal: openModal, toast, drawer: openDrawer, sheet: openSheet
 };
 window.shell = shell;
@@ -144,8 +144,18 @@ function navHtml(role, path, query){
 }
 function bottomNavHtml(role, path, query){
   const items = role === 'expatriate-helper' ? BOTTOM_EH : BOTTOM_SA;
-  const links = items.map(it => `<a href="${it.href}" class="${isActive(it, path, query) ? 'active' : ''}" ${isActive(it, path, query) ? 'aria-current="page"' : ''}>${icon(it.icon, 22)}<span>${esc(t(it.key))}</span></a>`).join('');
-  return `${links}<a href="#" data-open-more role="button" aria-label="${esc(t('nav.more'))}">${icon('more', 22)}<span>${esc(t('nav.more'))}</span></a>`;
+  const pending = store.service_requests.filter(r => r.status === 'pending').length;
+  const links = items.map(it => {
+    const active = isActive(it, path, query);
+    // Short single-line label (nav.s.*); full label stays in aria-label and
+    // in sidebar/rail/More sheet. Badge = pending requests needing action.
+    const badge = it.badge === 'pendingRequests'
+      ? `<span class="tab-badge" id="bottom-req-badge" style="display:${pending ? 'flex' : 'none'}" aria-hidden="true">${pending > 99 ? '99+' : pending}</span>` : '';
+    const label = esc(t(it.shortKey || it.key));
+    const full = esc(t(it.key));
+    return `<a href="${it.href}" class="${active ? 'active' : ''}" ${active ? 'aria-current="page"' : ''} aria-label="${full}${pending && it.badge ? ` (${pending})` : ''}"><span class="nav-pill">${icon(it.icon, 24)}${badge}</span><span class="nav-label">${label}</span></a>`;
+  }).join('');
+  return `${links}<a href="#" data-open-more role="button" aria-label="${esc(t('nav.more'))}"><span class="nav-pill">${icon('more', 24)}</span><span class="nav-label">${esc(t('nav.more'))}</span></a>`;
 }
 function shellHtml(user, path, query){
   const oneAdmin = user.role === 'super-admin' && activeSuperAdmins() === 1;
