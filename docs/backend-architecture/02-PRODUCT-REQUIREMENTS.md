@@ -25,7 +25,7 @@ service; publish notices, news, events, jobs, and galleries; and show its accoun
 service charge on expatriate support and no replacement of official emergency services.
 
 **Website first, mobile app later** (plan v1.1 §1, principle 1; Decision Sheet Phase 1 scope). Phase 1
-delivers the complete web platform. The mobile app (M12) is Phase 3 and is specified here only so the
+delivers the complete web platform. The mobile app (M12) is plan Phase 3 (Future Mobile) and is specified here only so the
 API is built app-ready from the start.
 
 **Design direction:** Direction D ("The Meridian") is the approved frontend direction. These
@@ -57,20 +57,20 @@ modules communicate through service classes (plan v1.1 §3). The module-boundary
 when a feature request arrives, the first question is "which module is this?" — if no module fits, it is
 a new module or scope, and needs separate approval.
 
-| Module | Name | Phase | Scope in one line |
+| Module | Name | Product phase (plan v1.1) | Roadmap phase (Doc 12) | Scope in one line |
 |---|---|---|---|
-| M1 | Identity & Membership | Phase 1 | Registration, login (no OTP), approval queue, profiles, family members, account deletion. |
-| M2 | Community Profile | Phase 1 | Households/persons databank, computed statistics, professionals directory, institutions and landmarks register. |
-| M3 | Organisation | Phase 1 | History and timeline, constitution, executive committee (term-based), advisory council, former leaders, achievements. |
-| M4 | Annual Activities | Phase 1 | Activities by year and category, with dates, descriptions, photos/video, beneficiary counts, linked annual report. |
-| M5 | Expatriate Support | Phase 1 | Request intake, Request ID, 4-step status, helper assignment, expenses with photos, notifications, applicant confirmation. The most sensitive module (plan v1.1 §6). |
-| M6 | Blood Donor | Phase 1 | Donor register, group + area search, emergency blood requests, donor-side consent before any phone number is revealed. |
-| M7 | Content | Phase 1 | Notices, news, events, jobs, student achievements, gallery (photo; video in Phase 2), with draft → review → published workflow. |
-| M8 | Finance | Phase 1 | Double-entry-style immutable ledger, project accounts, public summary, annual reports (PDF generation is Phase 2 per plan v1.1 §6 M4/§15; the prototype's `.txt` download is replaced by real published report files). |
-| M9 | Notifications | Phase 1 | One notification service for all modules: Web Push (primary), in-app list and bell, app push (FCM/APNs in Phase 3), email optional in Phase 2. No SMS in Phase 1. |
-| M10 | Admin & Reporting | Phase 1 | Filament dashboard, per-module list/filter/export, activity-log viewer, system health. |
-| M11 | Public Web Experience | Phase 1 | The public website (Next.js): home, directory, organisation, activities, expatriate support, blood donors, news, finance, membership, contact, FAQ, privacy — all content from the API, nothing hard-coded. BN/EN, light/dark, fully responsive. |
-| M12 | Mobile App | Phase 3 | Flutter Android + iOS app: Home, Community, Services, Profile (bottom navigation), offline reading cache, push deep-links, optional biometric unlock, forced-update policy. **Not built in Phase 1; the API must be app-ready.** |
+| M1 | Identity & Membership | Phase 1 | Phase 2 | Registration, login (no OTP), approval queue, profiles, family members, account deletion. |
+| M2 | Community Profile | Phase 1 | Phase 3 | Households/persons databank, computed statistics, professionals directory, institutions and landmarks register. |
+| M3 | Organisation | Phase 1 | Phase 3 | History and timeline, constitution, executive committee (term-based), advisory council, former leaders, achievements. |
+| M4 | Annual Activities | Phase 1 | Phase 4 | Activities by year and category, with dates, descriptions, photos/video, beneficiary counts, linked annual report. |
+| M5 | Expatriate Support | Phase 1 | Phase 5 | Request intake, Request ID, 5-state status machine, 4-node public timeline, helper assignment, expenses with photos, notifications, applicant confirmation. The most sensitive module (plan v1.1 §6). |
+| M6 | Blood Donor | Phase 1 | Phase 5 | Donor register, group + area search, emergency blood requests, donor-side consent before any phone number is revealed. |
+| M7 | Content | Phase 1 | Phase 4 | Notices, news, events, jobs, student achievements, gallery (photo; video in plan Phase 2), with draft → review → published workflow. |
+| M8 | Finance | Phase 1 | Phase 6 | Double-entry-style immutable ledger, project accounts, public summary, annual reports (PDF generation is Phase 2 per plan v1.1 §6 M4/§15; the prototype's `.txt` download is replaced by real published report files). |
+| M9 | Notifications | Phase 1 | Phase 5 (partial) + Phase 7 (remainder) | One notification service for all modules: Web Push (primary), in-app list and bell, app push (FCM/APNs in plan Phase 3), email optional in plan Phase 2. No SMS in Phase 1. |
+| M10 | Admin & Reporting | Phase 1 | Phase 8 (separate approval) | Filament dashboard, per-module list/filter/export, activity-log viewer, system health. |
+| M11 | Public Web Experience | Phase 1 | Phase 7 | The public website (Next.js): home, directory, organisation, activities, expatriate support, blood donors, news, finance, membership, contact, FAQ, privacy — all content from the API, nothing hard-coded. BN/EN, light/dark, fully responsive. |
+| M12 | Mobile App | Phase 3 | Future Mobile | Flutter Android + iOS app: Home, Community, Services, Profile (bottom navigation), offline reading cache, push deep-links, optional biometric unlock, forced-update policy. **Not built in Phase 1; the API must be app-ready.** |
 
 ---
 
@@ -83,16 +83,16 @@ a new module or scope, and needs separate approval.
 | REQ-M1-001 | A visitor can register with name, mobile number, password, area, member type (resident / expatriate / student), and an optional "also list me as a blood donor" opt-in — the fields of the prototype `#regForm` (audit §3.4). | Audit §4 #30 |
 | REQ-M1-002 | A mobile number can be registered only once; a duplicate registration is rejected with a bilingual error. (The prototype never checks duplicates because it stores nothing.) | Audit §7.3 |
 | REQ-M1-003 | Passwords are stored only as hashes, never in plain text. The prototype's plaintext demo passwords (`demo1234`, `helper1234`) are deleted and never carried into the real system. | Audit §6.5; plan v1.1 §12 |
-| REQ-M1-004 | Registration creates an account in `pending` status; the account cannot log in until the Super Admin approves it. Member lifecycle: Registered → Pending Approval → Approved / Rejected → Suspended. | Plan v1.1 §5 |
+| REQ-M1-004 | Registration creates an account in `pending` status; the account can log in but sees an 'awaiting approval' screen with services locked until the Super Admin approves it. (Recommended, pending Fahim's confirmation — REG-AUTH-01.) Member lifecycle: Registered → Pending Approval → Approved / Rejected → Suspended. | Plan v1.1 §5 |
 | REQ-M1-005 | The Super Admin can create users directly and assign them the Super Admin or Expatriate Helper role, and can approve, reject, or suspend member accounts. (No UI for this exists in the prototype — it is new admin work.) | Audit §9.2; plan v1.1 §5 |
 | REQ-M1-006 | A member can log in with mobile number + password only. There is no OTP anywhere in Phase 1. | Decision Sheet |
 | REQ-M1-007 | Failed logins are rate-limited per IP and per account, with a temporary lock after a defined number of wrong attempts. (The prototype has no lockout.) | Plan v1.1 §5, §12 |
 | REQ-M1-008 | A member can view and edit their own profile: name (BN/EN), phone, area, country (for expatriates), family information, photo, and profession. The prototype's profile form has no validation at all and saves nothing; the backend validates server-side and persists. | Audit §4 #33; plan v1.1 §6 M1 |
 | REQ-M1-009 | A member can add family members to their profile. (Present in the v1 prototype's dashboard; dropped in Direction D; restored here as a requirement.) | Audit §9.13 |
 | REQ-M1-010 | A member can request deletion of their account; deletion takes effect after a 30-day grace period, and financial/request records are retained only in anonymised form. | Plan v1.1 §6 M1 |
-| REQ-M1-011 | A forgotten password is reset by the Super Admin. The exact mechanism is an open question (document 13, Q-04) because there is no OTP and no SMS in Phase 1; the backend must not invent an email/SMS reset flow without that decision. | Decision Sheet; audit §9.4 |
+| REQ-M1-011 | A forgotten password is reset by the Super Admin via a system-generated, single-use temporary password (24 h expiry, Doc 04 §5.5). There is no OTP and no SMS in Phase 1; a self-service email/SMS reset flow is an open question (document 13, Q-04) and must not be invented without that decision. | Decision Sheet; audit §9.4 |
 | REQ-M1-012 | Every member has a unique member ID, issued at approval. (The prototype has no member ID.) | Audit §9.13 |
-| REQ-M1-013 | Server-side validation enforces, as a minimum, the prototype's client-side rules: names 2+ characters; phone 10+ digits; password 6+ characters minimum (with a stronger password policy to be set at build time — see document 13, Q-05). | Audit §7.1 |
+| REQ-M1-013 | Server-side validation enforces, as a minimum, the prototype's client-side rules: names 2+ characters; phone 10+ digits; password per Doc 04 §5.1 (12 characters minimum, 16 for Super Admin, no composition rules, mandatory breach screening, history of 5). | Audit §7.1 |
 
 ### M2 — Community Profile
 
@@ -147,7 +147,7 @@ a new module or scope, and needs separate approval.
 | REQ-M5-010 | A request can reach `completed` only when at least one expense line exists or a "no expense incurred" declaration is recorded. | Plan v1.1 §9 |
 | REQ-M5-011 | A request reaches `closed` only on the applicant's confirmation. | Plan v1.1 §6 M5 |
 | REQ-M5-012 | If a request stays in `in_progress` for 72 hours without an update, the Super Admin receives an automatic reminder. | Plan v1.1 §9 |
-| REQ-M5-013 | Any visitor with a Request ID can track it publicly (no login), seeing status, the 4-node Meridian timeline with step notes, and the expense ledger. **What else is visible is a privacy decision** (document 13, Q-02): the prototype exposes applicant name and area in `#trMeta`; the backend must expose only what the organisation approves. | Audit §4 #16; doc 13 Q-02 |
+| REQ-M5-013 | Any visitor with a Request ID **and** the tracking secret can track it publicly (no login), seeing only the Tier-S allowlist: status, service type, the 4-node Meridian timeline (Pending → Accepted → In Progress → Completed; `closed` shown as a completion banner; `rejected`/`cancelled` replace the timeline with a terminal-state notice), and the expense ledger (Doc 04 §7.4, Doc 07 §8.3/X2). The prototype's exposure of applicant name and area in `#trMeta` is NOT carried forward. Whether the Tier-S view should additionally include the applicant's first name or the beneficiary name is open (document 13, Q-02 / AO-04; default: no). | Audit §4 #16; doc 13 Q-02 |
 | REQ-M5-014 | On submission, every Expatriate Helper and the Super Admin receive a browser/push notification with the Request ID. For an urgent request, the backup helper is notified as well. (Prototype: simulated toast only.) | Decision Sheet; plan v1.1 §5, §9 |
 | REQ-M5-015 | The member's "My Requests" list shows only that member's own requests. The prototype's bug — the seeded demo request `EXP-2026-1052` appended to every member's list — must not be reproduced. | Audit §8.9 |
 | REQ-M5-016 | The permanent disclaimer is shown wherever expatriate support is presented: "This service is not a replacement for official emergency services (call 999 first) / not an ambulance replacement." The Emergency Response Team is 3–5 people; its roster and on-call rotation are admin-managed. | Decision Sheet; plan v1.1 §6 M5 |
@@ -173,9 +173,9 @@ a new module or scope, and needs separate approval.
 | REQ-M7-002 | Notices are managed with dates, expiry, and priority, and can be shown on the home announcement strip and (for urgent notices) the home ticker and push notification. Expired notices stop showing automatically. | Plan v1.1 §6 M7; audit §4 #21 |
 | REQ-M7-003 | Events are managed with date/time, venue, and body, and can be listed as upcoming. RSVP is **Under review** (document 13, Q-18). | Audit §4 #22 |
 | REQ-M7-004 | Job circulars are published only after verification, with employer, deadline, details, and an application route. Unverified circulars are never published. | Audit §4 #23 |
-| REQ-M7-005 | Content follows the workflow Draft → Review → Published. Scheduled publishing is supported (publish at a set time). | Plan v1.1 §6 M7 |
+| REQ-M7-005 | Content follows the workflow Draft → Review → Published. In Phase 1 `review` is a same-person checkpoint (the Super Admin authors and publishes — Doc 05 §9.3), not a second-person approval; the state exists so the future Content Editor split needs no schema change. Scheduled publishing is supported (publish at a set time). | Plan v1.1 §6 M7 |
 | REQ-M7-006 | The photo gallery is managed as albums with captions (BN/EN), ordering, and consent flags. Images are uploaded through the media library with automatic thumbnails and WebP conversion (queue job, per plan v1.1 §6 M7). The prototype's 8 base64 demo images are replaced. | Audit §4 #24; plan v1.1 §6 M7 |
-| REQ-M7-007 | The video gallery is **Phase 2** (plan v1.1 §2, Phase 2: video streaming optimisation). In Phase 1 it remains a labelled placeholder ("ভিডিও গ্যালারি শীঘ্রই আসছে"), with no invented video content. Video upload, size limits, and poster frames are specified for Phase 2. | Audit §4 #25; plan v1.1 §2 |
+| REQ-M7-007 | The video gallery is **plan Phase 2** (plan v1.1 §2, Phase 2: video streaming optimisation). In Phase 1 it remains a labelled placeholder ("ভিডিও গ্যালারি শীঘ্রই আসছে"), with no invented video content. Video upload, size limits, and poster frames are specified for plan Phase 2. | Audit §4 #25; plan v1.1 §2 |
 | REQ-M7-008 | Student achievements are a content category (notice/news category), per plan v1.1 §6 M7. | Plan v1.1 §6 M7 |
 | REQ-M7-009 | The FAQ is managed (question, answer BN/EN, category, order) with search. The prototype's 5 Q&A are static. | Audit §4 #36 |
 
@@ -186,8 +186,8 @@ a new module or scope, and needs separate approval.
 | REQ-M8-001 | The Super Admin enters ledger entries with type (income / expense / donation), category, linked project/activity, amount in BDT `numeric(12,2)`, date, payee, voucher image, entered-by, and approved-by. | Plan v1.1 §6 M8, §7 |
 | REQ-M8-002 | Ledger entries are **immutable**: they cannot be edited or deleted at the application level. An error is corrected only by a reversal entry that points at the original entry. | Plan v1.1 §6 M8, §7 |
 | REQ-M8-003 | Project accounts track budget vs spent vs status per project, linked to ledger entries. The prototype's Direction D has no project-accounts table; the editorial alternative's 4 demo projects are demo data, not a specification. | Audit §4 #28 |
-| REQ-M8-004 | The public finance page shows only the published summary: monthly summary and per-project totals. Donor names appear only with the donor's consent. The exact public summary level (monthly totals only, or project-level detail) is an open decision (document 13, Q-09; plan v1.1 §17 decision 7). | Plan v1.1 §6 M8; doc 13 Q-09 |
-| REQ-M8-005 | Annual reports are published per year as real files (PDF + summary), versioned, with an audited flag. The prototype's generated `.txt` download is replaced; automatic PDF generation is Phase 2 (plan v1.1 §15). | Audit §4 #29; plan v1.1 §15 |
+| REQ-M8-004 | The public finance page shows only the published summary: monthly summary and per-project totals. Donor names appear only with the donor's consent. The exact public summary level (monthly totals only, or project-level detail) is an open decision (document 13, Q-11; plan v1.1 §17 decision 7). | Plan v1.1 §6 M8; doc 13 Q-11 |
+| REQ-M8-005 | Annual reports are published per year as real files (PDF + summary), versioned, with an audited flag. The prototype's generated `.txt` download is replaced; automatic PDF generation is plan Phase 2 (plan v1.1 §15). | Audit §4 #29; plan v1.1 §15 |
 | REQ-M8-006 | Monthly balances are maintained as a summary (materialised summary updated nightly by the scheduler, per plan v1.1 §7). | Plan v1.1 §7 |
 | REQ-M8-007 | All finance figures shown publicly are real, audited, and labelled as such; demo figures from the prototype (`FINANCE` 2024–2026) are never published. Where no audited figure exists, the page shows "তথ্য হালনাগাদ হচ্ছে". | Audit §6.4 |
 
@@ -199,8 +199,8 @@ a new module or scope, and needs separate approval.
 | REQ-M9-002 | A new expatriate request triggers a Web Push (VAPID + Service Worker) notification to the Super Admin and all Helpers, reaching the device even when the browser is closed; clicking it opens the request directly. Helpers grant permission once, at first dashboard login. | Plan v1.1 §5, §6 M9 |
 | REQ-M9-003 | Every user has a persistent in-app notification list with a bell icon, unread count, and read/unread state. The prototype's list starts empty on every load and is session-only. | Audit §4 #34 |
 | REQ-M9-004 | A user can turn notifications off from browser/app settings. Each device/browser subscription is stored separately. | Plan v1.1 §6 M9 |
-| REQ-M9-005 | App push (FCM/APNs) is delivered in Phase 3 with the mobile app; the notification service is built so app push is an added channel, not a rebuild. | Plan v1.1 §6 M9 |
-| REQ-M9-006 | Email notification is optional in Phase 2; there is no SMS in Phase 1. | Plan v1.1 §6 M9 |
+| REQ-M9-005 | App push (FCM/APNs) is delivered in plan Phase 3 (Future Mobile) with the mobile app; the notification service is built so app push is an added channel, not a rebuild. | Plan v1.1 §6 M9 |
+| REQ-M9-006 | Email notification is optional in plan Phase 2; there is no SMS in Phase 1. | Plan v1.1 §6 M9 |
 | REQ-M9-007 | No notification is sent for a request, donor, or finance event to anyone who is not entitled to see that event (role- and consent-checked at send time). | Plan v1.1 §12 |
 
 ### M10 — Admin & Reporting
@@ -210,7 +210,7 @@ a new module or scope, and needs separate approval.
 | REQ-M10-001 | The Super Admin has a dashboard showing key numbers: members, pending approvals, in-progress requests, and the month's accounts (plan v1.1 §6 M10). The prototype has no Super Admin dashboard at all. | Audit §4 #32; plan v1.1 §6 M10 |
 | REQ-M10-002 | The Helper has a dashboard showing the request queue with search, filter by status/service, and assignment. (The prototype's helper queue lists all requests with no search, filter, pagination, or assignment.) | Audit §4 #15 |
 | REQ-M10-003 | Every module has list, filter, and export (CSV/Excel/PDF) in the admin panel. | Plan v1.1 §6 M10 |
-| REQ-M10-004 | An activity-log viewer shows who did what, when, and to which record — including logins, approvals, finance entries, status changes, and consent-based number disclosures. The log cannot be deleted, including by an admin. Retention is at least 2 years. | Plan v1.1 §12 |
+| REQ-M10-004 | An activity-log viewer shows who did what, when, and to which record — including logins, approvals, finance entries, status changes, and consent-based number disclosures. The log cannot be deleted, including by an admin. Retention is permanent (no purge); the plan's "at least 2 years" (plan v1.1 §12) is the floor, not the rule. | Plan v1.1 §12 |
 | REQ-M10-005 | System health is visible: queue status and the date of the last successful backup. | Plan v1.1 §6 M10 |
 | REQ-M10-006 | The admin panel enforces roles server-side: a Helper sees and edits only expatriate requests; every other module is Super Admin only. Filament's access hooks (`canAccessPanel()`, per-resource `can*()`) are wired to the same gates/policies as the API. | Decision Sheet; research notes §4 |
 
@@ -227,7 +227,7 @@ a new module or scope, and needs separate approval.
 | REQ-M11-007 | The site is fully responsive, with the mobile rules proven in Direction D: 18px side gutters at 360px, photos shown whole on phones, single slim header row (max 56px), no horizontal overflow. | Audit §2.1 |
 | REQ-M11-008 | The contact page shows real contact details (office address, hours, phone, email) once the organisation supplies and verifies them, plus a map. Until then it shows no invented contact details and no sample phone number. A contact message is stored in an inbox the Super Admin can list and reply to. | Audit §4 #35; doc 13 Q-06 |
 
-### M12 — Mobile App (Phase 3; API-ready in Phase 1)
+### M12 — Mobile App (Future Mobile; plan Phase 3; API-ready in Phase 1)
 
 | ID | Requirement | Source |
 |---|---|---|
@@ -259,13 +259,10 @@ labelled as such wherever it is repeated.
 | NFR-010 | Privacy | Phone and beneficiary information in encrypted columns; API responses field-filtered by role; public API contains no personal field at all (verified by test). Consent withdrawal takes effect immediately. | Contract tests; privacy review. |
 | NFR-011 | Accessibility | The public site passes a keyboard/screen-reader/reduced-motion review. (The prototype's accessibility pass is unverified — audit §8.15.) | Accessibility audit on staging. |
 | NFR-012 | SEO | See REQ-M11-005. | SEO checklist in document 14. |
-| NFR-013 | Backup | Nightly database dump to off-server S3-compatible storage, retained 30 days; weekly backups 12 weeks; media with versioning, deleted files recoverable for 30 days; restore drill quarterly on staging. | Backup/restore drill records. |
+| NFR-013 | Backup | Nightly database dump to off-server S3-compatible storage; three-tier retention — daily 30 days, weekly 12 weeks, monthly 12 months (Doc 06 §12); media with versioning, deleted files recoverable for 30 days; monthly automated restore check + quarterly full restore rehearsal, mandatory, documented (Doc 06 §13). | Backup/restore drill records. |
 | NFR-014 | Maintainability | Every schema change is a Laravel migration with a reversible `down()`; hand-run SQL on the production database is prohibited. | Code review; deployment checklist. |
 
-**Bengali search quality is explicitly not a target yet.** Whether PostgreSQL full-text search handles
-Bengali names and notices well is unverified in both PostgreSQL and MySQL (research notes §6, §9 item 7)
-and needs an empirical test with real Bengali text before any search-quality claim is made (document 13,
-Q-12).
+**Bengali search quality — measured on MySQL 8.0.46 (Phase 0.1, Investigator E).** ngram `FULLTEXT` + BOOLEAN MODE is the recommended primary (Doc 15 §9); NATURAL LANGUAGE MODE must NOT be the default. Measured on 8.0.46, not 8.4 — re-test on MySQL 8.4 with real Bengali text is required before any search-quality or performance claim (Doc 13 Q-13).
 
 ## 6. Constraints
 
@@ -285,8 +282,7 @@ Q-12).
    production. Real data replaces it only after client approval and (for people) individual consent.
 8. **Statistics are computed, never hand-typed.** Where data is unverified, show "তথ্য হালনাগাদ হচ্ছে".
 9. **Technology constraints (Decision Sheet, from research notes):** Laravel 13 (`^13.0`), PHP 8.4 or
-   8.5 (floor 8.3, never 8.2), PostgreSQL (narrow lean, VPS-only; MySQL/MariaDB LTS is the documented
-   alternative if shared-hosting portability in Bangladesh becomes a requirement), Sanctum `^4.0`,
+   8.5 (floor 8.3, never 8.2), MySQL 8.4 LTS + InnoDB (Confirmed, Phase 0.1 — Fahim; ADR-003; the PostgreSQL lean is superseded), Sanctum `^4.0`,
    Spatie Laravel Permission v8 (`^8.0`), Filament 5 (`^5.0`), database queue/cache to start (Redis +
    Horizon deferred), Scout `database` engine to start, local `public` disk to start (S3-compatible
    later), spatie/laravel-backup v10 with a mandatory monthly automated restore check + quarterly
@@ -299,14 +295,14 @@ Q-12).
 Per Engineering Plan v1.1 §2 and the Decision Sheet. These are **not** requirements, and building any of
 them in Phase 1 needs a separate, written approval (change control, plan v1.1 §15).
 
-- Online payment/donation collection (Phase 2, subject to the organisation's merchant-account readiness).
+- Online payment/donation collection (plan Phase 2, subject to the organisation's merchant-account readiness).
 - Live chat, video calls, e-commerce/shop, online courses.
 - NID or any third-party (government) database verification.
 - OTP login.
 - President / GS / Treasurer and other committee-based admin roles.
-- Video gallery streaming optimisation and automatic annual-report PDF generation (both Phase 2).
-- Email newsletter, member card / QR ID (Phase 2).
-- Mobile app (Phase 3).
+- Video gallery streaming optimisation and automatic annual-report PDF generation (both plan Phase 2).
+- Email newsletter, member card / QR ID (plan Phase 2).
+- Mobile app (Future Mobile; plan Phase 3).
 - Content writing, photography, and real data collection — the organisation's responsibility; the
   developer provides only the upload structure.
 - Voting features. (Membership copy in the prototype mentions "ভোটাধিকারসহ সব সুবিধা" — voting rights —

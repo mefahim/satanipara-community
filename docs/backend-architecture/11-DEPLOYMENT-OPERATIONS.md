@@ -39,7 +39,7 @@ This is a starting size for a small community platform (a few thousand users), n
 
 - **Ubuntu 24.04 LTS** (per Engineering Plan v1.1). Long-term support, security updates enabled, automatic security updates configured for the OS packages.
 - **PHP 8.4 or 8.5** (per Decision Sheet; floor 8.3, never 8.2 — EOL 31 Dec 2026). The exact version is pinned at scaffold time and recorded.
-- **PostgreSQL** — current major at scaffold time (verify at postgresql.org; do not assert a version number here — Research Notes §6, §9 item 6). The database runs on the same VPS to start.
+- **MySQL 8.4 LTS** — pinned (verify the lifecycle at dev.mysql.com at scaffold time; do not assert a patch number here). The database runs on the same VPS to start.
 - **Nginx** as the web server / reverse proxy, terminating TLS.
 - **Docker Compose** orchestrating the services below (per Engineering Plan v1.1).
 
@@ -50,13 +50,13 @@ This is a starting size for a small community platform (a few thousand users), n
 | `app` | PHP-FPM + Laravel application | Serves the API and the Filament panel; runs migrations on deploy (see §4) |
 | `worker` | Same image, queue worker process | Runs `queue:work` under Supervisor/systemd-equivalent supervision; never `queue:listen` in production (Research Notes §7.1) |
 | `scheduler` | Same image, scheduler process | Runs `schedule:run` every minute (backup, prune-expired tokens, queue cleanup, notification pruning) |
-| `db` | PostgreSQL | Data volume persisted on the host SSD; backups per §6 |
+| `db` | MySQL 8.4 LTS | Data volume persisted on the host SSD; backups per §6 |
 | `redis` | Redis | **Only when adopted** (per Decision Sheet: database queue/cache to start; Redis + Horizon v5 only when latency/volume justifies it). The Compose file includes it commented out, not running |
 | `nginx` | Nginx | TLS termination, static-asset serving, reverse proxy to `app` |
 
 - One image, three roles (`app`/`worker`/`scheduler`) — the same build is deployed everywhere, so a bug cannot exist in one role and not the others.
 - Container logs go to the host's log collection (see §5); a container that exits is restarted automatically, and repeated restarts alert.
-- **The Next.js public website** (M11) is a separate deployment concern: it may run on the same VPS (as a Node service or a static export behind Nginx) or on the organisation's chosen hosting. The decision is recorded at the start of the website phase (Doc 12, Phase 4/7); this document does not decide it. Whichever is chosen, the website talks to the API over HTTPS and never to the database.
+- **The Next.js public website** (M11) is a separate deployment concern: it may run on the same VPS (as a Node service or a static export behind Nginx) or on the organisation's chosen hosting. The decision is recorded at the start of the website phase (Doc 12, Phase 7); this document does not decide it. Whichever is chosen, the website talks to the API over HTTPS and never to the database.
 
 ## 3. Domain and SSL
 
@@ -77,7 +77,7 @@ Pull request → gates (§4.1) → merge to main → staging auto-deploy → UAT
 
 1. Pint (style).
 2. Larastan (static analysis).
-3. Unit + feature + API contract tests on PostgreSQL.
+3. Unit + feature + API contract tests on MySQL 8.4.
 4. Authorisation matrix completeness (Doc 10 §5).
 5. Coverage ≥ 80% of business logic.
 6. Dependency audit (no critical vulnerabilities).
@@ -96,7 +96,7 @@ A pull request that fails any gate does not merge. No gate is skipped by a devel
 
 - A production deploy is triggered by a named person approving the release in GitHub Actions. Approval requires: the staging deploy succeeded, the smoke tests passed, the UAT sign-off for the phase exists (Doc 10 §10), and the pre-deploy backup (§6) completed.
 - The production deploy: takes the pre-deploy backup, deploys the new image, runs migrations, clears caches, restarts the worker/scheduler, and runs the same smoke tests against production.
-- **Migrations:** run automatically as part of the deploy, in a transaction where PostgreSQL allows it (transactional DDL is a PostgreSQL advantage — Research Notes §6). A migration that fails rolls back the deploy.
+- **Migrations:** run automatically as part of the deploy. DDL is not transactional on MySQL: a failed migration does NOT roll back automatically — one DDL statement per migration, idempotent migrations, and the pre-deploy backup is the only rollback (Doc 06 §10, ADR-003). A migration that fails stops the deploy.
 - **Rollback:** the previous release is kept available (previous image + previous code). If the smoke tests fail after a production deploy, the deploy is rolled back to the previous release; if data changed, the pre-deploy backup is restored following the restore procedure (§6). Rollback is rehearsed, not improvised.
 
 ## 5. Secrets
@@ -130,9 +130,9 @@ Per Engineering Plan v1.1 (RPO 24h / RTO 4h) and Research Notes §7.5 (spatie/la
 ### 7.1 Backup policy
 
 - **Tool:** `spatie/laravel-backup` v10 (resolve the exact version at install time; use the package's current major for Laravel 13).
-- **Schedule:** nightly `backup:run` — database (`pg_dump`) + uploaded files (`storage/app/public` and the private disk).
+- **Schedule:** nightly `backup:run` — database (`mysqldump`) + uploaded files (`storage/app/public` and the private disk).
 - **Destinations:** **local disk + one off-server S3-compatible disk.** The package's own documentation warns that a local-only backup is worthless if the disk fails ("If you only use the local disk … and that disk crashes you will have nothing left but tears" — Research Notes §7.5). The off-server copy is mandatory, not optional.
-- **Cleanup:** `backup:clean` on schedule (retention: daily backups for 30 days, weekly for 12 weeks, monthly for 12 months — proposed, confirm at scaffold time).
+- **Cleanup:** `backup:clean` on schedule (retention: daily backups for 30 days, weekly for 12 weeks, monthly for 12 months — decided Phase 0.1, Doc 06 §13).
 - **Exclusions:** `storage/framework` (cache/views/sessions) is excluded. `.env` is **never** in a backup.
 - **Encryption:** backups are encrypted at rest on the off-server disk where the provider supports it; access is restricted to the deployment identity (Doc 08 §3.13).
 
@@ -148,7 +148,7 @@ These are the Engineering Plan v1.1 objectives, repeated here as plan objectives
 ### 7.3 Restore rehearsal
 
 - **Quarterly restore rehearsal (mandatory, documented).** Every quarter, the latest backup is restored to a disposable environment and verified: the application boots, logins work, a request can be tracked, the ledger totals match, and the file count matches. The result is recorded (date, backup used, duration, issues found). A rehearsal that fails is a high-priority incident, not a note for later.
-- The monthly restore test required by the Decision Sheet (spatie/laravel-backup, monthly restore test) is satisfied by the quarterly rehearsal plus a monthly automated restore-to-disposable-environment check; the exact cadence split is confirmed at scaffold time and recorded.
+- The monthly restore test required by the Decision Sheet (spatie/laravel-backup, monthly restore test) is satisfied by the quarterly rehearsal plus a monthly automated restore-to-disposable-environment check; the cadence is: monthly automated restore check + quarterly full restore rehearsal, mandatory, documented (Doc 06 §13).
 
 ### 7.4 Disaster scenarios (outline)
 
@@ -191,8 +191,8 @@ To be completed at the end of the programme (Phase 9, Doc 12). Every item must b
 
 1. Whether the Next.js public website runs on the same VPS or on separate hosting.
 2. The on-call / incident contact and the alert channel.
-3. Backup retention periods (daily/weekly/monthly).
+3. Backup retention periods (daily/weekly/monthly). — **Decided (Phase 0.1):** daily 30 days / weekly 12 weeks / monthly 12 months (Doc 06 §12).
 4. Log retention period (shared with Doc 08 §14 item 6).
-5. The exact restore-rehearsal cadence split (monthly automated check + quarterly full rehearsal).
+5. The exact restore-rehearsal cadence split — **Decided (Phase 0.1):** monthly automated check + quarterly full rehearsal (Doc 06 §13); the runbook adoption is DB-3 (Doc 06 §16).
 6. The organisation's domain name and DNS delegate.
 7. Whether Cloudflare is enabled, and the trusted-proxy configuration if it is.

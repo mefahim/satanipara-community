@@ -58,3 +58,5 @@ The system needs an admin panel (M10) for the Super Admin and the Expatriate Hel
 ## Reason for selection
 
 It is the fastest path to a complete, maintainable admin panel that enforces the same permission model as the API, it is what Engineering Plan v1.1 specified (updated from Filament 3 to Filament 5, per the Decision Sheet's divergence rule — Filament 5 is the current major and the plan's version is superseded), and it avoids building and securing a second SPA for a handful of administrators. A bespoke admin SPA would cost more, duplicate the auth and permission work, and deliver no capability the organisation asked for.
+
+> Phase 0.1 note: no database dependency — verified 2026-11-14 (the MySQL 8.4 switch does not affect this ADR).

@@ -18,7 +18,7 @@ sequenceDiagram
     participant V as Visitor (public, no login)
     participant WEB as Next.js website
     participant API as Laravel API (/api/v1)
-    participant DB as PostgreSQL
+    participant DB as MySQL 8.4
     participant Q as Queue (database driver)
     participant H as Expatriate Helper
     participant SA as Super Admin
@@ -32,7 +32,7 @@ sequenceDiagram
     API->>DB: Create notifications for<br/>Super Admin + all Helpers
     API->>Q: Dispatch push-delivery job<br/>(Web Push to registered devices)
     API-->>WEB: 201 + Request ID
-    WEB-->>V: Success pane — Request ID +<br/>4-step Meridian timeline
+    WEB-->>V: Success pane — Request ID +<br/>4-node Meridian timeline (Pending → Accepted → In Progress → Completed)
     Q->>H: Push / browser notification<br/>(best-effort; DB notification is the record)
     H->>API: GET /expatriate-requests<br/>(queue — helpers see all requests)
     API-->>H: Page list
@@ -69,7 +69,7 @@ sequenceDiagram
     participant WEB as Next.js website (SPA)
     participant MOB as Flutter app (future)
     participant API as Laravel API (/api/v1)
-    participant DB as PostgreSQL
+    participant DB as MySQL 8.4
 
     Note over WEB,API: --- Web (first-party SPA): cookie auth ---
     WEB->>API: GET /sanctum/csrf-cookie
@@ -125,7 +125,7 @@ sequenceDiagram
     participant V as Visitor (public)
     participant WEB as Next.js website
     participant API as Laravel API (/api/v1)
-    participant DB as PostgreSQL
+    participant DB as MySQL 8.4
     participant Q as Queue (database driver)
     participant D as Donor (registered member)
     participant SA as Super Admin
@@ -162,11 +162,11 @@ sequenceDiagram
 
 - **Consent is a donor-side action.** The prototype's consent was granted by the *requester's own click* (Audit Findings §6) — a button that instantly revealed the number with no donor involved. The real flow requires the donor to grant consent for that specific request; the requester cannot grant it for them.
 - **Phones are never in a list or search response.** The prototype showed masked phones (`01••• •••421`); the API returns no phone digits at all in a list (Doc 07 B1). The full number is returned only by the donor-contact endpoint, only after consent, and every reveal is audit-logged (Doc 08 §9.1).
-- **Consent records are permanent history.** A revocation is a new row, not a deletion — so the history of who consented, when, and for which request is always reconstructable.
+- **Consent records are permanent history.** A revocation is a status change on the same consent row (`status = revoked`, Doc 07 B5), not a deletion — so the history of who consented, when, and for which request is always reconstructable.
 - **The prototype's blood request created no record and contacted no donor** (Audit Findings §3 #19). The real flow creates the request, notifies matching donors, and tracks the lifecycle to closure.
 - **Unavailable donors** have their consent path disabled (matching the prototype, where the consent button was disabled for unavailable donors — Audit Findings §5.2).
 
-## 4. Finance entry, publish, and reversal
+## 4. Finance entry, approve-and-publish, and reversal
 
 Money rules: BDT, `decimal(12,2)`, never float. Ledger entries are immutable — corrections only by reversal (Decision Sheet, Doc 07 §14.9).
 
@@ -176,7 +176,7 @@ sequenceDiagram
     participant SA as Super Admin<br/>(Phase 1 — Treasurer role deferred)
     participant PANEL as Filament admin panel
     participant API as Laravel API (/api/v1)
-    participant DB as PostgreSQL
+    participant DB as MySQL 8.4
     participant PUB as Public website (visitor)
 
     SA->>PANEL: Create entry (date, item, kind,<br/>category, amount, payee, receipt?)
@@ -184,13 +184,10 @@ sequenceDiagram
     API->>API: Validate (amount ≠ 0,<br/>two decimals, kind in enum)
     API->>DB: Entry created, status draft<br/>(NOT public)
     API-->>PANEL: 201 + entry
-    SA->>PANEL: Approve entry
+    SA->>PANEL: Approve entry (approve IS publish — one step)
     PANEL->>API: POST /finance/entries/{id}/approve
-    API->>DB: Status approved + audit entry
-    Note over SA,API: Dual control (a different person<br/>approving than the creator) is<br/>proposed — confirm in Sprint 1<br/>(Doc 07 §17 item 4).
-    SA->>PANEL: Publish entry
-    PANEL->>API: POST /finance/entries/{id}/publish
-    API->>DB: Status published + audit entry
+    API->>DB: Status published + audit entry<br/>(approved_by / approved_at / published_at set)
+    Note over SA,API: Dual control is mandatory (decided<br/>Phase 0.1): the approver must differ<br/>from the creator (Doc 04 §6.1, Doc 07 F4).
     PUB->>API: GET /finance/ledger?year=2026
     API->>DB: Sum published entries<br/>server-side
     API-->>PUB: Cursor list + totals
@@ -209,7 +206,7 @@ sequenceDiagram
 - **The prototype's finance rows had no dates, payees, receipts, or sub-categories** (Audit Findings §5.4) and its totals were computed in the browser. The API stores the full record and computes totals server-side.
 - **The prototype generated its "annual report" as a `.txt` file in the browser** and noted "ডেমোতে PDF তৈরি হয় না" (Audit Findings §6). Real reports are real files (PDF), versioned by year, uploaded through `POST /finance/reports` with an audited flag (Doc 07 F8).
 - **Project accounts** (budget vs spent per project) exist only in the editorial alternative, not in Direction D (Audit Findings §3 #28) — the endpoint is marked proposed pending Sprint 1 confirmation (Doc 07 F9).
-- **Phase 1 performer:** the Treasurer role is deferred, so the Super Admin performs entry, approval, and publishing in Phase 1 (Doc 09 §3.11). If dual control is confirmed, approval must be by a different person than the creator.
+- **Phase 1 performer:** the Treasurer role is deferred, so the Super Admin performs entry, approval, and publishing in Phase 1 (Doc 09 §3.11). Dual control is mandatory (decided Phase 0.1): approval must be by a different person than the creator — a one-Super-Admin organisation cannot publish until a second approver exists (Doc 04 §6.1). A rejected entry stays `draft` (F6a, reason ≥10 characters) and can be corrected and resubmitted.
 
 ## 5. Content publish workflow
 
@@ -221,7 +218,7 @@ sequenceDiagram
     participant SA as Super Admin
     participant PANEL as Filament admin panel
     participant API as Laravel API (/api/v1)
-    participant DB as PostgreSQL
+    participant DB as MySQL 8.4
     participant PUB as Public website (visitor)
 
     SA->>PANEL: Create content (title/body bn/en,<br/>tag/category, dates, files)

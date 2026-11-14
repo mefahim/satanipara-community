@@ -15,7 +15,7 @@
 - **Tables are grouped by domain** (Identity, Community, Organisation, Activities & Content, Services, Finance, System) matching doc 06 §§2–8. The Mermaid diagram itself is one diagram — the grouping is by the section headings and the relationship guide in §3, because Mermaid `erDiagram` has no subgraphs.
 - **Only the key columns are shown** in each box (primary key, foreign keys, and the one or two columns that define the row's meaning). The full column lists are in doc 06.
 - **Polymorphic links** (`media_links`, `model_has_roles`, `notifications_log.related_*`, `activity_log.subject_*`) cannot be drawn as ordinary foreign keys, because the target table varies per row. They are shown as a dashed relationship to the most common target and explained in §3.
-- **Framework tables** (`personal_access_tokens`, `notifications`, `jobs`, `failed_jobs`, `cache`, `sessions`, `password_reset_tokens`, `migrations`) are listed in §2.8 but not drawn in full — they are Laravel's tables, and their relationships are the framework's, not the application's.
+- **Framework tables** (`personal_access_tokens`, `notifications`, `jobs`, `failed_jobs`, `cache`, `sessions`, `password_reset_tokens`, `migrations`) are listed in §1 / §3.7 but not drawn in full — they are Laravel's tables, and their relationships are the framework's, not the application's.
 - **Soft delete:** every table marked "soft delete: yes" in doc 06 carries `deleted_at`. It is omitted from the boxes below for readability — its presence is governed by doc 06, not by this diagram.
 
 ---
@@ -139,6 +139,16 @@ erDiagram
         date ends_on
         boolean is_current
     }
+    constitution_versions {
+        bigint id PK
+        varchar version UK
+        varchar title_bn
+        date effective_from
+        boolean is_current
+        bigint supersedes_version_id FK
+        bigint approved_by FK
+        bigint document_media_id FK
+    }
     committee_members {
         bigint id PK
         bigint committee_term_id FK
@@ -201,7 +211,7 @@ erDiagram
         varchar disk
         varchar path UK
         varchar mime_type
-        jsonb variants
+        json variants
         varchar consent_status
         bigint uploaded_by FK
     }
@@ -243,10 +253,19 @@ erDiagram
     }
 
     %% ============ Domain E — Services (M5/M6) ============
+    service_types {
+        bigint id PK
+        varchar key UK
+        varchar name_bn
+        boolean is_active
+        integer sort_order
+    }
     service_requests {
         bigint id PK
         varchar request_no UK
-        varchar service
+        bigint service_type_id FK
+        varchar service_key
+        varchar service_name_bn
         varchar status
         bigint applicant_user_id FK
         bigint applicant_country_id FK
@@ -404,6 +423,9 @@ erDiagram
     media ||--o{ committee_members : photo_of
     media ||--o{ advisors : photo_of
     media ||--o{ past_leaders : photo_of
+    users ||--o{ constitution_versions : approves
+    media ||--o| constitution_versions : document_of
+    constitution_versions ||--o| constitution_versions : supersedes
 
     %% ============ Relationships — Activities & Content ============
     users ||--o{ activities : creates
@@ -421,12 +443,13 @@ erDiagram
     users ||--o{ service_requests : applies_as
     users ||--o{ service_requests : assigned_helper
     countries ||--o{ service_requests : applicant_country
+    service_types ||--o{ service_requests : catalogues
     service_requests ||--o{ service_request_updates : has
     users ||--o{ service_request_updates : writes
     service_requests ||--o{ service_request_expenses : has
     media ||--o{ service_request_expenses : voucher_for
     service_request_expenses ||--o| service_request_expenses : reverses
-    users ||--o| emergency_team_members : serves_on
+    users ||--o{ emergency_team_members : serves_on
     users ||--o| blood_donors : registered_as
     blood_requests ||--o{ blood_consents : asks
     blood_donors ||--o{ blood_consents : grants
@@ -480,6 +503,7 @@ One paragraph per major relationship, with cardinalities and delete behaviours. 
 
 - **Committee_terms → committee_members (one-to-many).** A term has many members; a member belongs to one term. Delete behaviour: `RESTRICT` on the term — a term with members cannot be deleted, because terms are history. A member row references a person optionally (`person_id`, `SET NULL`) and carries a denormalised `name_bn`, so a historical member without a databank record still renders.
 - **Persons → advisors / past_leaders (one-to-many, optional).** An advisor or past leader may link to a databank person or stand alone by name. Delete behaviour: `SET NULL` — the listing survives the person record's anonymisation. Past leaders carry `term_start_year` / `term_end_year` (nullable — unknown is recorded as unknown, never guessed) and a `term_note_bn` where the term is under verification.
+- **Constitution_versions (one current, versioned).** A new version supersedes the old; history is kept (retention: permanent). At most one current version (`uk_one_current_constitution`, same generated-column pattern as `committee_terms`). A version is approved by a Super Admin (`approved_by`, `SET NULL`) and may carry its signed PDF/scan as a `media` row (`document_media_id`, `SET NULL`).
 - **Achievements (standalone).** Milestones for the heritage timeline. Only one verified milestone exists today (the 1999 founding). A milestone is published only when `is_verified = true`. Delete behaviour: soft delete; an unverified milestone is never published, and a published milestone that proves wrong is unpublished with a correction note, not deleted.
 
 ### 3.4 Activities & Content
@@ -494,10 +518,11 @@ One paragraph per major relationship, with cardinalities and delete behaviours. 
 
 ### 3.5 Services
 
+- **Service_types → service_requests (one-to-many).** The service catalogue (admin-managed, permission `service_types.manage`). A request stores both the FK (`service_type_id`, `RESTRICT` — deactivate instead of deleting a service in use) and a snapshot of the key/name at submission (`service_key`, `service_name_bn`), so a later catalogue rename does not rewrite history. Seed candidates (7, pending Q-22): grocery, medicine, hospital, elderly, home, document, general.
 - **Users → service_requests (two relationships).** `applicant_user_id` (who applied — nullable, because requests can be submitted without an account; `SET NULL` on user deletion, with the request anonymised) and `assigned_helper_id` (which helper owns it; `SET NULL` if the helper's account is removed). The public identifier is `request_no` (`EXP-YYYY-####`, UNIQUE), never the bigint `id`.
 - **Service_requests → service_request_updates (one-to-many).** A request has many updates; each update records its author, the status transition it accompanied (`status_from` → `status_to`, nullable for a plain note), and whether the applicant may see it (`is_visible_to_applicant`). Delete behaviour: `CASCADE` on the request, but updates are **never deleted individually** — an erroneous update is corrected by a new update.
 - **Service_requests → service_request_expenses (one-to-many).** A request has many itemised expense lines (product cost + transport, `numeric(12,2)`). A wrong line is corrected by a **reversal expense line** — the self-reference `reverses_expense_id` (nullable FK to the same table). Delete behaviour: `CASCADE` on the request; expense lines are never deleted individually.
-- **Users → emergency_team_members (one-to-one, optional).** An ERT member may be a platform user or a volunteer reached by phone (`user_id` nullable, `SET NULL`). The team is 3–5 people by policy (not by a database constraint).
+- **Users → emergency_team_members (one-to-many, optional).** One user may serve on the ERT across multiple terms; the roster is a list, not a single seat. An ERT member may be a platform user or a volunteer reached by phone (`user_id` nullable, `SET NULL`). The team is 3–5 people by policy (not by a database constraint).
 - **Users ↔ blood_donors (one-to-one, optional).** A user may have one donor record; a donor may have no account. `phone_hash` is UNIQUE where not null. Availability is **computed** (90-day rule from `last_donation_date`), never stored — there is no `is_available` column to hand-edit.
 - **Blood_requests → blood_consents (one-to-many).** A blood request asks many donors; each donor has one consent row per request (`blood_request_id`, `blood_donor_id` UNIQUE together), whose status moves `requested → granted → revoked/expired`. The row records `granted_at`, `revoked_at`, and `revealed_to_requester_at` — the audit record of the phone reveal.
 - **Blood_donors → blood_requests (fulfilment).** `blood_requests.fulfilled_by_donor_id` (`SET NULL`) records who gave, once confirmed; fulfilment updates the donor's `last_donation_date`, which drives the 90-day availability computation.
@@ -520,7 +545,7 @@ One paragraph per major relationship, with cardinalities and delete behaviours. 
 
 ## 4. Changes from Engineering Plan v1.1
 
-This diagram follows Engineering Plan v1.1 §7 (38 tables, 7 domains) and adds the 6 tables doc 06 flags as `[ADDITION]`: `blood_consents`, `contact_messages`, `faqs`, `annual_reports`, `infrastructure_facilities`, `data_requests` — 44 application tables in total. It also draws the Spatie pivots (`role_has_permissions`, `model_has_permissions`) that the plan's §7 lists only in part, and lists (but does not draw) the Laravel framework tables. Where this diagram and doc 06 disagree, doc 06 governs.
+This diagram follows Engineering Plan v1.1 §7 (39 tables named, 7 domains — the plan text says 38, corrected Phase 0.1) and adds the 8 tables doc 06 flags as `[ADDITION]`: `blood_consents`, `contact_messages`, `faqs`, `annual_reports`, `infrastructure_facilities`, `data_requests`, `service_types`, `constitution_versions` — 47 application tables in total (49 defined incl. the 2 Spatie pivots, 57 physical incl. the 8 Laravel framework tables). It also draws the Spatie pivots (`role_has_permissions`, `model_has_permissions`) that the plan's §7 lists only in part, and lists (but does not draw) the Laravel framework tables. Where this diagram and doc 06 disagree, doc 06 governs.
 
 ---
 

@@ -8,13 +8,13 @@
 
 ## Context
 
-The platform starts as a small community system (a few thousand users) on infrastructure the organisation can afford and the team can operate. The deployment architecture must support: a Laravel API, a Filament admin panel, a Next.js public website, a PostgreSQL database, a queue worker and scheduler, nightly backups, and a staging environment that is a production copy. No infrastructure exists yet — no server has been provisioned and no domain has been confirmed — so this ADR is Recommended, not Confirmed.
+The platform starts as a small community system (a few thousand users) on infrastructure the organisation can afford and the team can operate. The deployment architecture must support: a Laravel API, a Filament admin panel, a Next.js public website, a MySQL 8.4 LTS database, a queue worker and scheduler, nightly backups, and a staging environment that is a production copy. No infrastructure exists yet — no server has been provisioned and no domain has been confirmed — so this ADR is Recommended, not Confirmed.
 
 ## Options considered
 
-1. **Single VPS, Docker Compose, GitHub Actions** (app/worker/scheduler/PostgreSQL/Redis-when-adopted/Nginx; Ubuntu 24.04 LTS; 4 vCPU/8 GB RAM/80 GB SSD to start).
+1. **Single VPS, Docker Compose, GitHub Actions** (app/worker/scheduler/MySQL 8.4/Redis-when-adopted/Nginx; Ubuntu 24.04 LTS; 4 vCPU/8 GB RAM/80 GB SSD to start).
 2. **Managed platform (PaaS)** — e.g. a Laravel hosting platform or a generic PaaS. Less operational work, but recurring cost, less control, and a dependency on a provider the organisation has not chosen.
-3. **Shared hosting (cPanel)** — cheapest, but no Docker, no queue worker supervision, often no PostgreSQL (see ADR-003), and no CI/CD story. Rejected for the primary deployment; it remains relevant only as the fallback that would force the MySQL decision in ADR-003.
+3. **Shared hosting (cPanel)** — cheapest, and now database-compatible (MySQL is ubiquitous there), but still no Docker, no queue worker supervision, and no CI/CD story. Rejected for the primary deployment for those operational reasons, not for the database.
 4. **Multi-server / Kubernetes from day one** — rejected: operational complexity wildly disproportionate to the workload.
 
 ## Advantages
@@ -27,7 +27,7 @@ The platform starts as a small community system (a few thousand users) on infras
 
 ## Disadvantages
 
-- **Single point of failure:** one VPS means one host. If it fails, the system is down until it is rebuilt from the backup (RTO 4h, Doc 11 §6.2). That is accepted at this scale and is mitigated by the off-server backup and the documented rebuild procedure — not by buying redundancy the budget does not support.
+- **Single point of failure:** one VPS means one host. If it fails, the system is down until it is rebuilt from the backup (RTO 4h, Doc 11 §7.2). That is accepted at this scale and is mitigated by the off-server backup and the documented rebuild procedure — not by buying redundancy the budget does not support.
 - **The team operates the server:** OS patching, firewall, Docker, TLS renewal, and monitoring are the team's responsibility. A PaaS would remove some of that; the cost is control and money.
 - **VPS access has been intermittent** in this project's history (the workspace's standing notes record repeated SSH resets and a period when the VPS-hosted subdomains were unreachable). Deploys must not depend on a single fragile access route; the documented fallback (a self-contained script run by Fahim on the VPS) exists for that reason.
 - **The Next.js website's hosting is undecided** (same VPS vs separate hosting — Doc 11 §11 item 1). This ADR does not decide it.
@@ -51,7 +51,7 @@ The platform starts as a small community system (a few thousand users) on infras
 
 ## Final recommendation
 
-**Single VPS (4 vCPU / 8 GB RAM / 80 GB SSD to start, Ubuntu 24.04 LTS), Docker Compose (app/worker/scheduler/PostgreSQL/Nginx, Redis only when adopted), GitHub Actions CI/CD (gates → staging auto-deploy → manual-approval production with pre-deploy backup), Let's Encrypt with auto-renewal, Cloudflare free tier as an optional layer.** Status is Recommended until the hosting account and the organisation's domain are confirmed.
+**Single VPS (4 vCPU / 8 GB RAM / 80 GB SSD to start, Ubuntu 24.04 LTS), Docker Compose (app/worker/scheduler/MySQL 8.4/Nginx, Redis only when adopted), GitHub Actions CI/CD (gates → staging auto-deploy → manual-approval production with pre-deploy backup), Let's Encrypt with auto-renewal, Cloudflare free tier as an optional layer.** Status is Recommended until the hosting account and the organisation's domain are confirmed.
 
 ## Reason for selection
 

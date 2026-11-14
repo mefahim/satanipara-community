@@ -42,7 +42,7 @@ Laravel 13 requires PHP ≥ 8.3 and supports up to 8.5. The project must choose 
 
 ## Maintenance implications
 
-- Pin the exact PHP version in the deployment (Docker image / server) and in `composer.json` (`"php": "^8.4"` or `"^8.5"` as decided at scaffold). Record the decision and its support end-date in the runbook so the next upgrade is scheduled, not discovered.
+- Pin the exact PHP version in the deployment (Docker image / server) and in `composer.json` (`"php": "^8.4"` or `"^8.5"` as decided at scaffold). Record the decision and its support end-date in the runbook so the next upgrade is scheduled, not discovered. **The `^8.4` floor is not relaxable to 8.3: spatie/laravel-backup v10.4.0 requires `php ^8.4` (v10.3.3 allowed `^8.3`), so PHP 8.3 cannot run the current backup package (Phase 0.1, ADR-013). The effective PHP floor is therefore 8.4.**
 - If 8.4 is chosen, plan the move to 8.5 (or its successor) during 2028; if 8.5 is chosen, during 2029.
 
 ## Final recommendation

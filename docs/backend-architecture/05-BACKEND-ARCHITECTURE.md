@@ -13,7 +13,7 @@
 
 This document defines the Laravel backend architecture for the Satanipara Community platform: the framework and language versions, the modular monolith structure, the layering rules, the API-first frontend separation, the authentication architecture, the state machines, and the supporting services (caching, queues, scheduler, media, notifications).
 
-**Architectural stance, in one paragraph:** a single Laravel application — a **modular monolith** — exposing one versioned REST API (`/api/v1`) backed by one PostgreSQL database, with a Filament 5 admin panel served from the same application. The public website (Next.js) and the future mobile app (Flutter) are thin clients over that API; they hold no business logic and no data of their own. The Direction D prototype is a **design reference** for the frontend, not the production frontend and not a backend. The system is built for a small community on a single VPS, so every infrastructure choice starts with the simplest option that meets the requirement, and upgrades only when a stated trigger is met.
+**Architectural stance, in one paragraph:** a single Laravel application — a **modular monolith** — exposing one versioned REST API (`/api/v1`) backed by one MySQL 8.4 LTS database (InnoDB), with a Filament 5 admin panel served from the same application. The public website (Next.js) and the future mobile app (Flutter) are thin clients over that API; they hold no business logic and no data of their own. The Direction D prototype is a **design reference** for the frontend, not the production frontend and not a backend. The system is built for a small community on a single VPS, so every infrastructure choice starts with the simplest option that meets the requirement, and upgrades only when a stated trigger is met.
 
 **What this document does not contain:** no Laravel code, no migrations, no dashboard UI or mockups, no redesign of Direction D, no prices, no invented dates, stats, or people. Version constraints use caret ranges (`^13.0`, `^4.0`, …) and no patch numbers, per the Decision Sheet.
 
@@ -62,7 +62,7 @@ This document defines the Laravel backend architecture for the Satanipara Commun
 | Laravel Boost | `laravel/boost ^2.0` | First-party MCP server / upgrade assistance. |
 | Laravel Tinker | `laravel/tinker ^3.0` | Console REPL. |
 
-**Plan v1.1 versions superseded (per the Decision Sheet):** Laravel 12 → 13 (see §2.1); Filament 3 → 5; PostgreSQL 16 → current major at scaffold time (verify; do not assert PostgreSQL 18 dates without re-checking — Research Notes §6, §9); Redis 7 + Horizon as day-one → deferred to when justified (§10); Next.js 15 / Flutter 3.x → verify the current stable at build time, do not assert.
+**Plan v1.1 versions superseded (per the Decision Sheet):** Laravel 12 → 13 (see §2.1); Filament 3 → 5; PostgreSQL 16 → MySQL 8.4 LTS (Phase 0.1, Confirmed — Fahim; ADR-003); Redis 7 + Horizon as day-one → deferred to when justified (§10); Next.js 15 / Flutter 3.x → verify the current stable at build time, do not assert.
 
 ### 2.4 Laravel 13 changes the codebase must respect
 
@@ -75,49 +75,44 @@ From the Laravel 13 upgrade guide and release notes (Research Notes §1). These 
 - **Queue routing by class:** `Queue::route(JobClass::class, connection: ..., queue: ...)` defines default queue/connection routing centrally. Use it instead of scattering connection names through dispatch calls.
 - **Attributes:** `#[Middleware]` and `#[Authorize]` on controllers; queue-job attributes `#[Tries]`, `#[Backoff]`, `#[Timeout]`, `#[FailOnTimeout]`. Prefer attributes over fluent configuration where the framework supports them, for readability.
 - **JSON:API resources:** Laravel 13 ships first-party JSON:API resources. The platform's API uses the envelope from the Decision Sheet (`{"data": ..., "meta": {...}}`), **not** JSON:API — the envelope is a standing decision. JSON:API resources are noted as available but are not adopted; if a future client needs JSON:API, that is a separate decision.
-- **AI SDK / vector search:** Laravel 13's AI SDK and native vector search exist, but vector search requires PostgreSQL + `pgvector` (§3) and the AI SDK has no Phase 1 use case. Both are noted as available, not adopted.
+- **AI SDK / vector search:** Laravel 13's AI SDK and native vector search exist, but vector search requires PostgreSQL's vector extension (§3) — unavailable on MySQL 8.4 (ADR-003) — and the AI SDK has no Phase 1 use case. Neither is adopted.
 - **Other upgrade-guide items** (low impact for a new app, recorded for completeness): `upsert` now validates a non-empty `uniqueBy`; model instantiation during `boot()` throws `LogicException`; polymorphic pivot table names are now pluralised when inferred; `Js::from` uses `JSON_UNESCAPED_UNICODE`. None of these changes the architecture; they are listed so the scaffold does not accidentally rely on old behaviour.
 
 ---
 
-## 3. Database decision — PostgreSQL vs MySQL
+## 3. Database decision — MySQL 8.4 LTS + InnoDB (Confirmed)
 
 ### 3.1 Decision
 
-**PostgreSQL is the database, with a narrow lean, for a single-VPS start.** This is the Decision Sheet's confirmed position, following Research Notes §6. It is **not** presented as a foregone conclusion: the deciding constraint is stated below, and the alternative is documented with its own trigger.
+**MySQL 8.4 LTS with InnoDB is the database. Status: Confirmed, 2026-11-14, decided by Fahim (Phase 0.1).** This supersedes the Phase 0 recommendation, which leaned PostgreSQL (narrow lean, VPS-only). The deciding fact is Fahim's confirmed decision; the hosting-portability question that used to decide it (Doc 13 Q-26) is closed. Full reasoning, accepted limitations, and mitigations: ADR-003.
 
-### 3.2 Why PostgreSQL (on a VPS)
+### 3.2 Why MySQL 8.4 LTS (on a VPS)
 
-In order of weight (Research Notes §6):
+In order of weight:
 
-1. **Laravel 13 vector search is PostgreSQL-only** (requires PostgreSQL + `pgvector`). Choosing MySQL closes that door permanently. There is no Phase 1 vector-search use case, but the option value is real for a databank with Bengali/English text.
-2. **Native full-text search is stronger without an extra service** — `tsvector`/`tsquery` with GIN indexes, configurable dictionaries, ranking (`ts_rank`), phrase matching. At this scale (thousands of rows, not millions) it is good enough that no separate search engine is needed (§10.4).
-3. **JSONB** — binary, GIN-indexable across the whole document, with rich operators — reduces the risk of the two most common "we'll regret this later" problems in a databank/ledger app (flexible attributes and audit payloads).
-4. **Transactional DDL** — a failed migration rolls back cleanly, instead of leaving partial schema changes. For a project whose migrations carry financial-integrity constraints, this matters.
+1. **Ubiquitous on cheap Bangladeshi shared/cPanel hosting** — the cheap-hosting exit stays open even though the project starts on a VPS; every cheap host offers it.
+2. **LTS lifecycle:** GA 30 Apr 2024; Premier support to 30 Apr 2029; Extended support to 30 Apr 2032 (Oracle Lifetime Support Policy, 5 + 3 years). The next LTS is 9.7 (GA 21 Apr 2026); upgrade is 8.4 → 9.7 only (skipping an LTS series is not supported).
+3. **Financial integrity is identical:** `DECIMAL(12,2)` / `NUMERIC(12,2)` give exact decimal arithmetic in either engine, provided the application uses `decimal` columns (never float) and `numeric(12,2)` consistently (Decision Sheet). The choice of database does not change money handling.
+4. **InnoDB:** MVCC; clustered primary-key index favouring simple PK lookups; `FOR UPDATE SKIP LOCKED` (MySQL ≥ 8.0.1) so the database queue driver works without double-claims; `CHECK` constraints enforced (since 8.0.16); generated columns + functional indexes; `FULLTEXT` indexes on InnoDB.
+5. **Window functions and CTEs** (including recursive) are supported since MySQL 8.0 and cover the reporting this platform needs. `mysqldump` is a well-understood, one-binary operation.
 
-Other PostgreSQL strengths that apply here: strict SQL semantics, deferrable and partial/exclusion constraints, window functions, CTEs (including recursive), `FILTER` aggregates, materialised views, true MVCC (readers never block writers), and mature logical backup tooling (`pg_dump` / `pg_restore`).
+### 3.3 What MySQL does not give (accepted limitations — record them, do not hide them)
 
-### 3.3 The MySQL counterweight (documented, not dismissed)
+- **No native vector search.** Laravel 13 vector search is PostgreSQL-only. There is no Phase 1 use case; if semantic search is ever wanted, it needs an external service and a new ADR.
+- **Full-text search is less configurable** than PostgreSQL's native search (no built-in Bengali dictionary; weaker stemming/language handling). Bengali search quality was measured on MySQL 8.0.46 in Phase 0.1 (Investigator E): ngram `FULLTEXT` + BOOLEAN MODE is the recommended primary — see §10.4 and ADR-010. Re-test on MySQL 8.4 is required before any performance claim.
+- **DDL is not transactional.** Every DDL statement causes an implicit commit before and after it. A failed multi-statement migration leaves a half-applied schema; there is no automatic rollback. Mitigation (mandatory, not advisory): one DDL statement per migration, idempotent migrations, pre-deploy backup as the only rollback, staging-first migration runs, post-deploy schema-drift check (Doc 06 §10, Doc 11 §4.3).
+- **No partial unique indexes, no exclusion constraints, no deferrable constraints, no materialised views, no `FILTER` aggregates, no JSONB.** The two partial-index invariants in this blueprint (one current committee term; single-holder committee roles) are preserved with STORED generated columns + unique indexes (Doc 06 §§4.1–4.2). `FILTER` aggregates are rewritten as `SUM/COUNT(CASE WHEN …)`. The two JSON columns (`media.variants`, `activity_log.before`/`after`) use MySQL `JSON`. No blueprint query uses a materialised view (the monthly finance summary is computed on read from published entries, not a view — Doc 06 §9.1, Phase 0.1 decision on M-08).
 
-MySQL/MariaDB (LTS line) is a **perfectly adequate database for this workload**, and the better choice **if shared-hosting portability in Bangladesh becomes a requirement**:
+### 3.4 What is verified / unverified
 
-- MySQL is ubiquitous on cheap Bangladeshi shared/cPanel hosting; PostgreSQL is rarely offered there. If the site ever has to move to cheap shared hosting, MySQL/MariaDB is the only practical option.
-- Decimal integrity is **identical** in both: `DECIMAL(p,s)` / `NUMERIC(p,s)` give exact decimal arithmetic in either engine, provided the application uses `decimal` columns (never float) and `numeric(12,2)` consistently (Decision Sheet). The choice of database does not change money handling.
-- Foreign keys on InnoDB are fine for practical purposes; MySQL's window functions and CTEs (since 8.0) cover the reporting this platform needs; `mysqldump` is as well understood as `pg_dump`.
-
-**Trade-off statement (recorded):** PostgreSQL is the better default **on a VPS**; MySQL is the better choice **if shared-hosting portability is a requirement**. Either is defensible. The constraint that decided it here is that the project starts on a single VPS, where hosting availability is not a constraint.
-
-### 3.4 What is unverified
-
-**Bengali full-text search quality is unverified in both engines** (Research Notes §6, §9). PostgreSQL has no built-in Bengali dictionary; MySQL's n-gram parser behaviour for Bengali is likewise untested. Before any search-quality claim is made, a small empirical test with real Bengali names and notices is required. `pg_trgm` (trigram search) is a likely fallback on PostgreSQL; it is not verified here and is not assumed. The search design in §10.4 therefore starts with the simplest mechanism and treats search quality as something to measure, not assert.
+- **Bengali full-text search: measured on MySQL 8.0.46** (Investigator E, Phase 0.1) — boolean-mode ngram `FULLTEXT` recommended. 8.0 vs 8.4 ngram feature-set equivalence verified from the MySQL 8.4 manual §14.9.8; timings on 8.4 not yet measured — re-run required (Doc 13 Q-13, Doc 15 §9).
+- **MySQL 8.4 lifecycle dates** are Oracle Lifetime Support Policy dates, corroborated by secondary summaries; re-verify against dev.mysql.com at scaffold time.
 
 ### 3.5 Version and hosting notes
 
-- PostgreSQL major: **current major at scaffold time** — verify against postgresql.org. Do not assert a specific major or its dates in this blueprint (Research Notes §6, §9: PostgreSQL 18 dates are secondary lifecycle summaries; re-verify).
+- MySQL major: **8.4 LTS** — pinned. Do not assert a specific patch number; resolve at scaffold time.
 - The database runs on the same single VPS as the application in Phase 1 (Docker or a system package — the deployment choice is an operations decision, not an architecture decision). No managed-database service is required at this scale.
-- Connection handling: Laravel's default connection pool behaviour is sufficient at Phase 1 volume (500 concurrent users is the plan's performance budget — Engineering Plan v1.1, cited in the Decision Sheet — and the database is not the bottleneck at that level). PgBouncer or a similar pooler is a future option if connection counts become a problem; it is not adopted on day one.
-
----
+- Connection handling: Laravel's default connection handling is sufficient at Phase 1 volume (500 concurrent users is the plan's performance budget — Engineering Plan v1.1, cited in the Decision Sheet — and the database is not the bottleneck at that level). **No pooler is adopted.** The PgBouncer option from the Phase 0 draft is deleted: no MySQL pooler is introduced without a new ADR.
 
 ## 4. Modular monolith structure
 
@@ -131,20 +126,20 @@ Microservices are rejected for Phase 1: they would multiply the operational surf
 
 Per Engineering Plan v1.1 §6, reconciled with the audit's 37 features (Audit Findings §3). The module list is the Decision Sheet's M1–M12 naming; nothing here renames a module.
 
-| Module | Name | Phase | Owns (from the audit) |
+| Module | Name | Product phase (plan v1.1) | Roadmap phase (Doc 12) | Owns (from the audit) |
 |---|---|---|---|
-| **M1** | Identity & Membership | Phase 1 | Registration, member approval, profiles, family records, account lifecycle, password reset (Super-Admin-mediated), data-rights requests. Audit #30–#33, #37. |
-| **M2** | Community Profile | Phase 1 | Households/persons databank, statistics (computed, never hand-typed), professionals directory, institutions, landmarks, freedom fighters. Audit #2–#6. Infrastructure (#6) is a **reserved** sub-area: the permission exists (doc 04 §4.2) but the records and UI are built only when the client supplies facility data. |
-| **M3** | Organisation | Phase 1 | History/timeline (verified milestones only), constitution (versions + documents), committee terms/members, advisors, past leaders, achievements. Audit #7–#11. |
-| **M4** | Annual Activities | Phase 1 | Activities by year and category (category stored per activity — the prototype's category filter had no data behind it, Audit Findings §8.7), activity detail, linked reports. Audit #12–#13. |
-| **M5** | Expatriate Support | Phase 1 | Request intake, Request IDs, assignment, status workflow, updates/photos, itemised expenses, ERT roster, public tracking. The platform's most sensitive module (Plan v1.1 §6). Audit #14–#17. |
-| **M6** | Blood Donor | Phase 1 | Donor registry (computed availability — 90-day rule), donor search, emergency blood requests, donor-side consent and phone reveal. Audit #18–#19. |
-| **M7** | Content | Phase 1 | Notices, news, events, job circulars, FAQs, gallery (photos), video gallery (placeholder in the prototype — Audit Findings §3 #25; the module exists, video records are built when the client supplies video), media library. Audit #20–#25, #36. |
-| **M8** | Finance | Phase 1 | Immutable ledger, categories, project accounts, monthly summaries, annual reports. Audit #26–#29. |
-| **M9** | Notifications | Phase 1 | Notification service (Web Push primary, in-app list, email optional Phase 2, no SMS). Audit #34. |
-| **M10** | Admin & Reporting | Phase 1 | Filament dashboard, exports, activity/audit-log viewer, system health. Audit #32 (Super Admin dashboard — absent in the prototype, to be built). |
-| **M11** | Public Web Experience | Phase 1 | The Next.js public website. This module is the **consumer** of the API, not a backend module — its backend footprint is the public API surface, the SEO/bilingual routing contract, and the caching rules for public pages. |
-| **M12** | Mobile App | Phase 3 | The Flutter app. Phase 1 backend work for M12 is limited to: token auth that already works for mobile (§8), push-notification device registration (M9), and API versioning that does not break when the app ships. No app is built in Phase 1. |
+| **M1** | Identity & Membership | Phase 1 | Phase 2 | Registration, member approval, profiles, family records, account lifecycle, password reset (Super-Admin-mediated), data-rights requests. Audit #30–#33, #37. |
+| **M2** | Community Profile | Phase 1 | Phase 3 | Households/persons databank, statistics (computed, never hand-typed), professionals directory, institutions, landmarks, freedom fighters. Audit #2–#6. Infrastructure (#6) is a **reserved** sub-area: the permission exists (doc 04 §4.2) but the records and UI are built only when the client supplies facility data. |
+| **M3** | Organisation | Phase 1 | Phase 3 | History/timeline (verified milestones only), constitution (versions + documents), committee terms/members, advisors, past leaders, achievements. Audit #7–#11. |
+| **M4** | Annual Activities | Phase 1 | Phase 4 | Activities by year and category (category stored per activity — the prototype's category filter had no data behind it, Audit Findings §8.7), activity detail, linked reports. Audit #12–#13. |
+| **M5** | Expatriate Support | Phase 1 | Phase 5 | Request intake, Request IDs, assignment, status workflow, updates/photos, itemised expenses, ERT roster, public tracking. The platform's most sensitive module (Plan v1.1 §6). Audit #14–#17. |
+| **M6** | Blood Donor | Phase 1 | Phase 5 | Donor registry (computed availability — 90-day rule), donor search, emergency blood requests, donor-side consent and phone reveal. Audit #18–#19. |
+| **M7** | Content | Phase 1 | Phase 4 | Notices, news, events, job circulars, FAQs, gallery (photos), video gallery (placeholder in the prototype — Audit Findings §3 #25; the module exists, video records are built when the client supplies video), media library. Audit #20–#25, #36. |
+| **M8** | Finance | Phase 1 | Phase 6 | Immutable ledger, categories, project accounts, monthly summaries, annual reports. Audit #26–#29. |
+| **M9** | Notifications | Phase 1 | Phase 5 (partial) + Phase 7 (remainder) | Notification service (Web Push primary, in-app list, email optional plan Phase 2, no SMS). Audit #34. |
+| **M10** | Admin & Reporting | Phase 1 | Phase 8 (separate approval) | Filament dashboard, exports, activity/audit-log viewer, system health. Audit #32 (Super Admin dashboard — absent in the prototype, to be built). |
+| **M11** | Public Web Experience | Phase 1 | Phase 7 | The Next.js public website. This module is the **consumer** of the API, not a backend module — its backend footprint is the public API surface, the SEO/bilingual routing contract, and the caching rules for public pages. |
+| **M12** | Mobile App | Phase 3 | Future Mobile | The Flutter app. Phase 1 backend work for M12 is limited to: token auth that already works for mobile (§8), push-notification device registration (M9), and API versioning that does not break when the app ships. No app is built in Phase 1. |
 
 ### 4.3 Physical layout
 
@@ -201,7 +196,7 @@ Errors travel the reverse path through the **exception handler** (§7.2), which 
 
 - Every mutating endpoint (POST/PUT/PATCH/DELETE) has a **Form Request** class. Validation rules live there and nowhere else. Controllers never validate inline.
 - Form Requests carry the **authorisation check** (`authorize()` method) as the first gate: the request is rejected before validation runs if the caller lacks the permission. The policy check in the service layer is the second gate (defence in depth — the Form Request checks the permission, the policy checks the record-level scope).
-- Validation rules encode the audit's findings as server-side rules (Audit Findings §7.1 was client-side only and is **not** trusted): names ≥ 2 characters, details/messages ≥ 10 characters, phone = ≥ 10 digits after stripping non-digits (with the additional rule that Bangladeshi mobile numbers must start with `01` — a tightening over the prototype, which accepted any 10 digits; the exact format rule is confirmed at build time against the client's real numbers), hospital name ≥ 3 characters, consent checkbox required where the flow demands it, password per doc 04 §5.1 (12 characters minimum, complexity, history).
+- Validation rules encode the audit's findings as server-side rules (Audit Findings §7.1 was client-side only and is **not** trusted): names ≥ 2 characters, details/messages ≥ 10 characters, phone = ≥ 10 digits after stripping non-digits (with the additional rule that Bangladeshi mobile numbers must start with `01` — a tightening over the prototype, which accepted any 10 digits; the exact format rule is confirmed at build time against the client's real numbers), hospital name ≥ 3 characters, consent checkbox required where the flow demands it, password per doc 04 §5.1 (12 characters minimum, no composition rules, mandatory breach screening, history of 5).
 - Validation messages are **bilingual** (Bengali + English) and come from the language files, not from hard-coded strings. The prototype's error strings (Audit Findings §7.2) are the starting point for the Bengali wording, reviewed for tone at build time.
 - File-upload validation (size, MIME type, image dimensions) lives in the Form Request too, before the file reaches the media pipeline (§11).
 
@@ -222,7 +217,7 @@ Errors travel the reverse path through the **exception handler** (§7.2), which 
 ### 5.5 Service classes — where business logic lives
 
 - Each module has service classes that own its business logic: `ExpatriateRequestService` (intake, assignment, transitions, expenses), `FinanceService` (entry, approval, reversal, summaries), `MemberService` (registration, approval, suspension), `DonorService` (registration, consent, matching), `ContentService` (draft → publish → archive), `NotificationService` (dispatch — M9), `MediaService` (upload pipeline — §11), `StatisticsService` (computed aggregates — doc 06 §9).
-- Services are the **transaction boundary**: a service method that changes more than one record wraps the whole change in a database transaction, including the audit-log write (doc 04 §5.7 — an action without its log entry cannot commit). A failed step rolls back everything, including dispatched jobs where the queue driver supports it (the database queue driver participates in transactions — Research Notes §7.1 — so a job dispatched inside a rolled-back transaction never exists).
+- Services are the **transaction boundary**: a service method that changes more than one record wraps the whole change in a database transaction, including the audit-log write (doc 04 §5.7 — an action without its log entry cannot commit). Transactions wrap DML only — DDL is not transactional on MySQL (§3.3); migrations never rely on transactional rollback. A failed step rolls back everything, including dispatched jobs where the queue driver supports it (the database queue driver participates in transactions — Research Notes §7.1 — so a job dispatched inside a rolled-back transaction never exists).
 - Services are the **state-machine boundary**: status transitions go through the service, which validates the transition against the machine (§9) before touching the model. Models never change their own status directly outside the service.
 - Services are **framework-thin**: they depend on models, events, and other services — not on HTTP objects, not on the request, not on the session. That makes them unit-testable without HTTP.
 
@@ -268,16 +263,16 @@ What the prototype is **not**:
 
 | Client | Technology (per Plan v1.1, versions verified at build time) | Auth | Phase |
 |---|---|---|---|
-| **Public web** | **Next.js** (version: verify current stable at build time; Plan v1.1 says Next.js 15 — superseded as a version claim, not as a technology choice). Server-rendered public pages with ISR (5-minute revalidate; on-demand purge on urgent notices — Plan v1.1 §10). Bilingual routing by URL (`/{lang}/…` — Plan v1.1 §10, M11), light/dark mode, fully responsive. | Sanctum cookie auth (same top-level domain — §8.1). | Phase 1 |
-| **Admin panel** | **Filament 5.x** (`^5.0`), served from the same Laravel application. Not a separate app, not a separate deployment. | Session auth (web guard) through the same Laravel session. Panel access gated by `canAccessPanel()` + the permission set (doc 04). | Phase 1 |
-| **Mobile app** | **Flutter** (version: verify current stable at build time; Plan v1.1 says Flutter 3.x — superseded as a version claim). Bottom navigation: Home, Community, Services, Profile (Plan v1.1 §6, M12). Offline read cache for notices and directory; push deep-links; optional biometric unlock; app-version force-update policy. | Sanctum personal access tokens (§8.2). | Phase 3 |
+| **Public web** | **Next.js** (version: verify current stable at build time; Plan v1.1 says Next.js 15 — superseded as a version claim, not as a technology choice). Server-rendered public pages with ISR (5-minute revalidate; on-demand purge on urgent notices — Plan v1.1 §10). Bilingual routing by URL (`/{lang}/…` — Plan v1.1 §10, M11), light/dark mode, fully responsive. | Sanctum cookie auth (same top-level domain — §8.1). | Phase 7 (Doc 12; plan Phase 1) |
+| **Admin panel** | **Filament 5.x** (`^5.0`), served from the same Laravel application. Not a separate app, not a separate deployment. | Session auth (web guard) through the same Laravel session. Panel access gated by `canAccessPanel()` + the permission set (doc 04). | Phase 8 (Doc 12; skeleton in Phase 1) |
+| **Mobile app** | **Flutter** (version: verify current stable at build time; Plan v1.1 says Flutter 3.x — superseded as a version claim). Bottom navigation: Home, Community, Services, Profile (Plan v1.1 §6, M12). Offline read cache for notices and directory; push deep-links; optional biometric unlock; app-version force-update policy. | Sanctum personal access tokens (§8.2). | Future Mobile (plan Phase 3) |
 
 **Rules:**
 
 1. **All clients consume `/api/v1`.** There is no second API, no admin-only API, and no direct database access from any client. The Filament panel is the one exception to "consume the API" — it runs inside the Laravel application and uses the same services and policies directly (not over HTTP), because it is part of the application. That is a deliberate, documented exception: the panel shares the service layer, not the HTTP layer.
 2. **No business logic in any client.** Validation that exists in a client is for user experience only (immediate feedback); the server re-validates everything (Form Requests, §5.2). A client that disagrees with the server loses.
 3. **No hard-coded content in any client.** Every piece of content on the public site comes from the API (Plan v1.1 §6, M11). The prototype's hard-coded arrays (`DIRECTORY`, `DONORS`, `FINANCE`, … — Audit Findings §2.5) are replaced by API responses.
-4. **The API is versioned from day one.** The base is `/api/v1`. A breaking change creates `/api/v2`; it never silently changes `/api/v1`. The Flutter app (Phase 3) depends on this.
+4. **The API is versioned from day one.** The base is `/api/v1`. A breaking change creates `/api/v2`; it never silently changes `/api/v1`. The Flutter app (Future Mobile; plan Phase 3) depends on this.
 5. **The public website's routes are not the prototype's hash routes.** The prototype uses hash routing (`#/home`, `#/expatriate`, … — Audit Findings §2.1). The production Next.js site uses real URL routes (`/{lang}/`, `/{lang}/expatriate`, …) for SEO and shareability. The prototype's 18 hash views map to the production route set (the mapping is a frontend-build decision, recorded in the frontend specification — not in this backend document).
 
 ### 6.3 Filament 5 admin panel
@@ -311,7 +306,7 @@ What the prototype is **not**:
 
 ### 7.3 Endpoint inventory (summary)
 
-Engineering Plan v1.1 estimated **~70 endpoints** under `/api/v1`. The full inventory in doc 07 §14 lists **108 endpoints** (6 wholly proposed, 4 with behaviour-level proposals) against the schema in doc 06; the OpenAPI specification is produced in Sprint 1 of development (Plan v1.1 §8 note) and must cover the doc 07 inventory and no others without a scope decision. The resource groups below are the complete scope; the OpenAPI document must cover all of them and no others without a scope decision:
+Engineering Plan v1.1 estimated **~70 endpoints** under `/api/v1`. The full inventory in doc 07 §14 lists **132 endpoints** (7 wholly proposed, 0 with behaviour-level proposals outstanding — the 4 Phase 0 behaviour-level proposals were all decided in Phase 0.1) against the schema in doc 06; the OpenAPI specification is produced in Sprint 1 of development (Plan v1.1 §8 note) and must cover the doc 07 inventory and no others without a scope decision. The resource groups below are the complete scope; the OpenAPI document must cover all of them and no others without a scope decision:
 
 | Group | Resources (summary) |
 |---|---|
@@ -331,7 +326,7 @@ Engineering Plan v1.1 estimated **~70 endpoints** under `/api/v1`. The full inve
 ### 7.4 Rate limiting
 
 - **Public, unauthenticated endpoints** (request intake, tracking, blood-request submit, contact, donor search): throttled per IP (e.g. 60 requests/minute per IP for reads, 10 submissions/minute per IP for writes — exact numbers are configuration, set at deployment and recorded in the runbook). The purpose is to prevent spam intake and ID-enumeration on tracking (a tracking lookup that is throttled cannot be brute-forced across the `EXP-YYYY-####` space quickly).
-- **Authenticated endpoints:** throttled per user (generous — e.g. 300 requests/minute) so a bug in a client cannot take the API down.
+- **Authenticated endpoints:** throttled per user at **120 requests/minute** (decided Phase 0.1 — Doc 07 §9; the Phase 0 "e.g. 300" figure is deleted) so a bug in a client cannot take the API down.
 - **Login:** throttled per the rules in doc 04 §5.2 (5 failures / 15 minutes, 10 failures / 30-minute lock).
 - Throttle responses use the standard error envelope with `error.code` indicating throttling, and a `Retry-After` header.
 
@@ -355,7 +350,7 @@ Authentication is **Laravel Sanctum 4.x** (`^4.0`), per the Decision Sheet and R
 
 - The `auth:sanctum` guard tries the **session cookie first, then the `Authorization` header token**. One guard serves both clients; the route definitions do not branch by client type.
 - **Abilities:** tokens can be granted abilities (e.g. `['server:update']` in the docs' example). For first-party SPA requests `tokenCan()` always returns `true` — real authorisation still belongs in policies/gates (Research Notes §3). Token abilities are therefore used only as a coarse scope on mobile tokens (e.g. a token issued for a read-only kiosk, if such a thing is ever needed), never as the authorisation mechanism.
-- **Token expiry:** by default Sanctum tokens **never expire**. The application configures a global `expiration` (in minutes) in `config/sanctum.php` and/or per-token expiry at creation. Expired tokens are pruned on schedule (`php artisan sanctum:prune-expired`, daily — §10.5). The exact expiry (e.g. 90 days for a mobile token, with re-login on expiry) is a configuration decision recorded at build time. A token that never expires is a credential that can never be revoked by time — Phase 1 does not allow that.
+- **Token expiry:** by default Sanctum tokens **never expire**. The application configures a global `expiration` (in minutes) in `config/sanctum.php` and/or per-token expiry at creation. Expired tokens are pruned on schedule (`php artisan sanctum:prune-expired`, daily — §10.5). The expiry is **30 days for mobile tokens** (decided Phase 0.1 — Doc 04 §5.4, Doc 07 §8.2), with re-login on expiry; web tokens follow the session rules in Doc 04 §5.4. A token that never expires is a credential that can never be revoked by time — Phase 1 does not allow that.
 - **Revocation:** deleting the token row (`$user->tokens()->delete()`, `currentAccessToken()->delete()`, or a specific token id). There is no server-side token-introspection endpoint; revocation is a database delete and takes effect immediately.
 - **Device/session management (designed around Sanctum's limits):** Sanctum itself has **no per-device session list, no "log out everywhere", and no refresh-token flow** (Research Notes §3). The application builds these on top:
   - *Per-device list:* the `user_devices` table (doc 06 §2) records each device (FCM token, platform, last seen) at login/token creation. The profile page lists them.
@@ -391,7 +386,7 @@ Registration (name + mobile + password)
 |---|---|---|
 | OTP login (SMS or authenticator) | Future. Decision Sheet: NO OTP in Phase 1. | Client request + a funded SMS/OTP provider + a decision on who pays per-message costs. |
 | MFA (TOTP) for Super Admins | Optional in Phase 1, recommended (doc 04 §5.8). | Client decision at handover. The system is built so enabling it is configuration, not a rebuild. |
-| Self-service password reset by email | Future. | An email service is adopted (M9 email is Phase 2) and email addresses are collected and verified. |
+| Self-service password reset by email | Future. | An email service is adopted (M9 email is plan Phase 2) and email addresses are collected and verified. |
 | Social login (Socialite) | Not planned. | No use case — the community's identity is a mobile number, not a social account. |
 | Biometric unlock (mobile) | Phase 3 (M12), app-side only. | Flutter app build. It unlocks the app locally; it does not replace server authentication. |
 
@@ -428,7 +423,7 @@ Any state ──(applicant cancels)──▶ cancelled        [see rules below]
 | `pending → accepted` | Assigned helper, or a helper taking the request, or Super Admin. | Assignment is recorded (helper id + timestamp). A request cannot be accepted by two helpers — the first acceptance wins; a concurrent second acceptance is rejected (row-level lock / atomic update). |
 | `accepted → in_progress` | Assigned helper or Super Admin. | Means work has started. The helper may add updates and expenses from this state onward. |
 | `in_progress → completed` | Assigned helper or Super Admin. | **Requires at least one expense entry OR an explicit "no expenses incurred" declaration** (Plan v1.1 §9.1). A request cannot be marked completed with an empty expense record and no declaration. The completion must include a summary update (what was done) and, where applicable, a photo. |
-| `completed → closed` | The **applicant** confirms (or a Super Admin closes it after confirmation is received out of band and recorded). | Closure is the applicant's act, not the helper's. A helper cannot close their own completed request. |
+| `completed → closed` | The **applicant** confirms (or a Super Admin closes it after confirmation is received out of band and recorded). | Closure is the applicant's act, not the helper's. A helper cannot close their own completed request. Guest applicants confirm via the secret-authenticated X11 endpoint (Doc 07 §14.7). |
 | `pending → rejected` | Super Admin (or the assigned helper, where the organisation allows it — the permission `expatriate.requests.reject` is Super Admin + assigned helper; the policy decision is recorded at build time). | A reason is **mandatory**. The applicant is notified with the reason. |
 | Any state → `cancelled` | The **applicant** (their own request), or a Super Admin with a reason. | Cancellation is terminal. A cancelled request cannot be re-opened; a new request is submitted instead. |
 | — | — | `pending → completed` directly is **illegal**. `completed → in_progress` (re-opening) is **illegal** — if completed work proves incomplete, the Super Admin creates a follow-up request linked to the original, or the applicant submits a new request. |
@@ -440,6 +435,10 @@ Any state ──(applicant cancels)──▶ cancelled        [see rules below]
 - **Expenses:** itemised (product cost + transport). There is **no service-charge field** anywhere (Decision Sheet). Expense lines are added by the assigned helper (or Super Admin) and are visible to the applicant in tracking (totals) and to admins in full.
 - **Request IDs:** server-generated, unique, format `EXP-YYYY-####` (Decision Sheet). The prototype's random IDs could collide (Audit Findings §8.10) and its `created` date was hard-coded. The real system generates the ID from a per-year sequence inside a transaction, so uniqueness is guaranteed, and `created_at` is the real timestamp.
 - **Open question D11:** the wizard is 3 steps in the Direction D build but Design System §7.1 describes 4 steps. This does **not** change the state machine — the machine governs the request after submission, not the form's step count. D11 is recorded as open in doc 04 §11 and in doc 06; it is a UX question for the frontend build.
+
+**Tracking timeline (4 nodes, R-14).** The public tracking view shows the four progress nodes Pending → Accepted → In Progress → Completed; `closed` is shown as a completion banner, and `rejected`/`cancelled` replace the timeline with a terminal-state notice (Doc 07 X2, Doc 14 AC-M5-09).
+
+**Guest confirm-close.** A guest applicant confirms completion via the secret-authenticated X11 endpoint (Doc 07 §14.7). There is no completion-notification channel for guests in Phase 1 — tracking IS the notification.
 
 ### 9.2 Member lifecycle (M1)
 
@@ -474,7 +473,7 @@ draft ──(review)──▶ review ──(publish)──▶ published ──(e
 
 | Rule | Detail |
 |---|---|
-| Draft → review → published | Super Admin authors and publishes in Phase 1 (doc 04 §6.3). When a Content Editor role exists, the editor authors and the Super Admin publishes (enforced separation). |
+| Draft → review → published | Super Admin authors and publishes in Phase 1 (doc 04 §6.3). In Phase 1 `review` is a same-person checkpoint, not a second-person approval; the state exists so the future Content Editor split needs no schema change. When a Content Editor role exists, the editor authors and the Super Admin publishes (enforced separation). |
 | Scheduled publish | A `publish_at` timestamp. The scheduler (§10.5) publishes due items. A scheduled item is not visible publicly before its time. |
 | Expiry / auto-archive | Notices carry an `expires_at`. At expiry the scheduler moves them to `archived` automatically. Archived notices remain visible as history (where the archive is public) but no longer appear in the active list or the homepage ticker. |
 | Editing a published item | Creates a **new revision**; the published version stays live until the new revision is published. There is no silent in-place edit of live content. (Revision history is a content-table concern — doc 06 §5.) |
@@ -535,7 +534,7 @@ submitted ──(matching donors notified)──▶ notified
 Per the Decision Sheet and Research Notes §7.1: **the queue driver is `database` to start**. Zero new services; the default `QUEUE_CONNECTION` in Laravel's shipped config is already `database`.
 
 - The `jobs` and `failed_jobs` tables are the standard Laravel tables (created by the default migration).
-- The database driver uses `FOR UPDATE SKIP LOCKED` on PostgreSQL, so concurrent workers do not double-claim jobs.
+- The database driver uses `FOR UPDATE SKIP LOCKED` (MySQL ≥ 8.0.1), so concurrent workers do not double-claim jobs.
 - **Transactional participation is a feature, not a footnote:** a job dispatched inside a rolled-back transaction never exists. This is relied on by the audit-log rule (doc 04 §5.7) — a notification job dispatched by a service that then rolls back is correctly never sent.
 - **The worker runs under Supervisor/systemd, never `queue:listen` in production** (Research Notes §7.1). `queue:listen` reloads the framework on every job and is a development tool.
 - **Queue routing by class** (`Queue::route(...)`, §2.4) assigns jobs to queues centrally: e.g. notifications on `notifications`, media processing on `media`, backups on `maintenance`. A single worker processes the default queue; additional workers are added per queue when volume justifies it.
@@ -569,11 +568,11 @@ The Laravel scheduler (`routes/console.php`, run by a single cron entry) owns al
 
 ### 10.4 Search
 
-Per the Decision Sheet and Research Notes §7.3: **start with Scout's `database` engine** (or plain `whereFullText` / `whereLike` Eloquent queries — `whereLike()` exists since Laravel 11.34 and emits `LIKE` on MySQL, `ILIKE` on PostgreSQL). No external search service on day one.
+Per the Decision Sheet and Research Notes §7.3: **start with Scout's `database` engine in BOOLEAN MODE** (or plain `whereFullText` / `whereLike` Eloquent queries — `whereLike()` exists since Laravel 11.34 and emits `LIKE` on MySQL). No external search service on day one.
 
 - **What is searchable:** directory entries (name/role/area, BN+EN), donors (name/area), activities, notices/news/events/jobs (title/body), FAQs. Search is scoped by the caller's permissions (a public search never returns members-only or private records).
+- **Bengali search — measured (Phase 0.1, Investigator E, MySQL 8.0.46):** ngram `FULLTEXT` + **BOOLEAN MODE** is the recommended primary (boolean counts identical to `LIKE '%term%'` in every single-word case). **NATURAL LANGUAGE MODE must NOT be the default** (it matched ~100% of rows, e.g. `রক্তদান` → 1800/1800, top-20 precision 8/20) — and Scout's database engine defaults to natural-language mode, so boolean mode must be set explicitly if Scout is adopted. `LIKE 'term%'` with a B-tree index is for prefix/autocomplete (never `term*`). Minimum 2 characters per term; escape boolean operators; split multi-word input with `+` AND operators. Spelling variants are NOT tolerated by any approach. Re-test on MySQL 8.4 is required before any performance claim (Doc 13 Q-13, Doc 15 §9).
 - **Meilisearch later, only if justified:** typo tolerance, faceting, or Bengali search quality demonstrably failing. It is a clean additive swap behind the Scout driver, not a rewrite. The trigger is evidence (a failed empirical test — §3.4), not enthusiasm.
-- **Bengali FTS quality is unverified** (§3.4). No search-quality claim is made in this blueprint.
 
 ### 10.5 Media pipeline — see §11
 
@@ -646,10 +645,10 @@ Per Engineering Plan v1.1 §6 (M9): **one Notification Service — every module 
 ## 13. Backup and recovery (summary — detail in doc 06 §12)
 
 - **Tool:** `spatie/laravel-backup` v10 (Decision Sheet; Research Notes §7.5).
-- **Schedule:** nightly `backup:run` — database (`pg_dump`) + uploads (`storage/app/public`).
+- **Schedule:** nightly `backup:run` — database (`mysqldump`) + uploads (`storage/app/public`).
 - **Destinations:** local **plus one off-server S3-compatible disk**. The package's own documentation warns: *"If you only use the local disk … and that disk crashes you will have nothing left but tears"* (Research Notes §7.5). A local-only backup is not a backup.
-- **Cleanup:** `backup:clean` on schedule, per the retention policy (30 days — doc 06 §12).
-- **Restore test:** **monthly automated restore check + quarterly full restore rehearsal, mandatory, documented** (doc 06 §13, doc 11 §6.3, ADR-013). Untested backups are the common failure; the restore test is a scheduled, evidenced activity, not a hope.
+- **Cleanup:** `backup:clean` on schedule, per the retention policy (daily 30 days / weekly 12 weeks / monthly 12 months — doc 06 §12).
+- **Restore test:** **monthly automated restore check + quarterly full restore rehearsal, mandatory, documented** (doc 06 §13, doc 11 §7.3, ADR-013). Untested backups are the common failure; the restore test is a scheduled, evidenced activity, not a hope.
 - **RPO 24 hours / RTO 4 hours** (per Engineering Plan v1.1, cited in the Decision Sheet). Nightly backups give an RPO of up to 24 hours; the RTO of 4 hours is the target for restoring the application and database from the off-server backup onto a fresh VPS.
 - **Exclusions:** `storage/framework` (cache/views/sessions) is excluded. **Never put an unencrypted `.env` in a backup.**
 
@@ -683,13 +682,13 @@ Per Engineering Plan v1.1, cited in the Decision Sheet as **plan estimates, not 
 
 ## 15. Changes from Engineering Plan v1.1
 
-This document **agrees** with Engineering Plan v1.1 on: the modular monolith (§4), the M1–M12 module catalogue, one API/one database, PostgreSQL, Sanctum, Spatie Permission, Filament admin, Next.js public web, Flutter app later, the state machines (§9), statistics computed not stored, money entries never edited/deleted (reversal only), RPO 24h / RTO 4h, the API-first approach under `/api/v1` (108-endpoint inventory in doc 07; the plan estimated ~70), Web Push (VAPID) + FCM/APNs, and the performance budgets (§14.2, as plan figures).
+This document **agrees** with Engineering Plan v1.1 on: the modular monolith (§4), the M1–M12 module catalogue, one API/one database, MySQL 8.4 LTS + InnoDB (supersedes the plan's PostgreSQL 16 — see §2.3), Sanctum, Spatie Permission, Filament admin, Next.js public web, Flutter app later, the state machines (§9), statistics computed not stored, money entries never edited/deleted (reversal only), RPO 24h / RTO 4h, the API-first approach under `/api/v1` (132-endpoint inventory in doc 07; the plan estimated ~70), Web Push (VAPID) + FCM/APNs, and the performance budgets (§14.2, as plan figures).
 
 It **diverges** from the plan, with reasons, in the following places (per the Decision Sheet's divergence list):
 
 1. **Laravel 12 → Laravel 13** (§2.1). Reason: Laravel 12 bug fixes ended 13 Aug 2026; security fixes end 24 Feb 2027. A new project on Laravel 12 would be security-only from day one.
 2. **Design tokens/fonts** — the plan's tokens (Forest `#14532D`, Gold `#C9A227`, Hind Siliguri/Noto Serif Bengali) are **superseded by Direction D** (§6.1). Direction D is the approved frontend direction.
-3. **Plan versions superseded** (§2.3): Filament 3 → 5; PostgreSQL 16 → current major at scaffold time; Redis 7 + Horizon as day-one → deferred to when justified (§10.2); Next.js 15 / Flutter 3.x → verify current stable at build time.
+3. **Plan versions superseded** (§2.3): Filament 3 → 5; PostgreSQL 16 → MySQL 8.4 LTS (Phase 0.1, Confirmed — Fahim); Redis 7 + Horizon as day-one → deferred to when justified (§10.2); Next.js 15 / Flutter 3.x → verify current stable at build time.
 4. **Queue/cache to start: database, not Redis** (§10.1, §5.8). The plan lists Redis + Horizon without a trigger. This blueprint starts on the database driver and adopts Redis only on a stated trigger (§10.2), because Phase 1 volume does not justify a second service.
 5. **Media storage to start: local `public` disk, not S3-compatible** (§11.1). The plan lists S3-compatible storage. This blueprint starts local (via the Storage facade, so the switch is configuration) and moves to S3-compatible on a stated trigger.
 6. **Search to start: Scout `database` engine, not Meilisearch** (§10.4). Meilisearch is a later, evidence-triggered addition.
@@ -702,7 +701,7 @@ It **diverges** from the plan, with reasons, in the following places (per the De
 |---|---|---|
 | D11 | Expatriate wizard is 3 steps in the build, 4 in Design System §7.1. No state-machine impact (§9.1). Frontend build to confirm the step count. | Under review |
 | ARCH-1 | PHP 8.4 (conservative) vs 8.5 (longest runway) — decide at scaffold time against the hosting environment. | Under review — decide at scaffold |
-| ARCH-2 | PostgreSQL major version at scaffold time — verify against postgresql.org; do not assert dates from secondary sources. | Under review — verify at scaffold |
+| ARCH-2 | MySQL 8.4 LTS — GA 30 Apr 2024; Premier support to 30 Apr 2029; Extended support to 30 Apr 2032. Verify against the MySQL lifecycle at scaffold time; do not assert dates from secondary sources. | **Confirmed** — Phase 0.1 |
 | ARCH-3 | Exact token expiry for mobile (Sanctum) and exact throttle numbers (§7.4) — configuration decisions, record in the runbook. | Under review — decide at build |
 | ARCH-4 | Bengali full-text search quality — empirical test required before any quality claim (§3.4). | Under review — test with real data |
 | ARCH-5 | Filament Shield plugin — not verified; adopt only after a version/maintenance/compatibility check, or wire the hooks by hand (§6.3). | Under review |

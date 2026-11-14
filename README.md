@@ -158,7 +158,7 @@ the page.
 - New expatriate requests trigger a browser notification to Super Admin and all Helpers (simulated in
   this prototype).
 - No backend, database, payment, or real OTP in this phase — this is a static HTML/CSS/JS prototype.
-  Real development (Laravel + PostgreSQL + Next.js + Flutter) is a separate, later phase.
+  Real development (Laravel + MySQL 8.4 + Next.js + Flutter) is a separate, later phase.
 
 ## Planned Laravel backend architecture
 
@@ -166,7 +166,7 @@ the page.
 > describes what will be built, so that the prototype is not mistaken for the product.
 
 The backend is a **Laravel 13 modular monolith** (`^13.0`, PHP 8.4 or 8.5, floor 8.3) with a
-**PostgreSQL** database, a **Sanctum**-secured REST API (`/api/v1`, `^4.0`), a **Filament 5** admin
+**MySQL 8.4 LTS (InnoDB)** database, a **Sanctum**-secured REST API (`/api/v1`, `^4.0`), a **Filament 5** admin
 panel (`^5.0`), and **Spatie Laravel Permission v8** (`^8.0`) for role-based access control — one API
 and one database serving the public website (Next.js), the mobile app (Flutter, later), and the admin
 panel. The full blueprint is in `docs/backend-architecture/` (see Documentation below).
@@ -177,10 +177,7 @@ resolved from Packagist at scaffold time, never asserted here):
 - **Modular monolith, not microservices** — 12 modules (M1–M12), each with its own models, controllers,
   policies, and tests; modules communicate through service classes, never by querying each other's
   tables.
-- **PostgreSQL (narrow lean, VPS-only)** — chosen for transactional DDL, JSONB, stronger native
-  full-text search, and Laravel 13 vector search being PostgreSQL-only. MySQL/MariaDB LTS is the
-  documented alternative if shared-hosting portability in Bangladesh becomes a requirement. Bengali
-  full-text search quality is unverified in both and needs an empirical test with real Bengali text.
+- **MySQL 8.4 LTS + InnoDB (Confirmed, Phase 0.1 — Fahim)** — project standard; ubiquitous on cheap Bangladeshi shared/cPanel hosting, same decimal integrity, `CHECK` constraints, generated columns, `FULLTEXT`. The Phase 0 PostgreSQL lean is superseded (ADR-003). Bengali FTS measured on MySQL 8.0.46 (ngram FULLTEXT + BOOLEAN MODE recommended — Doc 15 §9); re-test on 8.4 required.
 - **Auth:** Sanctum cookie auth for the first-party web SPA (same top-level domain) and personal access
   tokens for the Flutter app. No refresh-token flow and no per-device session list exist in Sanctum
   itself — the design works around that.
@@ -191,42 +188,44 @@ resolved from Packagist at scaffold time, never asserted here):
 - **Queue/cache to start:** database driver for both (zero new services); Redis + Horizon only when
   latency or volume justifies them. Sessions on the database. Cache tags are not supported by the
   database/file drivers — no tag-dependent code is written unless Redis is adopted.
-- **Search to start:** Scout `database` engine (or `whereFullText`/`whereLike`); Meilisearch later only
+- **Search to start:** Scout `database` engine in **BOOLEAN MODE** (or `whereFullText`/`whereLike`); natural-language mode must NOT be the default (Doc 15 §9). Meilisearch later only
   if typo tolerance or Bengali search demonstrably fails.
 - **Media to start:** local `public` disk via the Storage facade (never hard-coded `public_path()`
   writes); S3-compatible storage later when volume, CDN, or off-server durability requires it. Private
   files are served through controllers with signed URLs.
 - **Backup:** spatie/laravel-backup v10, nightly database + uploads to local storage and one off-server
-  S3-compatible disk, with a mandatory monthly restore test. Recovery targets: RPO 24 hours, RTO 4
+  S3-compatible disk, with a mandatory monthly automated restore check + quarterly full restore rehearsal. Recovery targets: RPO 24 hours, RTO 4
   hours.
 - **Testing:** Pest 4 / PHPUnit 12, with 80%+ business-logic coverage as the target; every valid and
   invalid state-machine transition tested; API contract tests for every endpoint. Pint for style,
   Larastan for static analysis, Telescope for local development only.
 
 **What the plan changed:** this architecture follows Engineering Plan v1.1 (Laravel modular monolith +
-REST API, PostgreSQL, Sanctum, Spatie, Filament, Next.js, Flutter, one API/DB, 44 tables, 108
+REST API, MySQL 8.4 LTS, Sanctum, Spatie, Filament, Next.js, Flutter, one API/DB, 47 application tables (49 defined, 57 physical), 132
 endpoints, expatriate state machine, immutable ledger, RPO/RTO) except for three explicit divergences:
 Laravel 12 → 13 (Laravel 12 bug fixes ended 2026-08-13, security-only until 2027-02-24); the plan's
 design tokens/fonts → Direction D tokens (above); and the plan's pinned versions (Filament 3 → 5,
-PostgreSQL 16 → current major, Redis/Horizon and S3 as day-one → deferred until justified, Next.js 15 /
+PostgreSQL 16 → MySQL 8.4 LTS (Phase 0.1, Confirmed — Fahim), Redis/Horizon and S3 as day-one → deferred until justified, Next.js 15 /
 Flutter 3.x → verify current at build time).
 
 ## Major modules (M1–M12)
 
-| Module | Name | Phase | In one line |
+| Module | Name | Product phase (plan v1.1) | Roadmap phase (Doc 12) | In one line |
 |---|---|---|---|
-| M1 | Identity & Membership | Phase 1 | Registration, login (no OTP), approval queue, profiles, family members, account deletion. |
-| M2 | Community Profile | Phase 1 | Households/persons databank, computed statistics, professionals directory, institutions and landmarks. |
-| M3 | Organisation | Phase 1 | History and timeline, constitution, term-based committee, advisory council, former leaders. |
-| M4 | Annual Activities | Phase 1 | Activities by year and category, with dates, descriptions, photos, beneficiary counts. |
-| M5 | Expatriate Support | Phase 1 | Request intake, Request ID, 4-step status, helper assignment, expenses with photos, notifications. The most sensitive module. |
-| M6 | Blood Donor | Phase 1 | Donor register, group + area search, emergency blood requests, donor-side consent. |
-| M7 | Content | Phase 1 | Notices, news, events, jobs, gallery (photo; video in Phase 2), draft → review → published. |
-| M8 | Finance | Phase 1 | Immutable ledger, project accounts, public summary, annual reports. |
-| M9 | Notifications | Phase 1 | One notification service: Web Push (primary), in-app list, app push in Phase 3. No SMS. |
-| M10 | Admin & Reporting | Phase 1 | Filament dashboard, list/filter/export, activity-log viewer, system health. |
-| M11 | Public Web Experience | Phase 1 | The public website (Next.js): all content from the API, nothing hard-coded. BN/EN, light/dark. |
-| M12 | Mobile App | Phase 3 | Flutter Android + iOS: Home, Community, Services, Profile; offline cache; push deep-links. |
+| M1 | Identity & Membership | Phase 1 | Phase 2 | Registration, login (no OTP), approval queue, profiles, family members, account deletion. |
+| M2 | Community Profile | Phase 1 | Phase 3 | Households/persons databank, computed statistics, professionals directory, institutions and landmarks. |
+| M3 | Organisation | Phase 1 | Phase 3 | History and timeline, constitution, term-based committee, advisory council, former leaders. |
+| M4 | Annual Activities | Phase 1 | Phase 4 | Activities by year and category, with dates, descriptions, photos, beneficiary counts. |
+| M5 | Expatriate Support | Phase 1 | Phase 5 | Request intake, Request ID, 5-state status machine, 4-node public timeline, helper assignment, expenses with photos, notifications. The most sensitive module. |
+| M6 | Blood Donor | Phase 1 | Phase 5 | Donor register, group + area search, emergency blood requests, donor-side consent. |
+| M7 | Content | Phase 1 | Phase 4 | Notices, news, events, jobs, gallery (photo; video in plan Phase 2), draft → review → published. |
+| M8 | Finance | Phase 1 | Phase 6 | Immutable ledger, project accounts, public summary, annual reports. |
+| M9 | Notifications | Phase 1 | Phase 5 (partial) + Phase 7 (remainder) | One notification service: Web Push (primary), in-app list, app push in plan Phase 3. No SMS. |
+| M10 | Admin & Reporting | Phase 1 | Phase 8 (separate approval) | Filament dashboard, list/filter/export, activity-log viewer, system health. |
+| M11 | Public Web Experience | Phase 1 | Phase 7 | The public website (Next.js): all content from the API, nothing hard-coded. BN/EN, light/dark. |
+| M12 | Mobile App | Phase 3 | Future Mobile | Flutter Android + iOS: Home, Community, Services, Profile; offline cache; push deep-links. |
+
+Canonical module→phase map (Doc 12 §1.5): M1→Ph2, M2/M3→Ph3, M4/M7→Ph4, M5/M6→Ph5, M8→Ph6, M9→Ph5 (partial) + Ph7 (remainder), M10→Ph8 (separate approval), M11→Ph7, M12→Future Mobile.
 
 ## Dynamic content strategy
 
@@ -273,7 +272,7 @@ outside expatriate requests is denied server-side, not merely hidden in the UI.
 
 ## Future Android/iOS roadmap
 
-The mobile app (M12) is **Phase 3 — not yet implemented**. It will be a Flutter app for Android and
+The mobile app (M12) is **Future Mobile (plan Phase 3) — not yet implemented**. It will be a Flutter app for Android and
 iOS with bottom navigation (Home, Community, Services, Profile), offline reading cache for notices and
 the directory, push deep-links (a notification opens the related request or notice directly), optional
 biometric unlock, and a forced-update policy. It will use the same `/api/v1` endpoints and the same
@@ -332,16 +331,16 @@ python3 -m http.server 8000
   `02-PRODUCT-REQUIREMENTS.md` (vision, users, modules M1–M12, numbered requirements),
   `03-DYNAMIC-CONTENT-INVENTORY.md` (every content item that must become dynamic),
   `04-USER-ROLES-PERMISSIONS.md` (Super Admin governance, granular permissions, Role–Permission
-  Matrix), `05-BACKEND-ARCHITECTURE.md` (Laravel 13, PostgreSQL, Sanctum, state machines),
-  `06-DATABASE-DESIGN.md` (44 tables, migration order, financial integrity, privacy),
-  `07-API-ARCHITECTURE.md` (108-endpoint inventory), `08-SECURITY-ARCHITECTURE.md` (OWASP threat
+  Matrix), `05-BACKEND-ARCHITECTURE.md` (Laravel 13, MySQL 8.4 LTS, Sanctum, state machines),
+  `06-DATABASE-DESIGN.md` (47 application tables, migration order, financial integrity, privacy),
+  `07-API-ARCHITECTURE.md` (132-endpoint inventory), `08-SECURITY-ARCHITECTURE.md` (OWASP threat
   model), `09-ADMIN-DASHBOARD-REQUIREMENTS.md` (functional spec, planning only),
   `10-TESTING-QUALITY-STRATEGY.md` (testing, CI/CD, observability),
   `11-DEPLOYMENT-OPERATIONS.md` (environments, hosting, backup/DR, handover),
   `12-DEVELOPMENT-ROADMAP.md` (Phase 0–9 plus mobile),
   `13-OPEN-QUESTIONS-AND-ASSUMPTIONS.md` (everything still undecided, nothing guessed),
   `14-ACCEPTANCE-CRITERIA.md` (measurable acceptance criteria per module, plus the Phase 0 quality
-  gate), `adr/` (13 Architecture Decision Records), `diagrams/` (system architecture, ERD,
+  gate), `15-PHASE-0.1-REVIEW-AND-RESOLUTION.md` (Phase 0.1 reconciliation), `adr/` (13 Architecture Decision Records), `diagrams/` (system architecture, ERD,
   RBAC matrix, API flows — all in Mermaid).
 
 ## Development roadmap
@@ -399,14 +398,14 @@ Website (Phase 0–1D in the plan's terms): approximately 12 weeks. Complete (wi
 |---|---|
 | Prototype (Direction D, `index.html`) — 18 views, all flows clickable | **Implemented (simulated)** — static demo, no backend |
 | Editorial redesign and v1 prototype (`alternatives/`) | **Implemented (simulated)** — preserved, superseded directions |
-| Design direction (Direction D, "The Meridian") | **Implemented** — approved frontend direction; client Design OK still pending |
+| Design direction (Direction D, "The Meridian") | **Under review** — working direction approved for the build; client's formal Design OK still pending (Doc 13 A-01) |
 | Laravel backend, API, database, admin panel | **Planned** — blueprint in `docs/backend-architecture/`, not built |
-| Next.js public website (from the API) | **Planned** — Phase 1C |
-| Flutter mobile app (Android + iOS) | **Not yet implemented** — Phase 3 |
+| Next.js public website (from the API) | **Planned** — Doc 12 Phase 7 (plan Phase 1C) |
+| Flutter mobile app (Android + iOS) | **Not yet implemented** — Future Mobile (plan Phase 3) |
 | Real data (members, committee, donors, finance, photos, constitution) | **Not yet implemented** — demo data only; real data needs client approval and individual consent |
 | Expatriate wizard step count (3 built vs 4 in the design system, D11) | **Under review** — open question, not resolved by guessing |
-| Public tracking privacy boundary (what a visitor with a Request ID may see) | **Under review** — open question |
-| Forgot-password mechanism (no OTP, no SMS in Phase 1) | **Under review** — open question |
+| Public tracking privacy boundary (what a visitor with a Request ID may see) | **Under review** — mechanism decided in Phase 0.1 (Request ID + tracking secret, Tier-S allowlist); open only for AO-04 (first name / beneficiary name in the Tier-S view) |
+| Forgot-password mechanism (no OTP, no SMS in Phase 1) | **Under review** — mechanism decided in Phase 0.1 (Super-Admin-mediated temporary password); open only for the delivery channel / identity-verification procedure (AO-05) |
 | Domain name, logo, helper list, public-vs-members-only statistics, finance public summary level | **Under review** — open questions for the organisation |
 | Client Design OK, public launch | **Not yet implemented** — prototype is not approved as final, not a public launch |
 
@@ -423,5 +422,5 @@ screen-reader pass.
    `docs/backend-architecture/13-OPEN-QUESTIONS-AND-ASSUMPTIONS.md`.
 3. **Commercial proposal** (payment steps, contract) — separate from this repository and from the
    blueprint; no prices appear here.
-4. **Phase 0 approval**, then Phase 1A (identity, 2-role access, community data model, Filament admin,
+4. **Phase 0 approval**, then Doc 12 Phase 2 (plan Phase 1A: identity, 2-role access, community data model, Filament admin,
    audit log) on staging.

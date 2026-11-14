@@ -34,7 +34,7 @@ flowchart TD
     end
 
     subgraph Data["Data layer (same VPS)"]
-        PG[("PostgreSQL<br/>One database, 7 domains<br/>Encrypted phone columns<br/>+ phone_hash (HMAC)")]
+        DB[("MySQL 8.4 LTS (InnoDB)<br/>One database, 7 domains<br/>Encrypted phone columns<br/>+ phone_hash (HMAC)")]
         CACHE[("Cache / sessions<br/>Database driver to start<br/>Redis only when adopted")]
         JOBS[("Jobs table<br/>Database queue")]
         STORE[("File storage<br/>public disk (local)<br/>private disk (local)")]
@@ -59,7 +59,7 @@ flowchart TD
     SVC --> SEARCH
     SVC --> MEDIA
     SVC --> BACKUP
-    SVC --> PG
+    SVC --> DB
     SVC --> CACHE
     QUEUE --> JOBS
     MEDIA --> STORE
@@ -118,7 +118,7 @@ Inside the application, the layers are:
 
 ### 2.4 Data layer — one database
 
-- **PostgreSQL** (ADR-003, Recommended pending hosting confirmation) is the single database for all seven data domains (the plan's 38 tables — Engineering Plan v1.1). One database, not one per module: the modules share it, and cross-module queries (e.g. the overview dashboard, the reports) are ordinary joins, not distributed transactions.
+- **MySQL 8.4 LTS (InnoDB)** (ADR-003, Confirmed) is the single database for all seven data domains (the plan's 39 tables — Engineering Plan v1.1, corrected Phase 0.1). One database, not one per module: the modules share it, and cross-module queries (e.g. the overview dashboard, the reports) are ordinary joins, not distributed transactions.
 - **Encrypted phone columns + `phone_hash` (HMAC).** Phone numbers and beneficiary-identifying fields are encrypted at the application layer; a keyed HMAC hash of the normalised phone is stored alongside for uniqueness checks and lookups, because an encrypted value cannot be searched (Doc 08 §6.2).
 - **Money** is `decimal(12,2)` in BDT, never float (Decision Sheet).
 - **Cache and sessions** are on the database driver to start (ADR-009); Redis only when adopted, at which point the cache moves to Redis and sessions stay on the database.
@@ -137,7 +137,7 @@ Inside the application, the layers are:
 
 1. The browser/app asks Cloudflare → Nginx → the API (`GET /api/v1/directory?search=…`).
 2. The API route is public, so no authentication is required — but the query is still scoped: only published, consented entries are selected.
-3. The service queries PostgreSQL (Scout database engine for the search), the API Resource shapes the response, and the client renders it. No phone numbers are in the response.
+3. The service queries MySQL 8.4 (Scout database engine in BOOLEAN MODE for the search), the API Resource shapes the response, and the client renders it. No phone numbers are in the response.
 
 **Authenticated write (e.g. a helper advancing a request):**
 
@@ -159,7 +159,7 @@ The prototype duplicated the same fact in several places: the demo request `EXP-
 
 The architecture prevents this by construction:
 
-- **Each fact is stored once** in PostgreSQL and **exposed once** by the API. Clients render it wherever it is needed; they do not keep their own copies.
+- **Each fact is stored once** in MySQL 8.4 and **exposed once** by the API. Clients render it wherever it is needed; they do not keep their own copies.
 - **Policy copy is data, not markup:** the public settings endpoint (`GET /api/v1/public/settings`, Doc 07 P3) is the single source for the no-service-charge statement, the 999 disclaimer, and the ERT size.
 - **Statistics are computed, never hand-typed:** counts and totals are aggregated from the data at request time (per Engineering Plan v1.1). Unverified figures are returned as `{"status": "updating"}`, never invented.
 - **The API is the only writer:** no client writes to the database, no client computes a total the server will trust, and no client-side state is treated as authoritative. The prototype's in-memory `state` object (Audit Findings §2.5) — which vanished on every reload — has no counterpart in the production system.

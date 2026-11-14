@@ -54,22 +54,22 @@ publication or disclosure. They are flagged 🔒 in their tables.
 
 | Item | Key fields | Workflow / states | Permissions | Public API | Retention / notes |
 |---|---|---|---|---|---|
-| Site identity | Brand name (BN/EN), tagline, slogan, founding year (1999 — verified), crest/logo file | Draft → published (single live record; changes versioned) | `settings.manage` — Super Admin | `GET /public/settings` (brand, tagline, slogan, founding year) | Keep all versions; logo file retained while in use + 1 year after replacement. Logo itself is an open item (document 13, Q-07). |
-| Policy copy (single source) | No-service-charge statement, 999/emergency disclaimer, ERT size (3–5), service catalogue text | Draft → published; one record feeds home, wizard, FAQ, privacy (the prototype re-types this text in 4 places — audit §5.10) | `settings.manage` — Super Admin | Public (rendered in page content) | Versioned; old versions kept for audit. |
-| Contact defaults | Office address, hours, phone, email, emergency number (999) | Draft → published; real values only after verification | `settings.manage` — Super Admin | Public once verified; until then the contact page shows no invented details | Until verified, fields stay empty and the public page shows the "information being updated" state. |
+| Site identity | Brand name (BN/EN), tagline, slogan, founding year (1999 — verified), crest/logo file | Managed as `settings` keys (no draft workflow — Phase 0.1, M-07; single live record; changes versioned) | `settings.manage` — Super Admin | `GET /public/settings` (brand, tagline, slogan, founding year) | Keep all versions; logo file retained while in use + 1 year after replacement. Logo itself is an open item (document 13, Q-07). |
+| Policy copy (single source) | No-service-charge statement, 999/emergency disclaimer, ERT size (3–5), service catalogue text | Managed as `settings` keys (no draft workflow — Phase 0.1, M-07); one record feeds home, wizard, FAQ, privacy (the prototype re-types this text in 4 places — audit §5.10) | `settings.manage` — Super Admin | Public (rendered in page content) | Versioned; old versions kept for audit. |
+| Contact defaults | Office address, hours, phone, email, emergency number (999) | Managed as `settings` keys (no draft workflow — Phase 0.1, M-07); real values only after verification | `settings.manage` — Super Admin | Public once verified; until then the contact page shows no invented details | Until verified, fields stay empty and the public page shows the "information being updated" state. |
 | Announcement strip | Notice text (BN/EN), link, start/end, dismissible flag | Draft → published → archived (expiry automatic) | `notices.publish` — Super Admin | `GET /public/announcements` (current only) | Archived strips kept 1 year. |
 
 ## 4. Homepage CMS (M11)
 
 | Item | Key fields | Workflow / states | Permissions | Public API | Retention / notes |
 |---|---|---|---|---|---|
-| Hero | Headline, subline, CTAs (label + target), hero image + caption, live-data right column (next event + open request count — D4, fed by API) | Draft → published; image needs consent flag | `content.publish` — Super Admin | `GET /public/home` | Images retained per media rules (§21). |
-| Our story (§01) | Body (BN/EN), pull-quote + attribution, image + caption | Draft → published | `content.publish` — Super Admin | `GET /public/home` | Quote attribution must be a real, consenting person or marked as a sample; the prototype's quote is explicitly a sample from an unnamed elder. |
+| Hero | Headline, subline, CTAs (label + target), hero image + caption, live-data right column (next event + open request count — D4, fed by API) | Managed as `settings` keys (no draft workflow — Phase 0.1, M-07); image needs consent flag | `content.publish` — Super Admin | `GET /public/home` | Images retained per media rules (§21). |
+| Our story (§01) | Body (BN/EN), pull-quote + attribution, image + caption | Managed as `settings` keys (no draft workflow — Phase 0.1, M-07) | `content.publish` — Super Admin | `GET /public/home` | Quote attribution must be a real, consenting person or marked as a sample; the prototype's quote is explicitly a sample from an unnamed elder. |
 | Community at a glance (§02) | Stat definitions only (no hand-typed numbers) | Published when the underlying data is verified; otherwise the "তথ্য হালনাগাদ হচ্ছে" state | `settings.manage` — Super Admin | `GET /public/stats` (computed, cached 15 min) | Stats are computed, never stored as numbers. |
 | Heritage timeline / Meridian (§03) | Milestone records (date, title, body BN/EN, verified flag) + undated era blocks | Draft → in_review (verification) → published → archived | `organization.manage` — Super Admin | `GET /public/timeline` | Only verified milestones published; today only 1999 is verified. |
-| Services index (§04) | Service rows (order, title, description, target) — 6 rows in Direction D | Draft → published | `content.publish` — Super Admin | `GET /public/home` | Numbering is a design matter (QA D5); content order is managed here. |
-| Expatriate pitch (§05) | Pitch copy, 4-step "how it works" (labels BN/EN), CTAs, disclaimer | Draft → published | `content.publish` — Super Admin | `GET /public/home` | Step labels must match the request workflow (§13). |
-| Blood-donation section (§06) | Intro copy, group chips (8 groups), CTAs | Draft → published | `content.publish` — Super Admin | `GET /public/home` | Chips link to the donor search with the group pre-selected. |
+| Services index (§04) | Service rows (order, title, description, target) — 6 rows in Direction D | Managed as `settings` keys (no draft workflow — Phase 0.1, M-07) | `content.publish` — Super Admin | `GET /public/home` | Numbering is a design matter (QA D5); content order is managed here. |
+| Expatriate pitch (§05) | Pitch copy, 4-step "how it works" (labels BN/EN), CTAs, disclaimer | Managed as `settings` keys (no draft workflow — Phase 0.1, M-07) | `content.publish` — Super Admin | `GET /public/home` | Step labels must match the request workflow (§13). |
+| Blood-donation section (§06) | Intro copy, group chips (8 groups), CTAs | Managed as `settings` keys (no draft workflow — Phase 0.1, M-07) | `content.publish` — Super Admin | `GET /public/home` | Chips link to the donor search with the group pre-selected. |
 | Activities & news feed (§07) | Feed assembly rule (latest 2 activities + latest 2 news) — no stored copy | Automatic from Activities + News | — (derived) | `GET /public/home` | Feed is assembled, never duplicated (§1). |
 | Gallery strip (§08) | Subset rule (featured gallery items) | Automatic from Gallery | — (derived) | `GET /public/home` | Same media records as §21. |
 | Transparency strip (§09) | Mini-ledger rule (first rows of the current year's published ledger) | Automatic from Finance | — (derived) | `GET /public/home` | Demo figures never shown; unpublished years show the updating state. |
@@ -128,21 +128,22 @@ publication or disclosure. They are flagged 🔒 in their tables.
 
 | Item | Key fields | Workflow / states | Permissions | Public API | Retention / notes |
 |---|---|---|---|---|---|
-| Facility / landmark | Name (BN/EN), type (field, graveyard, road, other), description, location, status (e.g. active/under maintenance), area, photo | Draft → published | `directory.manage` — Super Admin | `GET /public/infrastructure` | **Absent in the prototype** — entirely new. A map is Under review (document 13, Q-15); do not promise map coordinates until decided. |
+| Facility | Name (BN/EN), type (field, graveyard, road, other), description, location, status (e.g. active/under maintenance), area, photo | Draft → published | `community.infrastructure.manage` — Super Admin | `GET /public/infrastructure` (via C2c) | **Absent in the prototype** — entirely new. Stored in `infrastructure_facilities` (Doc 06 §3.8). A map is Under review (document 13, Q-15); do not promise map coordinates until decided. |
+| Landmark / place | Name (BN/EN), description, area, location note (BN) | Draft → published | `directory.manage` — Super Admin | `GET /public/directory` (via C2c) | Stored in `landmarks` (Doc 06 §3.6). |
 
 ## 12. Activities (M4)
 
 | Item | Key fields | Workflow / states | Permissions | Public API | Retention / notes |
 |---|---|---|---|---|---|
 | Activity | Year, category (scholarship/winter clothing/blood donation/medical camp/tree plantation/national day/relief/other), date, title (BN/EN), body (BN/EN), images, beneficiary count, linked annual-report document | Draft → in_review → published → archived (year-end auto-archive) | `activities.manage` — Super Admin | `GET /public/activities?year=&category=`; `GET /public/activities/{id}` | Category is mandatory on every activity — the prototype's category filter has no data behind it (audit §8.7). |
-| Activity detail | Same record + gallery, participants, outcomes, related activities (optional, Phase 2 if not decided) | Same as above | Same as above | `GET /public/activities/{id}` | No comments or attendance in Phase 1. |
+| Activity detail | Same record + gallery, participants, outcomes, related activities (optional, plan Phase 2 if not decided) | Same as above | Same as above | `GET /public/activities/{id}` | No comments or attendance in Phase 1. |
 
 ## 13. Expatriate Services (M5) — service catalogue
 
 | Item | Key fields | Workflow / states | Permissions | Public API | Retention / notes |
 |---|---|---|---|---|---|
-| Service type | Key (grocery/medicine/hospital/elderly/home/document/general), name (BN/EN), description (BN/EN), urgency options (urgent/today/tomorrow/this week), active flag | Managed list; changes versioned | `settings.manage` — Super Admin | `GET /public/services` | The 7 services come from the prototype's `SVC` object; confirm the final list with the organisation (plan v1.1 §6 M5 lists 6 types — reconcile, document 13, Q-22). |
-| Service policy copy | No-charge statement, 999 disclaimer, ERT size, "how it works" steps | Draft → published (single source, §3) | `settings.manage` — Super Admin | Public (rendered in page content) | Step labels must match the request workflow (§14). |
+| Service type | Key (grocery/medicine/hospital/elderly/home/document/general), name (BN/EN), description (BN/EN), urgency options (normal/urgent), `needed_by` (today/tomorrow/week), active flag | Managed table (`service_types`, Doc 06 §6.8); requests snapshot `service_key`/`service_name_bn` at submission | `service_types.manage` — Super Admin | `GET /public/services` (S1); admin endpoints S2–S5 | The 7 services come from the prototype's `SVC` object; confirm the final list with the organisation (plan v1.1 §6 M5 lists 6 types — reconcile, document 13, Q-22). |
+| Service policy copy | No-charge statement, 999 disclaimer, ERT size, "how it works" steps | Managed as `settings` keys (no draft workflow — Phase 0.1, M-07; single source, §3) | `settings.manage` — Super Admin | Public (rendered in page content) | Step labels must match the request workflow (§14). |
 
 ## 14. Expatriate Requests (M5) 🔒
 
@@ -206,28 +207,28 @@ publication or disclosure. They are flagged 🔒 in their tables.
 |---|---|---|---|---|---|
 | Photo | Image file, caption (BN/EN), album, order, consent flag, photographer/source note (internal) | Draft → in_review (consent check) → published → archived | `media.manage` — Super Admin | `GET /public/gallery`; `GET /public/gallery/{id}` | Thumbnails + WebP conversion by queue job (plan v1.1 §6 M7). The prototype's 8 base64 demo images are replaced, not reused. Consent flag mandatory. |
 | Album | Title (BN/EN), year, category, cover photo | Draft → published | `media.manage` — Super Admin | `GET /public/gallery` (albums) | Albums group photos by year/category. |
-| Video | Source (upload/embed), caption (BN/EN), poster frame, consent flag, size limit | **Phase 2** — placeholder only in Phase 1 ("ভিডিও গ্যালারি শীঘ্রই আসছে") | `media.manage` — Super Admin (Phase 2) | None in Phase 1 | No video content is invented for Phase 1. |
+| Video | Source (upload/embed), caption (BN/EN), poster frame, consent flag, size limit | **plan Phase 2** — placeholder only in Phase 1 ("ভিডিও গ্যালারি শীঘ্রই আসছে") | `media.manage` — Super Admin (plan Phase 2) | None in Phase 1 | No video content is invented for Phase 1. |
 
 ## 23. Financial Transparency (M8) 🔒
 
 | Item | Key fields | Workflow / states | Permissions | Public API | Retention / notes |
 |---|---|---|---|---|---|
-| Ledger entry | Entry number (unique), direction (income/expense), kind (income/expense/donation), category, linked project/activity, amount BDT `numeric(12,2)`, date, payee, voucher image, entered-by, approved-by, is_public_summary | Entered → approved → published (summary). **Immutable once entered** — no edit/delete at application level | `finance.enter` / `finance.approve` — Super Admin (Treasurer role deferred) | `GET /finance/summary` (published summary only); monthly + per-project totals | Corrections only by reversal entry pointing at the original. Monthly balances in a summary updated nightly by scheduler (plan v1.1 §7). |
+| Ledger entry | Entry number (unique), direction (income/expense), kind (income/expense/donation), category, linked project/activity, amount BDT `numeric(12,2)`, date, payee, voucher image, entered-by, approved-by, is_public_summary | Entered (draft) → approved-and-published in one step (summary). **Immutable once published** — no edit/delete at application level | `finance.create` / `finance.approve` — Super Admin (Treasurer role deferred) | `GET /finance/summary` (published summary only); monthly + per-project totals | Corrections only by reversal entry pointing at the original. Monthly balances computed on read (15-minute cache, Doc 06 §9.1). |
 | Finance category | Name (BN/EN), kind, order | Managed list | `finance.manage` — Super Admin | Public (as summary labels) | Prototype has only 3 kinds and no sub-categories. |
-| Monthly summary | Month, totals by kind/category, published flag | Computed nightly → published | `finance.approve` — Super Admin | `GET /finance/summary?month=` | Computed, never hand-typed. |
+| Monthly summary | Month, totals by kind/category, published flag | Computed on read (15-minute cache, Doc 06 §9.1); no stored snapshot | `finance.reports.publish` — Super Admin | `GET /public/finance/summary?month=` | Computed, never hand-typed. A later reversal changes the next computed summary (known limitation — the snapshot table remains a future option). |
 
 ## 24. Project Accounting (M8) 🔒
 
 | Item | Key fields | Workflow / states | Permissions | Public API | Retention / notes |
 |---|---|---|---|---|---|
 | Project | Name (BN/EN), budget BDT `numeric(12,2)`, spent (computed from linked entries), status (ongoing/completed), start/end dates | Draft → published → completed → archived | `finance.manage` — Super Admin | `GET /finance/projects/{id}` (published totals) | **Absent in Direction D** — entirely new. The editorial alternative's 4 demo projects are demo data, not a specification. Spent is computed, never typed. |
-| Project–entry link | Project, ledger entry, amount | Set at entry time | `finance.enter` — Super Admin | Included in project totals | An entry may link to one project (or none). |
+| Project–entry link | Project, ledger entry, amount | Set at entry time | `finance.create` — Super Admin | Included in project totals | An entry may link to one project (or none). |
 
 ## 25. Annual Reports (M8) 🔒
 
 | Item | Key fields | Workflow / states | Permissions | Public API | Retention / notes |
 |---|---|---|---|---|---|
-| Annual report | Year, title (BN/EN), summary (BN/EN), PDF file, audited flag, published date | Draft → in_review (audit) → published → archived (versioned by year) | `finance.publish` — Super Admin | `GET /finance/reports/annual?year=` (PDF download) | The prototype's generated `.txt` download is replaced. Automatic PDF generation is Phase 2 (plan v1.1 §15). The UI must not label a report "audited" unless it is audited. |
+| Annual report | Year, title (BN/EN), summary (BN/EN), PDF file, audited flag, published date | Draft → in_review (audit) → published → archived (versioned by year) | `finance.reports.publish` — Super Admin | `GET /finance/reports/annual?year=` (PDF download) | The prototype's generated `.txt` download is replaced. Automatic PDF generation is plan Phase 2 (plan v1.1 §15). The UI must not label a report "audited" unless it is audited. |
 
 ## 26. FAQ (M7)
 
@@ -239,14 +240,14 @@ publication or disclosure. They are flagged 🔒 in their tables.
 
 | Item | Key fields | Workflow / states | Permissions | Public API | Retention / notes |
 |---|---|---|---|---|---|
-| Contact message | Name, phone (encrypted), message, submitted-at, status (new/read/replied/archived), replied-by/at, reply text | New → read → replied → archived | Submit — public; inbox — `contact.view` / `contact.reply` (Super Admin) | `POST /contact` (public) | The prototype's message goes nowhere; the inbox is new. Validation as coded: name 2+ characters, phone 10+ digits, message 10+ characters (audit §7.1). |
+| Contact message | Name, phone (encrypted), message, submitted-at, status (new/read/replied/archived), replied-by/at, reply text | New → read → replied → archived | Submit — public; inbox — `contact_messages.view` / `contact_messages.reply` (Super Admin) | `POST /contact` (public) | The prototype's message goes nowhere; the inbox is new. Validation as coded: name 2+ characters, phone 10+ digits, message 10+ characters (audit §7.1). |
 | Contact info page | Office address, hours, phone, email, map (see §3 contact defaults) | Published once verified | `settings.manage` — Super Admin | `GET /public/contact` | No real phone/email exists in the prototype; no map (0 `<iframe>`). A map is included once real details exist — see document 13, Q-15. |
 
 ## 28. Privacy / Policy (M1 / M10) 🔒
 
 | Item | Key fields | Workflow / states | Permissions | Public API | Retention / notes |
 |---|---|---|---|---|---|
-| Privacy policy | Versioned text (BN/EN), effective date, version number | Draft → in_review → published (versioned; old versions retained) | `settings.manage` — Super Admin | `GET /public/privacy` | The prototype's 4 principles are inline static text; the full policy must be supplied and versioned. Required for app-store submission in Phase 3. |
+| Privacy policy | Versioned text (BN/EN), effective date, version number | Draft → in_review → published (versioned; old versions retained) | `settings.manage` — Super Admin | `GET /public/privacy` | The prototype's 4 principles are inline static text; the full policy must be supplied and versioned. Required for app-store submission in plan Phase 3 (Future Mobile). |
 | Consent records | Person/donor, scope (public profile / public phone / photo), granted/revoked, timestamp, channel | Append-only | Subject acts on own consent; Super Admin views log | — (internal) | Withdrawal takes effect immediately across the API. |
 | Data-rights requests | Requester, type (access/correction/deletion), status (received/in progress/completed), decided-by/at | Received → in progress → completed | Submit — member; handle — Super Admin | `POST /me/data-request` (auth); admin inbox | The privacy view promises the right to correct/delete; no flow exists in the prototype. Deletion: 30-day grace (plan v1.1 §6 M1). |
 
@@ -254,8 +255,8 @@ publication or disclosure. They are flagged 🔒 in their tables.
 
 | Item | Key fields | Workflow / states | Permissions | Public API | Retention / notes |
 |---|---|---|---|---|---|
-| Primary nav | Items (label BN/EN, target, order, visibility: public/member/admin) — 8 items in Direction D (Home, Directory, Organization, Activities, Expatriate Support, Blood Donor, News, Finance) | Draft → published | `settings.manage` — Super Admin | Part of `GET /public/settings` or page chrome | The mobile menu (12 items in the prototype) is a separate ordered list in the same record. QA D6/D7 (drawer vs bottom sheet; toggle placement) are frontend decisions. |
-| Footer | Link columns (Services / Organisation / Help), brand block, demo disclaimer (removed at launch; replaced by a real disclaimer if needed) | Draft → published | `settings.manage` — Super Admin | Part of page chrome | Footer links must resolve to real pages; no dead links. |
+| Primary nav | Items (label BN/EN, target, order, visibility: public/member/admin) — 8 items in Direction D (Home, Directory, Organization, Activities, Expatriate Support, Blood Donor, News, Finance) | Managed as `settings` keys (no draft workflow — Phase 0.1, M-07) | `settings.manage` — Super Admin | Part of `GET /public/settings` or page chrome | The mobile menu (12 items in the prototype) is a separate ordered list in the same record. QA D6/D7 (drawer vs bottom sheet; toggle placement) are frontend decisions. |
+| Footer | Link columns (Services / Organisation / Help), brand block, demo disclaimer (removed at launch; replaced by a real disclaimer if needed) | Managed as `settings` keys (no draft workflow — Phase 0.1, M-07) | `settings.manage` — Super Admin | Part of page chrome | Footer links must resolve to real pages; no dead links. |
 
 ## 30. Footer (M11)
 
@@ -267,14 +268,14 @@ published workflow, Super Admin only.
 
 | Item | Key fields | Workflow / states | Permissions | Public API | Retention / notes |
 |---|---|---|---|---|---|
-| Page meta | Page, title (BN/EN), description (BN/EN), Open Graph image, slug, structured-data type (Organization, Event) | Draft → published (per page; defaults from Global Settings) | `content.publish` — Super Admin | Rendered in page head; `sitemap.xml` auto-generated | Sitemap updates when a notice is published (plan v1.1 §14). Slugs are clean and stable; changing a slug keeps a redirect. |
+| Page meta | Page, title (BN/EN), description (BN/EN), Open Graph image, slug, structured-data type (Organization, Event) | Managed as `settings` keys (no draft workflow — Phase 0.1, M-07; per page; defaults from Global Settings) | `content.publish` — Super Admin | Rendered in page head; `sitemap.xml` auto-generated | Sitemap updates when a notice is published (plan v1.1 §14). Slugs are clean and stable; changing a slug keeps a redirect. |
 | Sitemap / robots | Generated `sitemap.xml`, `robots.txt` | Automatic | — (generated) | `GET /sitemap.xml` | No hand-maintained sitemap. |
 
 ## 32. Notification Templates (M9)
 
 | Item | Key fields | Workflow / states | Permissions | Public API | Retention / notes |
 |---|---|---|---|---|---|
-| Template | Event key (e.g. `expatriate.request.created`, `blood.request.created`, `member.approved`), title (BN/EN), body (BN/EN), channels (web push / in-app / app push / email), variables (Request ID, name, status) | Draft → published (versioned) | `notifications.manage` — Super Admin | — (internal; rendered at send time) | Every send is logged (recipient, time, success/failure). Templates are bilingual; Bengali is the fallback. |
+| Template | Event key (e.g. `expatriate.request.created`, `blood.request.created`, `member.approved`), title (BN/EN), body (BN/EN), channels (web push / in-app / app push / email), variables (Request ID, name, status) | Code constants, versioned in git (no draft workflow, no admin UI in Phase 1 — Phase 0.1, M-06) | — (code change; no permission) | — (internal; rendered at send time) | Every send is logged (recipient, time, success/failure). Templates are bilingual; Bengali is the fallback. |
 | Delivery log | Notification, recipient, channel, sent-at, delivered/failed, read-at | Append-only | System writes; Super Admin views | `GET /notifications` (own, authenticated) | Retention per §33. |
 
 ## 33. System Config (M10)

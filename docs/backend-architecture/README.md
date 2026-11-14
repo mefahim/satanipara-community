@@ -24,7 +24,7 @@ There are two things in this project that must never be confused:
    It is **Implemented** as a prototype: it renders, its flows can be clicked through, and it was verified
    live on 2026-11-14 with 0 console errors. It has no server, no database, no real authentication, and
    no persistence. Every name, figure, and record in it is **demo data**.
-2. **The planned backend** — a Laravel 13 modular monolith with a PostgreSQL database, a Sanctum-secured
+2. **The planned backend** — a Laravel 13 modular monolith with a MySQL 8.4 LTS (InnoDB) database, a Sanctum-secured
    REST API (`/api/v1`), and a Filament 5 admin panel, as specified in this document set. It is **Planned**,
    not built. Nothing in these documents describes backend work as implemented.
 
@@ -99,6 +99,9 @@ create migrations, build a dashboard UI, or redesign Direction D.
   English; user-facing Bengali strings are specified in the content inventory (document 03) and in the
   API/error conventions.
 
+
+> **Phase vocabulary (Phase 0.1).** Three phase schemes exist in the blueprint's sources and must not be confused: **Product Phase 1** is the Decision Sheet scope (the whole Phase 1 product = Doc 12 Phases 1–9); **Roadmap Phase N** is a Doc 12 phase (an unqualified "Phase N" means a Doc 12 phase); **Plan Phase N** is an Engineering Plan v1.1 phase, always written as "plan Phase N". **Sprint 1** is the first development sprint of Phase 1 (foundation). Canonical module→phase map: M1→Ph2, M2/M3→Ph3, M4/M7→Ph4, M5/M6→Ph5, M8→Ph6, M9→Ph5 (partial) + Ph7 (remainder), M10→Ph8 (separate approval), M11→Ph7, M12→Future Mobile (Doc 12 §1.5).
+
 ## 4. Document map
 
 | # | Document | One-line summary |
@@ -108,9 +111,9 @@ create migrations, build a dashboard UI, or redesign Direction D.
 | 02 | `02-PRODUCT-REQUIREMENTS.md` | Product requirements: vision, users, modules M1–M12, numbered testable requirements, non-functional targets, constraints, and out-of-scope list. |
 | 03 | `03-DYNAMIC-CONTENT-INVENTORY.md` | Every content item that must become dynamic, per module, with fields, workflow, states, permissions, and retention. |
 | 04 | `04-USER-ROLES-PERMISSIONS.md` | User roles and permissions — RBAC and governance; Phase 1 two-role model, granular permission catalogue, full Role–Permission Matrix. |
-| 05 | `05-BACKEND-ARCHITECTURE.md` | Backend architecture: Laravel 13 modular monolith, PostgreSQL, Sanctum auth, state machines, queues, media, notifications. |
-| 06 | `06-DATABASE-DESIGN.md` | Database design: 44 application tables in 7 domains, per-table schema, migration order, financial integrity, privacy, backup/recovery. |
-| 07 | `07-API-ARCHITECTURE.md` | API architecture: `/api/v1`, response/error envelopes, pagination, rate limits, and the full 108-endpoint inventory. |
+| 05 | `05-BACKEND-ARCHITECTURE.md` | Backend architecture: Laravel 13 modular monolith, MySQL 8.4 LTS, Sanctum auth, state machines, queues, media, notifications. |
+| 06 | `06-DATABASE-DESIGN.md` | Database design: 47 application tables in 7 domains (49 defined, 57 physical), per-table schema, migration order, financial integrity, privacy, backup/recovery. |
+| 07 | `07-API-ARCHITECTURE.md` | API architecture: `/api/v1`, response/error envelopes, pagination, rate limits, and the full 132-endpoint inventory. |
 | 08 | `08-SECURITY-ARCHITECTURE.md` | Security architecture: OWASP Top 10 threat model, controls, encryption, uploads, incident response, acceptance. |
 | 09 | `09-ADMIN-DASHBOARD-REQUIREMENTS.md` | Admin dashboard functional requirements (planning only — no UI): per-module screens, actions, filters, permissions, states. |
 | 10 | `10-TESTING-QUALITY-STRATEGY.md` | Testing and quality strategy: PSR-12, Pest/PHPUnit, API contract tests, CI/CD, observability, performance budgets. |
@@ -125,7 +128,7 @@ create migrations, build a dashboard UI, or redesign Direction D.
 |---|---|---|
 | `adr/ADR-001-laravel-version.md` | Laravel version (13) | Confirmed |
 | `adr/ADR-002-php-version.md` | PHP version (8.4 / 8.5, floor 8.3) | Confirmed |
-| `adr/ADR-003-database.md` | Database (PostgreSQL, MySQL as documented alternative) | Recommended |
+| `adr/ADR-003-database.md` | Database (MySQL 8.4 LTS + InnoDB) | Confirmed |
 | `adr/ADR-004-authentication.md` | Authentication (Sanctum) | Confirmed |
 | `adr/ADR-005-rbac-implementation.md` | RBAC implementation (Spatie Permission v8) | Confirmed |
 | `adr/ADR-006-api-architecture.md` | API architecture (REST, API-first, `/api/v1`) | Confirmed |
@@ -143,8 +146,8 @@ create migrations, build a dashboard UI, or redesign Direction D.
 
 | Document | Contents |
 |---|---|
-| `diagrams/SYSTEM-ARCHITECTURE.md` | System architecture (Mermaid): clients → Laravel 13 API → PostgreSQL, queue/cache, storage, push services. |
-| `diagrams/ERD.md` | Entity Relationship Diagram (Mermaid `erDiagram`) for all 44 application tables, plus a written relationship guide. |
+| `diagrams/SYSTEM-ARCHITECTURE.md` | System architecture (Mermaid): clients → Laravel 13 API → MySQL 8.4 LTS, queue/cache, storage, push services. |
+| `diagrams/ERD.md` | Entity Relationship Diagram (Mermaid `erDiagram`) for all 47 application tables, plus a written relationship guide. |
 | `diagrams/RBAC-MATRIX.md` | Role–Permission Matrix (Mermaid + tables): Phase 1 roles, Member, Public; deferred roles in a marked future section. |
 | `diagrams/API-FLOW.md` | API flows (Mermaid sequence diagrams): expatriate lifecycle, login, blood consent, finance entry, content publish. |
 
@@ -200,10 +203,10 @@ fallback language where a translation is missing (per Engineering Plan v1.1 §7)
 
 This blueprint **agrees with** Engineering Plan v1.1 on its core architecture, and cites it throughout:
 
-- Laravel modular monolith + REST API; PostgreSQL; Sanctum; Spatie Permission; Filament admin; Next.js
+- Laravel modular monolith + REST API; MySQL 8.4 LTS + InnoDB; Sanctum; Spatie Permission; Filament admin; Next.js
   public web; Flutter app; one API and one database (plan §3–§4, §6–§8).
-- 38 tables in 7 domains in the plan (§7), extended to 44 application tables in this blueprint
-  (doc 06); 108 endpoints under `/api/v1` in the full inventory (doc 07), against the plan's ~70
+- 39 tables named in 7 domains in the plan (§7 — the plan states 38; the mechanical count is 39, Doc 06 §1.4), extended to 47 application tables in this blueprint
+  (doc 06); 132 endpoints under `/api/v1` in the full inventory (doc 07), against the plan's ~70
   estimate (§8).
 - Expatriate state machine `pending → accepted → in_progress → completed → closed`, with
   `rejected`/`cancelled` (plan §9).
@@ -228,7 +231,7 @@ reason (per the Decision Sheet):
    `#C49A4A`, Cool White `#FBFBF8`, Ivory `#F7F4EA`; Anek Bangla variable (workhorse), Tiro Bangla
    italic (pull-quotes only), Manrope (English). Direction D is the approved frontend direction.
 3. **Versions the plan pinned that are now superseded.** Filament 3 → Filament 5 (`^5.0`); PostgreSQL 16
-   → current major (verify at scaffold time; no major version is asserted here); Redis 7 + Horizon as
+   → MySQL 8.4 LTS (Phase 0.1, Confirmed — Fahim; ADR-003); Redis 7 + Horizon as
    day-one infrastructure → deferred until latency or volume justifies them (database queue/cache to
    start, per the research notes); Next.js 15 / Flutter 3.x → verify the current stable release at
    build time, do not assert. S3-compatible storage as the day-one media store → local `public` disk

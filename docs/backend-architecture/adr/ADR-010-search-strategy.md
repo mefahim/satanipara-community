@@ -1,32 +1,42 @@
-# ADR-010 — Search strategy (Scout database engine first)
+# ADR-010 — Search strategy (Scout database engine first, BOOLEAN MODE)
 
 | | |
 |---|---|
 | Status | **Recommended** |
-| Date | 2026-11-14 |
-| Sources | Research Notes §7.3 (laravel.com/docs/13.x/scout — primary for the driver list) and §6 (PostgreSQL vs MySQL full-text); Decision Sheet; Audit Findings §2.3 (prototype search was browser-side array filtering) |
+| Date | 2026-11-14 (rewritten Phase 0.1 for MySQL 8.4 LTS) |
+| Sources | Research Notes §7.3 (laravel.com/docs/13.x/scout — primary for the driver list) and §6; Decision Sheet; Audit Findings §2.3 (prototype search was browser-side array filtering); Investigator E Bengali benchmark (Phase 0.1, measured on MySQL 8.0.46) |
 
 ## Context
 
-The platform needs server-side search over: the people directory (names, roles, areas), blood donors (names, areas), activities, news/notices/events/jobs, and FAQ. The prototype filtered arrays in the browser over hardcoded data (Audit Findings §6) — that does not scale and is not carried forward. Search must be server-side, paginated, and permission-aware (it never returns fields the caller may not see). The content is bilingual (Bengali + English), and **Bengali full-text quality is unverified in every option considered** (Research Notes §6, §9 item 7).
+The platform needs server-side search over: the people directory (names, roles, areas), blood donors (names, areas), activities, news/notices/events/jobs, and FAQ. The prototype filtered arrays in the browser over hardcoded data (Audit Findings §6) — that does not scale and is not carried forward. Search must be server-side, paginated, and permission-aware (it never returns fields the caller may not see). The content is bilingual (Bengali + English), and **Bengali full-text quality was measured on MySQL 8.0.46 in Phase 0.1 (Investigator E)** — the recommendation below follows those measurements. Re-test on MySQL 8.4 is required before any performance claim (Doc 13 Q-13, Doc 15 §9).
 
 ## Options considered
 
-1. **Laravel Scout with the `database` engine** (or plain `whereFullText` / `whereLike` Eloquent queries — `whereLike()` exists since Laravel 11.34 and emits `LIKE` on MySQL, `ILIKE` on PostgreSQL).
+1. **Laravel Scout with the `database` engine, in BOOLEAN MODE** (or plain `whereFullText` / `whereLike` Eloquent queries — `whereLike()` exists since Laravel 11.34 and emits `LIKE` on MySQL). **Scout's database engine defaults to natural-language mode; this project MUST use boolean mode** (see below) — the default must be overridden explicitly.
 2. **Meilisearch** (self-hosted, single binary on port 7700; typo tolerance, faceting, geo, hybrid/vector search).
 3. **Typesense** (similar to Meilisearch, C++).
 4. **Algolia** (hosted/paid) — rejected: a paid hosted dependency for a small community platform with no demonstrated need.
-5. **PostgreSQL native full-text directly** (`tsvector`/`tsquery` + GIN, `ts_rank`, phrase matching) without Scout — a subset of option 1; the difference is whether the Scout abstraction is used.
+
+## Measured basis (Phase 0.1, Investigator E — MySQL 8.0.46, synthetic dataset, 3,900 rows)
+
+- **ngram `FULLTEXT` + BOOLEAN MODE is the recommended primary:** boolean counts identical to `LIKE '%term%'` in every single-word case.
+- **NATURAL LANGUAGE MODE must NOT be the default:** it matched ~100% of rows (e.g. `রক্তদান` → 1800/1800, top-20 precision 8/20). Scout's database engine defaults to natural-language mode — boolean mode must be set explicitly if Scout is adopted.
+- **Default-parser `FULLTEXT` is fastest (0.15–0.92 ms) but returns 0 rows for partials** — not usable as the primary for Bengali partial-name search.
+- **`LIKE 'term%'` with a B-tree index is for prefix/autocomplete** (never `term*`).
+- **Rules:** minimum 2 characters per term; escape boolean operators; split multi-word input with `+` AND operators. **Spelling variants are NOT tolerated by any approach.**
+- **Index coverage:** the `persons` FULLTEXT index must add `profession_bn` / `area_bn` (a name-only index cannot answer `শিক্ষক`).
+- 8.0 vs 8.4 ngram feature-set equivalence verified from the MySQL 8.4 manual §14.9.8; **no timings measured on 8.4 — re-run required** (Doc 15 §9 re-test checklist).
 
 ## Advantages
 
 - **Scout `database` engine:** zero new infrastructure; no separate index to manage or keep in sync; adequate ranking for member/notice/activity search at thousands of rows; a clean additive swap to Meilisearch later behind the same Scout driver (not a rewrite).
 - **Meilisearch:** typo tolerance, faceting, geo, hybrid/vector search — genuinely better search quality when it matters.
-- **PostgreSQL native FTS (under option 1 or 5):** configurable dictionaries/stemming, ranking, phrase matching; stronger than MySQL's `FULLTEXT` (which is simpler and less configurable, notably weaker on stemming/language handling).
+- **MySQL ngram `FULLTEXT` + BOOLEAN MODE (measured):** correct single-word recall matching `LIKE '%term%'`, with ranking, at this scale — stronger than the default parser for Bengali partial matching.
 
 ## Disadvantages
 
-- **Database engine:** no typo tolerance, no faceting, weaker Bengali handling. Search quality for Bengali names is unproven and must be tested empirically before any claim is made.
+- **Database engine:** no typo tolerance, no faceting, and **no spelling-variant tolerance** (no approach tolerates spelling variants — this is a measured limit, not a configuration gap). Search quality for Bengali names is measured on 8.0.46 and must be re-tested on 8.4.
+- **Scout default trap:** Scout's database engine defaults to natural-language mode, which is unusable as the default here (~100% row match). Boolean mode must be set explicitly; a code-review/CI check must prevent a silent revert to the default.
 - **Meilisearch:** a second service to run, back up, and keep in sync — index drift (the index disagreeing with the database) is a real failure mode. It is a clean swap later, but it is not free.
 - **Typesense:** same operational cost as Meilisearch with a smaller ecosystem in this stack.
 - **Algolia:** paid, hosted, and an external dependency for data that includes personal information — the data-residency and cost questions alone rule it out for now.
@@ -34,7 +44,7 @@ The platform needs server-side search over: the people directory (names, roles, 
 ## Security implications
 
 - Search must be permission-aware: a search over donors must never return phone numbers; a search over members must be scoped to what the caller may see (Doc 07 §6). This is enforced in the query, not by filtering results afterwards.
-- Search input is treated like any other input: parameterised, length-limited, and never interpolated into raw SQL (Doc 08 §3.1).
+- Search input is treated like any other input: parameterised, length-limited, and never interpolated into raw SQL (Doc 08 §3.1). Boolean-mode operators in user input are escaped (Doc 07 §6).
 - If Meilisearch is adopted later, its API key must be server-side only, its dashboard must not be publicly exposed, and indexed data must respect the same visibility rules as the database.
 
 ## Scalability implications
@@ -44,13 +54,13 @@ The platform needs server-side search over: the people directory (names, roles, 
 
 ## Maintenance implications
 
-- Database engine: no index to maintain, no sync to monitor. The cost is that search improvements require database work (indexes, `pg_trgm` trigram indexes as a likely fallback — not verified here, Research Notes §6).
+- Database engine: no index to maintain, no sync to monitor. The cost is that search improvements require database work (FULLTEXT indexes, ngram parser choice — recorded in Doc 06 §3.2/§3.5/§5.1 and Doc 07 §6).
 - Meilisearch (if adopted): the index must be rebuilt and verified as part of the backup/restore discipline; index drift must be monitored.
 
 ## Final recommendation
 
-**Start with Scout's `database` engine** (or plain `whereFullText`/`whereLike` Eloquent queries where Scout adds nothing), on whichever database is chosen (ADR-003). Add Meilisearch later only if typo tolerance, faceting, or Bengali search quality demonstrably fails in an empirical test with real Bengali names and notices.
+**Start with Scout's `database` engine in BOOLEAN MODE** (or plain `whereFullText` boolean / `whereLike` Eloquent queries where Scout adds nothing), on MySQL 8.4 LTS. Add Meilisearch later only if typo tolerance, faceting, or Bengali search quality demonstrably fails in an empirical test with real Bengali names and notices.
 
 ## Reason for selection
 
-Zero new infrastructure for a dataset of thousands of rows, with a clean additive upgrade path behind the same Scout driver. Paying for a second search service — with its sync, backup, and drift risks — before search quality has been measured would be premature optimisation. The Bengali-quality question is explicitly unresolved and is a test to run, not a claim to make.
+Zero new infrastructure for a dataset of thousands of rows, with a clean additive upgrade path behind the same Scout driver. Paying for a second search service — with its sync, backup, and drift risks — before search quality has been measured would be premature optimisation. The Bengali-quality question is now measured on MySQL 8.0.46 (Investigator E) and is a re-test on 8.4, not a claim to make.

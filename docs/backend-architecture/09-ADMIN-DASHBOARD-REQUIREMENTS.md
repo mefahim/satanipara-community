@@ -50,7 +50,7 @@ Each module below follows the same structure: purpose, main screens, actions, da
 - **Actions:** click-through from any count to the filtered list in the relevant module.
 - **Filters/search:** year selector for the finance summary; no free-text search on the overview itself.
 - **Forms/validation:** none.
-- **Permissions:** `dashboard.view` (Super Admin); helpers receive the reduced overview automatically — there is no separate "helper dashboard" permission to misconfigure.
+- **Permissions:** `dashboard.view_admin` (Super Admin); `dashboard.view_helper` (Helper, reduced overview).
 - **Approval workflow:** none (read-only).
 - **Empty state:** "No items need attention" when every count is zero, with a link to each module for review. **Loading state:** skeleton rows for each summary card until the data arrives. **Error state:** if a summary fails to load, that card shows "Could not load this summary — try again" with a retry action; the rest of the page still renders.
 
@@ -61,9 +61,9 @@ Each module below follows the same structure: purpose, main screens, actions, da
 - **Actions:** create user, edit user, deactivate/reactivate user, reset a user's password (Super Admin-only, audited — Doc 07 A6), assign/change role (Super Admin-only; Phase 1 roles only: `super-admin`, `expatriate-helper`).
 - **Data displayed:** name, phone (masked in the list; full number only on the detail view and only for Super Admins), role, area, status (active/inactive), last login, created date.
 - **Filters:** by role, by status, by area. **Search:** by name or phone (phone search uses the `phone_hash` lookup — Doc 08 §6.2).
-- **Forms:** name, phone, password (on create; minimum 8 characters, letter + digit), role, area. **Validation:** as Doc 07 §7; phone must be unique (409 `duplicate_phone`); role must be one of the two Phase 1 roles.
-- **Permissions:** `users.view`, `users.create`, `users.update`, `users.reset_password` (all Super Admin-only in Phase 1).
-- **Approval workflow:** none — creation is immediate, but it is audited. A proposed self-lockout guard (a Super Admin cannot remove their own Super Admin role) is listed for Sprint 1 confirmation (Doc 07 §17).
+- **Forms:** name, phone, password (on create; per Doc 04 §5.1 — 12 characters minimum, no composition rules, mandatory breach screening), role, area. **Validation:** as Doc 07 §7; phone must be unique (409 `duplicate_phone`); role must be one of the two Phase 1 roles.
+- **Permissions:** `members.view`, `members.create`, `members.reset_password`, `users.manage_roles` (all Super Admin-only in Phase 1; create/update use `members.create` + `users.manage_roles` jointly — Doc 07 AD4/AD5).
+- **Approval workflow:** none — creation is immediate, but it is audited. The self-lockout guard (a Super Admin cannot remove their own Super Admin role) is **mandatory** (decided Phase 0.1; Doc 04 §3.2).
 - **Empty state:** "No users yet" (only reachable before the first admin is created — in practice the list always has at least the initial Super Admin). **Loading:** skeleton table rows. **Error:** the list shows a retryable error banner; the create form shows field errors inline and preserves entered values.
 
 ### 3.3 Roles & Permissions
@@ -80,7 +80,7 @@ Each module below follows the same structure: purpose, main screens, actions, da
 
 - **Purpose:** manage the community membership register — applications, approvals, member records, and member lookup.
 - **Main screens:** member list (with a pending-applications view); member detail; member edit form.
-- **Actions:** approve an application (issues a member ID and enables login — Doc 07 D2), reject an application (reason required — Doc 07 D3), edit member details, deactivate a member, view a member's requests and history.
+- **Actions:** approve an application (issues a member ID and enables login — Doc 07 AD2), reject an application (reason required — Doc 07 AD3), edit member details, deactivate a member, view a member's requests and history.
 - **Data displayed:** member ID, name, phone (masked in the list), area, type (resident/expat/student), status (pending/approved/rejected/inactive), joined date, donor opt-in flag.
 - **Filters:** by status, type, area, donor opt-in. **Search:** by name, member ID, or phone (hash lookup).
 - **Forms:** member edit (name, phone, area, country, family info, type). **Validation:** as Doc 07 §7; phone unique excluding the member being edited.
@@ -157,14 +157,14 @@ Each module below follows the same structure: purpose, main screens, actions, da
 
 ### 3.11 Finance
 
-- **Purpose:** record, approve, publish, and reverse ledger entries; publish annual reports; view project accounts (if confirmed).
+- **Purpose:** record, approve-and-publish (one step), reject, and reverse ledger entries; publish annual reports; view project accounts (if confirmed).
 - **Main screens:** ledger list (year-grouped, kind-filtered); entry form; entry detail (with reversal history); annual-report list; finance summary.
-- **Actions:** create an entry (draft); approve an entry; publish an entry; reverse an entry (reason required — the original is never edited or deleted); upload an annual report (PDF, with audited flag).
-- **Data displayed:** date, item, kind (income/expense/donation), category, amount (BDT), payee, receipt, status (draft/approved/published/reversed), reversal link where applicable; totals computed server-side.
+- **Actions:** create an entry (draft); approve-and-publish an entry (one step); reject an entry (reason required — stays `draft`); reverse an entry (reason required — the original is never edited or deleted); upload an annual report (PDF, with audited flag).
+- **Data displayed:** date, item, kind (income/expense/donation), category, amount (BDT), payee, receipt, status (draft/published/reversed/discarded), reversal link where applicable; totals computed server-side.
 - **Filters:** by year, kind, category, status, date range. **Search:** by item or payee.
 - **Forms:** entry form (date, item, kind, category, amount, payee, receipt upload). **Validation:** amount ≠ 0 with two decimals; date valid; kind in enum; receipt passes upload checks.
-- **Permissions:** `finance.create`, `finance.approve`, `finance.publish`, `finance.reverse`, `finance.view` (Super Admin-only in Phase 1; the Treasurer role is deferred, so the Super Admin performs these actions in Phase 1).
-- **Approval workflow:** create (draft) → approve → publish. Whether approval must be by a *different* person than the creator (dual control) is **proposed — confirm in Sprint 1** (Doc 07 §17). Reversal requires a reason and is audited; a reversed entry stays visible with its reversal linked.
+- **Permissions:** `finance.create`, `finance.approve`, `finance.reverse`, `finance.view` (Super Admin-only in Phase 1; the Treasurer role is deferred, so the Super Admin performs these actions in Phase 1).
+- **Approval workflow:** create (draft) → approve-and-publish (one step). Dual control is **mandatory** (decided Phase 0.1 — Doc 04 §6.1): the approver must differ from the creator. Reversal requires a reason and is audited; a reversed entry stays visible with its reversal linked.
 - **Empty state:** "No entries of this type in this year" (the prototype's own empty text — Audit Findings §7.4). **Loading/error:** as §3.1. A failed publish or reversal changes nothing and shows the error on the entry.
 
 ### 3.12 Gallery & Media
@@ -185,7 +185,7 @@ Each module below follows the same structure: purpose, main screens, actions, da
 - **Main screens:** summary report (date-range selectable); per-module breakdowns (requests by status/service, donors by group, finance totals, membership counts); export (download the report as a file — format to be confirmed at scaffold time; CSV is the recommended starting point).
 - **Actions:** select a date range, export.
 - **Data displayed:** all figures computed from live data at request time, never hand-typed.
-- **Permissions:** `reports.view` (Super Admin-only).
+- **Permissions:** `dashboard.view_admin` (Super Admin-only).
 - **Empty state:** "No data in this period" when the range contains nothing. **Loading:** skeleton summary cards. **Error:** retryable banner.
 
 ### 3.14 Notifications
@@ -202,11 +202,11 @@ Each module below follows the same structure: purpose, main screens, actions, da
 
 - **Purpose:** receive, read, and reply to messages sent through the public contact form.
 - **Main screens:** message list; message detail with reply form.
-- **Actions:** mark read, reply (the reply text is stored as the record; in Phase 1 there is no email provider, so the reply is conveyed out of band — Doc 07 D8), mark resolved.
+- **Actions:** mark read, reply (the reply text is stored as the record; in Phase 1 there is no email provider, so the reply is conveyed out of band — Doc 07 AD8), mark resolved.
 - **Data displayed:** sender name, phone, message, received time, status (new/read/replied/resolved).
 - **Filters:** by status. **Search:** by sender name or message text.
 - **Forms:** reply (≥10 characters). **Validation:** reply ≥10 characters.
-- **Permissions:** `contact.view`, `contact.reply` (Super Admin-only).
+- **Permissions:** `contact_messages.view`, `contact_messages.reply` (Super Admin-only).
 - **Empty state:** "No messages". **Loading/error:** as §3.1.
 
 ### 3.16 Audit Logs
@@ -227,7 +227,7 @@ Each module below follows the same structure: purpose, main screens, actions, da
 - **Data displayed:** current values for every setting, with a note on where each value appears publicly.
 - **Forms:** brand (name, tagline, slogan), office (address, hours — real values only after verification), policy copy (no-service-charge statement, 999 disclaimer, ERT size), system (pagination defaults are not editable here — they are code constants).
 - **Validation:** per-field; policy copy fields require both Bengali and English text.
-- **Permissions:** `settings.view`, `settings.update` (Super Admin-only).
+- **Permissions:** `settings.manage` (Super Admin-only).
 - **Approval workflow:** none in Phase 1; changes are immediate and audited. Changing public policy copy is a significant action and should be announced to the organisation by the Super Admin out of band.
 - **Empty/loading/error:** settings always have values (seeded at deployment); a failed save preserves the form and shows field errors.
 

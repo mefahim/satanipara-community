@@ -104,7 +104,7 @@ not treat any of them as a source of truth.
   Emergency Response Team of **3–5** people. The service is **NOT a replacement for official emergency
   services — call 999 first**.
 - No backend, database, payment, or real OTP in this phase — static HTML/CSS/JS prototype only. Real
-  development (Laravel + PostgreSQL + Next.js + Flutter) is a separate, later phase.
+  development (Laravel + MySQL 8.4 + Next.js + Flutter) is a separate, later phase.
 - All content is DEMO; real stats/photos/committee/finance need client approval and (for people)
   individual consent before publication. Where no verified figure exists, the prototype shows
   "তথ্য হালনাগাদ হচ্ছে" ("information being updated") instead of inventing a number.

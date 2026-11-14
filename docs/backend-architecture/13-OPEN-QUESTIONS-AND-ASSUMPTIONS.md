@@ -21,7 +21,7 @@ that records the decision in the affected blueprint document.
   correct?
 - **Why it matters:** the frontend step structure, the draft-saving behaviour between steps, and the
   validation order all depend on the step count.
-- **What is known:** the audit (document 01 §8.11) records this as a doc/build mismatch to confirm. The
+- **What is known:** the audit (document 01 §8, defect D11) records this as a doc/build mismatch to confirm. The
   backend accepts the wizard's data regardless of step count (document 02, REQ-M5-003), so the backend
   is not blocked — but the frontend build is.
 - **Decided by:** Fahim / the design owner, confirming against the design system.
@@ -33,14 +33,12 @@ that records the decision in the affected blueprint document.
   `doTrack()`). The prototype's tracking result exposes the applicant's name and area in `#trMeta`, plus
   the service, the beneficiary ("for whom"), the 4-step timeline with notes, and the expense ledger.
   What exactly may a non-logged-in visitor see?
-- **Options:** (a) keep the prototype's exposure (name + area visible); (b) show status and timeline
-  only, hiding names; (c) show a masked applicant identity; (d) require the applicant's phone number
-  (or another second factor) as well as the Request ID.
+- **Phase 0.1 position (Doc 04 §7.4, Doc 07 §8.3/X2):** the mechanism is decided — Request ID **and** a 128-bit tracking secret (`random_bytes(16)`, 32 hex chars, SHA-256 hash stored), submitted by `POST /api/v1/expatriate-requests/track` (never GET/URL). The public view is the Tier-S allowlist only (status, service type, 4-node timeline, expense ledger — no applicant/beneficiary name or phone, no details, no vouchers, no author identities). The prototype's name/area exposure is NOT carried forward. The only open part is AO-04: whether the Tier-S view should additionally include the applicant's first name or the beneficiary name (default: no).
 - **Why it matters:** expatriate requests are the most sensitive module (plan v1.1 §6 M5); beneficiary
   phone/address are encrypted in the backend design. Publishing an applicant's name and area to anyone
   who guesses or shares an ID is a privacy decision, not a default.
 - **Decided by:** the organisation (Super Admin / client), with Fahim.
-- **Status:** Open.
+- **Status:** Open only for AO-04 (Tier-S view: first name / beneficiary name?). The mechanism and the Tier-S allowlist are decided (Phase 0.1).
 
 ### Q-03 — Does expatriate submission require login in production?
 
@@ -76,7 +74,7 @@ that records the decision in the affected blueprint document.
 - **Why it matters:** with no OTP, the password is the only authentication factor; the policy is the
   main defence (plan v1.1 §12). It must be set before the registration endpoint is built.
 - **Decided by:** Fahim.
-- **Status:** Open.
+- **Status:** **Decided (Phase 0.1) except AO-01:** the policy is Doc 04 §5.1 — 12 chars minimum for all accounts, 16 enforced for Super Admin, no composition rules, mandatory breach screening, Argon2id (m=19 MiB, t=2, p=1), history of 5, no expiry. Open only: AO-01 — 15 chars for all accounts (full NIST 800-63B-4 single-factor compliance)?
 
 ### Q-06 — Real contact details
 
@@ -136,7 +134,7 @@ that records the decision in the affected blueprint document.
 - **Why it matters:** it sets the `is_public_summary` behaviour, the `GET /finance/summary` response,
   and the finance approval workflow.
 - **Decided by:** the organisation.
-- **Status:** Open.
+- **Status:** **Decided in part (Phase 0.1):** dual control is mandatory (Doc 04 §6.1); approve IS publish (single step, F4; `finance.publish` deleted). The public summary level (monthly totals vs project-level detail) stays open for the organisation.
 
 ### Q-12 — Donation / payment in the future
 
@@ -151,15 +149,13 @@ that records the decision in the affected blueprint document.
 
 ### Q-13 — Bengali full-text search quality
 
-- **Question:** does PostgreSQL full-text search handle Bengali names and notices well enough, or is
-  Meilisearch (or another engine) needed? PostgreSQL has no built-in Bengali dictionary; MySQL n-gram
-  behaviour for Bengali is likewise unverified. (Research notes §6, §9 item 7.)
+- **Question:** does MySQL full-text search handle Bengali names and notices well enough, or is
+  Meilisearch (or another engine) needed? (Research notes §6, §9 item 7.)
 - **Why it matters:** member, notice, and activity search is a core public feature. Search quality
   cannot be claimed until it is tested.
-- **What is needed:** a small empirical test with real Bengali names and notices, on the chosen database,
-  before launch. `pg_trgm` trigram search is a likely fallback; it is not verified.
+- **What was measured (Phase 0.1, Doc 15 §9):** ngram `FULLTEXT` + **BOOLEAN MODE** on MySQL 8.0.46 (synthetic dataset, 3,900 rows) — boolean counts identical to `LIKE '%term%'` in every single-word case; recommended as the primary approach. Natural-language mode must NOT be the default (matched ~100% of rows). The PostgreSQL trigram-search fallback is dead (PostgreSQL superseded). Re-test on MySQL 8.4 + a real-data snapshot is required before launch (re-test checklist, Doc 15 §9).
 - **Decided by:** the build team, by measurement — not by opinion.
-- **Status:** Open (unverified; test required).
+- **Status:** Partially resolved by measurement (Phase 0.1); re-test on 8.4 + real-data snapshot still open.
 
 ### Q-14 — Reverb database driver
 
@@ -253,7 +249,8 @@ that records the decision in the affected blueprint document.
 - **Why it matters:** the service catalogue is a managed list in the backend (§3 of document 03), so
   either list can be implemented — but the final list must be confirmed before the wizard is built.
 - **Decided by:** the organisation, with Fahim.
-- **Status:** Open.
+- **Phase 0.1 position:** the catalogue is a table (`service_types`, Doc 06 §6.8) with endpoints S1–S5 and permission `service_types.manage`; requests snapshot `service_key`/`service_name_bn` at submission. Seed candidates (7, from the prototype's `SVC` object): grocery, medicine, hospital, elderly, home, document, general. The final list stays open for the organisation.
+- **Status:** Open (final list only).
 
 ### Q-23 — Apple Developer account (iOS)
 
@@ -282,16 +279,13 @@ that records the decision in the affected blueprint document.
 - **Decided by:** the organisation.
 - **Status:** Open — awaiting the organisation.
 
-### Q-26 — Database choice: PostgreSQL or MySQL?
+### Q-26 — Database choice: PostgreSQL or MySQL? — CLOSED (Decided 2026-11-14 by Fahim)
 
-- **Question:** the blueprint leans PostgreSQL, narrowly, because the project starts on a single VPS
-  where hosting availability is not a constraint (research notes §6). If shared-hosting portability in
-  Bangladesh becomes a requirement, MySQL/MariaDB LTS is the documented alternative. Which constraint
-  decides it — VPS-only, or shared-hosting portability?
+- **Decision:** **MySQL 8.4 LTS + InnoDB** (ADR-003, Confirmed). The PostgreSQL lean is superseded; the MySQL/MariaDB portability argument decided it.
 - **Why it matters:** it is the one infrastructure decision that is expensive to reverse after data
-  exists. It must be recorded explicitly, with the deciding constraint named.
-- **Decided by:** Fahim, with the build team.
-- **Status:** Open (lean recorded; decision to confirm at scaffold time).
+  exists. It is recorded explicitly, with the deciding constraint named (ubiquitous on cheap Bangladeshi shared/cPanel hosting; same decimal integrity, `CHECK` constraints, generated columns, `FULLTEXT`).
+- **Decided by:** Fahim (Phase 0.1).
+- **Status:** **Decided (Phase 0.1, 2026-11-14).**
 
 ### Q-27 — Hosting, domain ownership, and handover accounts
 
@@ -347,7 +341,7 @@ An assumption is not a fact; if it is invalidated, the affected requirement or d
 | A-03 | Two admin roles (Super Admin + Expatriate Helper) are sufficient for Phase 1, and the deferred roles (President, GS, Treasurer) can wait until after launch. | The organisation requires a committee role to approve or enter data in Phase 1. | The organisation, with Fahim. |
 | A-04 | Login with mobile number + password (no OTP) is acceptable to the organisation and its members, with rate limiting and temporary lockout as the main defence. | The organisation requires OTP, or members cannot reliably use password login. | The organisation, with Fahim. |
 | A-05 | Browser/push notification (Web Push) is sufficient for helper alerts, and helpers will grant notification permission at first dashboard login. | Helpers refuse permission, change browsers frequently, or need SMS. Mitigation in the plan: the dashboard bell badge showing unread requests is the backup. | The organisation (helpers). |
-| A-06 | The project starts on a single VPS, so PostgreSQL availability is not a constraint and the PostgreSQL lean holds. | The site must move to cheap shared hosting in Bangladesh, where only MySQL/MariaDB is practical. | Fahim (see Q-26). |
+| A-06 | The database is MySQL 8.4 LTS (InnoDB). If the project ever needs PostgreSQL-only features (notably Laravel native vector search), that is a new decision with a migration cost, not a reversion. | Fahim reverses the database decision. | Fahim (Decided 2026-11-14, Phase 0.1; ADR-003). |
 | A-07 | The 7 demo services in the prototype's `SVC` object are close to the final service list, and the list can be finalised without changing the request workflow. | The organisation wants a materially different service catalogue (see Q-22). | The organisation. |
 | A-08 | The public tracking page can show at least the request status and timeline without login, as the prototype does. | The organisation decides public tracking must be authenticated or masked (see Q-02). | The organisation. |
 | A-09 | Finance figures can be published as a monthly/project summary once audited, and the organisation will supply audited figures. | The organisation decides finance is members-only, or cannot supply audited figures. | The organisation. |
@@ -360,3 +354,29 @@ An assumption is not a fact; if it is invalidated, the affected requirement or d
 | A-16 | The single verified historical milestone is the 1999 founding, and no other date will be published until document-verified. | The organisation supplies verified documents for additional milestones. | The organisation. |
 | A-17 | The English translations in the prototype's `EN` dictionary (400 keys) are a starting point for the bilingual content, not a final translation, and professional review is needed before launch. | The organisation supplies its own translations or requires a different translation workflow. | The organisation. |
 | A-18 | The backup/restore targets (RPO 24 h, RTO 4 h, monthly automated restore check + quarterly full restore rehearsal) are acceptable to the organisation. | The organisation requires stricter recovery targets. | The organisation. |
+
+---
+
+## AO — Awaiting Organisation decisions (Phase 0.1 register)
+
+Every decision classified Awaiting Organisation in Phase 0.1, merged from Investigator B §6.2 (AO-01–AO-17) and the D/C open items, deduplicated. "Owner" is the party who must decide; "Blocks" is what cannot proceed (or cannot be called final) until it is decided. The full register with implications and blocked phases is Doc 15 §11.
+
+| # | Decision | Owner | Blocks |
+|---|---|---|---|
+| AO-01 | 15-character minimum for **all** accounts (full NIST SP 800-63B-4 single-factor compliance) vs 12 for Members/Helpers (documented deviation)? | Fahim (Q-05) | Nothing in Phase 1 (12 is implementable now); the deviation note must stay until decided. |
+| AO-02 | Is MFA for Super Admins **required at launch** or deferred/optional? (Build TOTP behind a flag either way.) | Organisation (Doc 04 §11 RBAC-3) | Go-live MFA posture; the runbook entry. Build is not blocked. |
+| AO-03 | Tracking-secret validity period after a terminal status (recommended: 90 days). | Organisation | Phase 1 tracking build (the value is configurable; the build needs a number before launch). |
+| AO-04 | Should the Tier-S tracking view additionally include the applicant's first name or the beneficiary name? (Default: no.) | Organisation (Q-02) | The tracking response shape. |
+| AO-05 | **Identity-verification procedure** (in person? call-back to a known number? other?) + the **outbound channel** for delivering temporary passwords, tracking secrets, and completion updates (in person? phone call? later email?). | Organisation (with Fahim) | Password-reset delivery, secret regeneration, recovery authorisation — all three flows need a named procedure before go-live. |
+| AO-06 | Emergency escalation rules for flagged expatriate requests (who is alerted, in what order, what counts as an emergency). | Organisation (Q-17) | Emergency request handling (the flag exists; the rules do not). |
+| AO-07 | **Who, by office, authorises a recovery bootstrap** (e.g. President / General Secretary — name the office). | Organisation | Recovery path (Doc 04 §5.8/RBAC-4) — without a named authoriser the procedure cannot be executed. |
+| AO-08 | Is the single-approver finance exception (written sign-off) wanted at all, and if so who signs it and for how long? (Default: not used.) | Organisation (client sign-off) | Nothing in Phase 1 (the exception is a policy document, not code). |
+| AO-09 | CAPTCHA provider (if spam/targeted lockout is observed) — which provider, and is it approved? Default Phase 1: no CAPTCHA (rate limits + honeypot + minimum submit time). | Organisation (with Fahim / build team) | Nothing in Phase 1; the mitigation path must be named before it is needed. |
+| AO-10 | Guest blood-request status checking: add a secret-authenticated blood-tracking endpoint, or update guest blood requesters out of band by phone? | Organisation | Guest blood-requester experience (currently no status-check path for guests). |
+| AO-11 | On member deletion, are `payee_bn` / `donor_name_bn` in ledger entries anonymised, or kept for financial-record integrity? (Default until decided: anonymise.) | Organisation (with Fahim) | Phase 1 anonymisation job (it must know whether to rewrite ledger payee fields). |
+| AO-12 | Donor phone destruction period after withdrawal (recommended: 90 days). | Organisation | Phase 1 donor-withdrawal build. |
+| AO-13 | `notifications_log` cold-storage mechanism after 2 years (destination, format, access control). | Organisation / build team | Nothing in Phase 1 (first archive ≥ 2 years after launch). |
+| AO-14 | Media recoverability window (blueprint: 30 days). | Organisation | Phase 1 media pipeline (purge job timing). |
+| AO-15 | Any time-based purge of former-member records (currently: none). | Organisation | Nothing in Phase 1. |
+| AO-16 | Confirmation of the blueprint's retention periods as organisational policy (2-year `notifications_log`, 1-year read-notification prune, 90-day application logs, 30-day backups, 30-day deletion grace). | Organisation | Handover sign-off (the build implements the blueprint figures; the runbook records them as "to be confirmed at handover"). |
+| AO-17 | Phone-number change re-verification by a Super Admin (Doc 07 M2). Default until decided: **required** (the phone is the login identifier). | Organisation (with Fahim) | Member profile-update build (M2). |

@@ -17,6 +17,8 @@ This document defines **who may do what** in the Satanipara Community platform: 
 
 **Phase 1 has exactly two admin roles: Super Admin (`super-admin`) and Expatriate Helper (`expatriate-helper`).** This is Fahim's decision of 2026-11-14, recorded in the Decision Sheet and in Engineering Plan v1.1 §5 ("আপাতত রোল ব্যবস্থা ইচ্ছাকৃতভাবে সহজ রাখা হলো" — the role system is deliberately kept simple for now). The other roles named in this document — President, General Secretary, Treasurer, and the rest — are **deferred future options**. They are evaluated in §8 as a catalogue for a later phase; they are **not** to be implemented, seeded, or exposed in any Phase 1 UI, API, or admin panel.
 
+**The Expatriate Helper IS the ERT operational role: there is no third role.** The ERT is a roster (doc 06 §6.4), not a role — the people on the ERT roster who act in the system do so as Expatriate Helpers (or Super Admins). (Phase 0.1, B §3.6.)
+
 The reason for the narrow Phase 1 scope, per Engineering Plan v1.1 §5, is deliberate: the user base is small at launch, responsibility is clear (one main administrator runs everything; helpers handle only expatriate requests), and more roles mean more training, more confusion, and more risk of wrong access. Roles are added when the need grows — on the same permission structure, without rebuilding the system.
 
 ### 1.2 Two non-admin actor types
@@ -101,6 +103,7 @@ The system cannot be administered until a first Super Admin exists, and no Super
 2. The bootstrap command **refuses to run if any Super Admin already exists**, and refuses to run in production more than once. It writes an audit-log entry recording that bootstrap occurred (actor: `system`, no password material logged).
 3. On first login the Super Admin **must** change the temporary password (forced password-change flag) before any other action is possible.
 4. The demo accounts from the prototype (`01700000000` / `demo1234`, `01700000001` / `helper1234` — Audit Findings §5.5, plaintext passwords in the repo) are **never seeded, never migrated, and never usable** in the real system. Demo data is never migrated (doc 06 §13).
+5. **Go-live expectation (Phase 0.1):** the organisation holds **two active Super Admins from day one** where possible (REG-AUTH-05; §3.2 item 6). The release-gate test is that no demo credential (`01700000000` / `demo1234`, `01700000001` / `helper1234`) can log in on any environment.
 
 ### 3.2 Last-active-Super-Admin guard (mandatory)
 
@@ -115,9 +118,9 @@ This is the single most important governance protection in Phase 1, because with
    - deleting (soft-deleting) the last active Super Admin's account;
    - demoting the last active Super Admin to another role.
 3. The guard is checked **inside the same database transaction** as the change, so a race between two simultaneous demotions cannot slip through.
-4. The guard applies to **all** actors, including another Super Admin — no one may remove the last Super Admin, including themselves.
+4. The guard applies to **all** actors, including another Super Admin — no one may remove the last Super Admin, including themselves. **And no Super Admin may remove their OWN Super Admin role at all** — even when another Super Admin exists. The self-removal ban is absolute (Phase 0.1, B §3.6.2; Doc 07 AD5): removal of one's own role is always blocked; another Super Admin must do it.
 5. **Recovery path (documented, not secret):** if the last Super Admin is genuinely unreachable (e.g. has left the organisation), recovery is by a fresh bootstrap performed by the deployer/maintainer under a written instruction from the organisation, creating a new Super Admin and recording the event in the audit log. The recovery procedure and who may authorise it are agreed with the client at handover; the procedure itself is documented in the operations runbook, not in this blueprint.
-6. **Recommendation (not a rule):** the organisation should hold **two** active Super Admins at all times, so that one person's absence never blocks administration. The system should surface a warning banner in the admin panel whenever only one active Super Admin exists. This is a standing recommendation to the client, not an enforced rule — a single-Super-Admin organisation is valid, just riskier.
+6. **Go-live expectation (Phase 0.1):** the organisation holds **two** active Super Admins from day one where possible (REG-AUTH-05), so that one person's absence never blocks administration. The system surfaces a warning banner in the admin panel whenever only one active Super Admin exists. A single-Super-Admin organisation is valid, just riskier — and with dual control mandatory (§6.1), a single Super Admin cannot publish finance entries until a second approver exists.
 
 ### 3.3 Role assignment rules
 
@@ -207,10 +210,12 @@ Permission names use the Decision Sheet convention `resource.action`. The catalo
 | `expatriate.requests.reject` | Reject a request with a reason (`pending → rejected`). |
 | `expatriate.requests.cancel` | Cancel a request (applicant cancels their own; Super Admin may cancel any with a reason). |
 | `expatriate.requests.close` | Mark a request closed after applicant confirmation (`completed → closed`). |
-| `expatriate.requests.update` | Edit request fields (service, beneficiary, details, urgency) — Super Admin only; helpers edit via updates/expenses, not the core fields. |
+| `expatriate.requests.accept` | Accept a pending request (`pending → accepted`) — Super Admin or assigned helper. (Phase 0.1: replaces `expatriate.requests.update` on X7.) |
+| `expatriate.requests.advance` | Advance a request to the next status (all transitions except accept) — Super Admin or assigned helper. (Phase 0.1: replaces `expatriate.requests.update` on X7.) |
 | `expatriate.updates.create` | Add an update note / photo to a request. |
 | `expatriate.expenses.create` | Add an itemised expense line (+ voucher photo). |
 | `expatriate.expenses.view` | View expense lines on a request (scope follows the request's visibility). |
+| `service_types.manage` | Manage the expatriate service catalogue (create/edit/deactivate service types) — Super Admin only. (Phase 0.1, doc 06 §6.8, Doc 07 S2–S5.) |
 | `expatriate.track` | Look up a request by Request ID (public tracking — see §7.4). |
 | `expatriate.emergency.manage` | Manage the Emergency Response Team roster (3–5 members) and on-call rotation. Reserved in Phase 1 to the Super Admin; the ERT roster itself is Phase 1 data, the management permission is Super Admin-only. |
 
@@ -243,7 +248,6 @@ Permission names use the Decision Sheet convention `resource.action`. The catalo
 | `content.delete` | Soft-delete content. |
 | `media.upload` | Upload media (photos / video) with consent flags. |
 | `media.manage` | Manage the media library (albums, captions, consent flags, delete). |
-| `reports.publish` | Publish an annual report (file + metadata, audited flag). |
 | `reports.download` | Download a published annual report (public for published reports). |
 
 #### Finance (M8)
@@ -296,22 +300,25 @@ The prototype's password rule was length-only (≥ 6 characters, registration; n
 
 | Rule | Phase 1 standard |
 |---|---|
-| Minimum length | **12 characters** for all accounts; **16 characters** recommended for Super Admin accounts. The admin user-creation form enforces the same rule it will enforce on the user (no weaker admin-set passwords). |
-| Complexity | At least one uppercase letter, one lowercase letter, one digit, and one non-alphanumeric character. |
-| Breach check | Passwords are checked against a breached-password list where feasible (e.g. a local list of the most common passwords at minimum; an online k-anonymity check only if the deployment has reliable outbound network access — the check must never block login if the service is unreachable; it applies at set/change time, not at login). |
+| Minimum length | **12 characters** for all accounts; **16 characters enforced** for Super Admin accounts. The admin user-creation form enforces the same rule it will enforce on the user (no weaker admin-set passwords). |
+| Complexity | **No composition rules** (no required character classes — composition rules are deleted; length + breach screening are the controls). |
+| Breach check | **Mandatory at set/change time:** HIBP k-anonymity check (2-second timeout; if the HIBP service is unreachable, fall back to the local list — the check never blocks on network failure) + a local list of ≥10,000 common passwords, always enforced + a context blocklist (organisation name, 'satanipara', 'community', the user's own name/phone). A breached or blocklisted password is rejected with a generic message. |
 | History | A new password must differ from the previous **5** passwords. |
 | No shared accounts | One account per person. Shared "office" logins are prohibited by policy and the system offers no shared-account feature. |
-| Storage | Passwords are stored only as hashes (Laravel's default hasher — bcrypt/argon2 per framework default at scaffold time). Plaintext passwords are never stored, never logged, never emailed. The prototype's plaintext demo passwords (Audit Findings §5.5) are never reproduced. |
+| Storage | Passwords are stored only as hashes: **Argon2id (m=19 MiB, t=2, p=1)**; bcrypt cost ≥12 as the fallback, with passwords over 72 bytes rejected (bcrypt truncation). Plaintext passwords are never stored, never logged, never emailed. The prototype's plaintext demo passwords (Audit Findings §5.5) are never reproduced. |
 | Forced change | Temporary/reset passwords and bootstrap passwords must be changed on first login before any other action. |
 | Expiry | **No forced periodic expiry** (it drives weaker passwords). A password is changed when it is suspected compromised, when a reset is requested, or on first login after a reset. |
+| Temporary passwords | Random, ≥16 characters, single-use, 24-hour expiry; system-generated only (the Super Admin never chooses one) — §5.5. |
+
+**Documented deviation from NIST SP 800-63B-4 (primary source, verified Phase 0.1):** NIST SP 800-63B-4 §3.1.1.2 requires a minimum of 15 characters for passwords used as a single-factor authentication mechanism (NIST SP 800-63B-4, July 2025, final 31 July 2025, https://doi.org/10.6028/NIST.SP.800-63B-4). This blueprint requires 12 characters for all accounts (16 enforced for Super Admin) — a deliberate deviation, recorded here: the 12/16 floor plus mandatory breach screening is the chosen balance for this community's users and devices. The deviation is a decision, not an oversight; AO-01 asks whether 15 characters should apply to all accounts.
 
 ### 5.2 Login throttling and lockout
 
 Per Engineering Plan v1.1 §5 and §9.2 ("ভুল পাসওয়ার্ডে rate limit ও সাময়িক লক থাকবে" — wrong passwords get rate limiting and a temporary lock):
 
 - **Rate limit:** after **5 failed login attempts** for a given phone number (or from a given IP address) within 15 minutes, further attempts are throttled.
-- **Temporary lock:** after **10 failed attempts**, the account is locked for **30 minutes**. The lock is per-account, not per-IP, so an attacker cannot lock out unrelated users by trying their numbers — but the per-IP throttle still applies to slow down distributed guessing.
-- **Lockout response:** the login response during a lock states only that the account is temporarily locked and when to retry. It never reveals whether the phone number exists (see §5.3).
+- **Temporary lock:** after **10 failed attempts**, the account is locked for **30 minutes**, growing to 60 minutes then 240 minutes on repeated failure. The lock is per-account — which means a known phone number **can** be locked by an attacker (a deliberate trade-off, not a protection against it); the per-IP throttle slows distributed guessing, and the Super Admin recovery path (§3.2) is the remedy for a locked-out Super Admin. (Phase 0.1 correction: the Phase 0 text claimed the per-account lock prevents locking out unrelated users — that reasoning was inverted; a per-account lock protects the account from guessing, it does not prevent targeted lockout.)
+- **Lockout response:** the login response during a lock states only that the account is temporarily locked and when to retry. It never reveals whether the phone number exists (see §5.3). A `423` response is returned **only after the correct password is presented** on a locked account; otherwise the response is the generic `401` (Doc 07 §14.1 A1).
 - **Successful login resets** the failure counter immediately.
 - **Super Admin lockout:** a locked Super Admin account is unlocked by another Super Admin, or — if it is the only Super Admin — by the documented recovery path in §3.2. There is no self-service unlock that bypasses the lock.
 - **Implementation:** Laravel's built-in rate limiting (`RateLimiter`, `throttle` middleware) on the login route, plus an account-level `locked_until` timestamp. Failed attempts are audit-logged (phone number hashed in the log, never in plaintext — see §5.7).
@@ -330,7 +337,7 @@ Sanctum 4.x has no per-device session list and no built-in "log out everywhere" 
 |---|---|
 | Web sessions | Database session driver (per the Decision Sheet: sessions on database). Session cookie is `HttpOnly`, `Secure`, `SameSite=Lax` (or `Strict` where the frontend allows it). |
 | Session lifetime | Idle timeout **120 minutes** for Member/helper web sessions; **30 minutes** for Super Admin web sessions (privileged sessions are shorter). Absolute session lifetime **12 hours** — re-authentication is required after that regardless of activity. Exact values are configuration, recorded here so they are chosen deliberately, not by default. |
-| Mobile tokens | Personal access tokens (Sanctum), one per device, with an **expiry** configured (tokens never expire by default — the application sets an expiry; see doc 05 §8). Token names record the device. |
+| Mobile tokens | Personal access tokens (Sanctum), one per device, with an **expiry of 30 days** (decided Phase 0.1; tokens never expire by default — the application sets the expiry; see doc 05 §8). Token names record the device. |
 | Revocation | A user can revoke their own tokens/sessions from their profile ("log out of all devices"). A Super Admin can revoke any user's tokens/sessions (e.g. on suspension). Revocation is a database delete (Sanctum's mechanism) and takes effect immediately. |
 | Suspension effect | Suspending an account immediately revokes all its tokens and invalidates all its sessions. A suspended user cannot log in, and any in-flight request after suspension is rejected. |
 | Concurrent sessions | No hard limit in Phase 1, but the profile page lists active sessions/tokens (device, last activity) so the user can spot and revoke unfamiliar ones. |
@@ -344,11 +351,11 @@ The reset flow is:
 
 1. The user contacts the Super Admin (in person, by phone, or through the office) and asks for a reset.
 2. The Super Admin verifies the person's identity by a means agreed with the organisation (e.g. in person with known identity, or a call-back to a known number). The verification method is an organisational procedure, documented in the operations runbook — the system does not invent one.
-3. The Super Admin issues a reset from the admin panel (permission `members.reset_password`). The system generates a **single-use, time-limited (24 hours) reset token** and shows the Super Admin a temporary password (or a reset link, if the user has an email on file — email is optional in Phase 1).
+3. The Super Admin issues a reset from the admin panel (permission `members.reset_password`). The system generates a **random temporary password (≥16 characters, single-use, 24-hour expiry)** and shows it once to the Super Admin. There is no `new_password` field and no reset link in Phase 1 — the Super Admin never chooses the temporary password.
 4. The temporary credential is delivered to the user **out of band** by the Super Admin (in person or by phone). It is never written into a ticket, a chat message, or the audit log.
-5. The user must change it on first login (§5.1). The reset token is invalidated after first use or after expiry, whichever comes first.
+5. The user must change it on first login (§5.1). The temporary password is invalidated after first use or after expiry, whichever comes first.
 6. The reset event (who reset whose password, when, by which Super Admin) is audit-logged. The password itself is never logged.
-7. **Future option (not Phase 1):** self-service reset by email link, and later OTP/MFA. See doc 05 §8.5.
+7. **Future option (not Phase 1):** self-service reset by email link (Q-04 — whether a self-service/email flow is added later), and later OTP/MFA. See doc 05 §8.5.
 
 ### 5.6 Sensitive-action confirmation
 
@@ -376,7 +383,7 @@ Per Engineering Plan v1.1 §5: "সব অ্যাডমিন কাজ অড
 |---|---|
 | What is logged | Every admin action (create/update/delete/approve/reject/assign/publish/reverse/reset/role change/login/logout/failed login/export), every expatriate-request status transition (actor, from → to, note, timestamp), every finance entry and reversal, every donor-consent grant/revoke and every phone reveal, every data export, every settings change. |
 | What is never logged | Passwords (plaintext or hashed), tokens, full phone numbers in plaintext where avoidable (store a hash for lookup — doc 06 §11), OTP codes, push-subscription private keys, file contents. |
-| Immutability | Audit-log rows are **append-only**. No update, no delete, no truncate through the application. The database user the application uses has no `DELETE`/`UPDATE` privilege on the `activity_log` table (enforced at the database level where the hosting allows it; otherwise enforced by policy + code review + a database trigger where possible). `audit_logs.view` is read-only and there is **no** `audit_logs.delete` permission — it does not exist in the catalogue. |
+| Immutability | Audit-log rows are **append-only**. No update, no delete, no truncate through the application. The `app` database user has no `DELETE`/`UPDATE` privilege on the `activity_log` table (mandatory, two-user design — ADR-003, doc 06 §8.2; the Phase 0 'where the hosting allows it' hedge is deleted — on MySQL it is fully implementable). BEFORE UPDATE/DELETE triggers raise SQLSTATE 45000 as a second layer. An optional hash chain over the rows is a recommendation, not a decision (Phase 0.1, A §2.4). `audit_logs.view` is read-only and there is **no** `audit_logs.delete` permission — it does not exist in the catalogue. |
 | Retention | Audit logs are retained for the life of the platform and are included in backups. No automatic purge in Phase 1. If a retention policy is ever adopted, it is a client decision recorded in writing. |
 | Visibility | Only Super Admins may view the audit log (`audit_logs.view`). Helpers and Members cannot view it, even for their own actions. |
 | Integrity | Each entry records: actor (user id), actor role at the time, action, subject type + id, before/after values (for field changes), IP address, user agent, timestamp. Entries are written in the same database transaction as the action they record, so an action without its log entry cannot commit. |
@@ -385,7 +392,7 @@ Per Engineering Plan v1.1 §5: "সব অ্যাডমিন কাজ অড
 
 Multi-factor authentication is **optional in Phase 1, and recommended for Super Admin accounts**. It is not mandatory, because the organisation's devices and habits are not yet known, and a mandatory MFA that the Super Admin cannot complete would lock the organisation out (see the last-Super-Admin guard, §3.2).
 
-- **If adopted:** TOTP-based MFA (authenticator app) for Super Admin accounts, enforced at login after password verification. Recovery codes are issued at enrolment, stored hashed, and each usable once. Losing both the device and the recovery codes requires the §3.2 recovery path.
+- **If adopted:** TOTP-based MFA (authenticator app) for Super Admin accounts, enforced at login after password verification. The TOTP implementation is built behind a feature flag (Phase 0.1, B §3.6.4) so it can be enabled without a rebuild. Recovery codes are issued at enrolment, stored hashed, and each usable once. Losing both the device and the recovery codes requires the §3.2 recovery path (AO-07: who may authorise recovery, and through what channel — open).
 - **Helpers and Members:** MFA is not offered in Phase 1. The login-throttling (§5.2) and password policy (§5.1) are the controls for those accounts.
 - **Future:** OTP login (SMS or authenticator) as a *login method* is a future option, not Phase 1 — the Decision Sheet records "NO OTP" for Phase 1 login. MFA as a *second* factor after password login is a different thing from OTP-as-login, and is the only MFA shape contemplated here.
 - The decision to enable or require MFA for Super Admins is made with the client at handover, and recorded in the operations runbook. The system must be built so that enabling it later is a configuration change, not a rebuild (doc 05 §8.5).
@@ -400,11 +407,12 @@ Separation of duties exists because a single person who can do every step of a s
 
 The finance lifecycle is `draft → published (locked) → (reversal if wrong)` — Engineering Plan v1.1 §9.4, doc 05 §9.4. The separation rules are:
 
-1. **The person who enters a ledger entry (`finance.create`) cannot approve/publish that same entry (`finance.approve`).** The system rejects the approval with an error naming the rule. This applies to Super Admins as well — a sole Super Admin cannot self-approve.
-2. **Consequence for a single-Super-Admin organisation:** if the organisation has only one Super Admin, that Super Admin can *enter* entries but cannot *publish* them until a second approver exists. This is intentional and must be explained to the client at handover. The practical answers are: (a) hold two Super Admins (the standing recommendation in §3.2), or (b) a future Treasurer/Finance-approver role (§8) takes the approval step. **The system must never silently allow self-approval as a workaround.** If the client insists on a single approver, that is a recorded policy exception with a written client sign-off, and the audit log will show the exception — it is not a code change made quietly.
-3. **Reversal is a separate act:** creating a reversal (`finance.reverse`) also cannot be done by the person who entered the original entry, and a reversal itself is an entry that goes through the same draft → approval path.
-4. **Publishing a monthly summary or annual report (`finance.reports.publish`)** requires the same separation from the person who prepared it, where a preparer is recorded.
+1. **The person who enters a ledger entry (`finance.create`) cannot approve/publish that same entry (`finance.approve`).** The system rejects the approval with an error naming the rule. This applies to Super Admins as well — a sole Super Admin cannot self-approve. (Approve IS publish — a single step; there is no separate `approved` state, Doc 07 F4/F5.)
+2. **Consequence for a single-Super-Admin organisation:** if the organisation has only one Super Admin, that Super Admin can *enter* entries but cannot *publish* them until a second approver exists. This is intentional and must be explained to the client at handover. With dual control mandatory, a single-Super-Admin organisation cannot publish finance entries at all until a second approver exists — this deadlock consequence is recorded as a risk (Doc 12 Phase 6 acceptance criteria carry the warning; two Super Admins from day one is the mitigation, REG-AUTH-05). The practical answers are: (a) hold two Super Admins (the go-live expectation in §3.2), or (b) a future Treasurer/Finance-approver role (§8) takes the approval step. **The system must never silently allow self-approval as a workaround.** If the client insists on a single approver, that is a recorded policy exception with a written client sign-off, and the audit log will show the exception — it is not a code change made quietly.
+3. **Reversal is a separate act:** creating a reversal (`finance.reverse`) is done by a Super Admin; the reversal approver must differ from the reversal's creator. The creator MAY be the original entry's enterer (the Phase 0 rule — 'the reversal creator cannot be the original enterer' — is deleted, B §3.7.2 scenario 6). A reversal itself is an entry that goes through the same draft → approval path; when it is approved, the original entry's status becomes `reversed` (doc 06 §7.1).
+4. **Publishing a monthly summary or annual report (`finance.reports.publish`)** requires the same separation from the person who prepared it — **the summary preparer is always recorded** (Phase 0.1: 'where a preparer is recorded' is deleted; the preparer is a required field on the publish action).
 5. **Exports** (`finance.export`) are logged and require confirmation (§5.6). Exporting is not approval and does not substitute for it.
+6. **Exception path (AO-08, open):** if the organisation has only one Super Admin and insists on publishing, the exception is a recorded policy exception with written client sign-off (item 2) — it is never a silent code change. The exception path itself is AO-08.
 
 ### 6.2 Membership: approval vs finance
 
@@ -450,7 +458,7 @@ Permissions alone are not enough: the same permission must mean different things
 | **Member PII (names, phone, address, date of birth, profession, expatriate country, family details)** | Visible in full only to Super Admins and to the Member themselves. Helpers see PII **only** where it is part of an expatriate request they are assigned to (applicant name, beneficiary, phone, country) — and only for that request. Public API responses never contain member PII. Member exports (`members.export`) are Super-Admin-only, confirmation-gated, and audit-logged. |
 | **Phone numbers generally** | Never in a public API response. Stored encrypted at rest where the field is flagged sensitive (doc 06 §11); lookups use a `phone_hash` (HMAC) so the system can find a user by phone without decrypting every row. |
 | **Donor phones** | See §7.3. |
-| **Expatriate request internals** | Applicant phone, beneficiary details, expense vouchers, and helper notes are visible to Super Admins and the assigned helper. The public tracking view (§7.4) shows only status, step notes (sanitised), and expense totals — never the applicant's phone or internal notes. |
+| **Expatriate request internals** | Applicant phone, beneficiary details, expense vouchers, and helper notes are visible to Super Admins and the assigned helper. The public tracking view (§7.4) is secret-authenticated and shows only the Tier-S allowlist (status, service type, step notes, expense totals) — never the applicant's phone, name, or internal notes. |
 | **Finance detail** | Payee names, voucher images, and entry notes are admin-only. The public sees aggregates. Donor names in finance appear only with that donor's consent (Engineering Plan v1.1 §6, M8). |
 | **Passwords / tokens / secrets** | Never readable through any API or admin screen. A Super Admin can *reset* a password; they can never *view* one. |
 
@@ -460,22 +468,25 @@ The prototype's consent was a button the **requester** clicked, which instantly 
 
 1. A donor's phone is **masked in every search result** (e.g. `01••• •••421` as in the prototype's display). The full number is never in a list response.
 2. When a blood request matches a donor, the **donor** is notified and asked. The donor grants consent (`blood.consents.grant`) for **that specific request only**. Consent is an explicit donor-side action, recorded with donor id, request id, timestamp, and channel.
-3. Only after the grant may the requester see the number (`donors.view_contact`), and only for that request. **Every reveal is audit-logged** (who viewed whose number, for which request, when).
+3. Only after the grant may the requester see the number (`donors.view_contact`), and only for that request. **Every reveal is audit-logged** (who viewed whose number, for which request, when). The reveal endpoint (B6) is rate-limited at 10/min/user (Doc 07 §9).
 4. The donor may **revoke** consent (`blood.consents.revoke`) at any time; the number is hidden again immediately. Revocation does not erase the audit record of a reveal that already happened, and the requester is told the consent was withdrawn.
 5. Consent **expires** with the blood request (when the request is fulfilled or cancelled, the grant lapses). A new request needs a new grant. There is no standing "reveal my number to everyone" consent.
 6. **Availability is computed, not typed:** a donor whose last donation was less than 90 days ago is not shown as available (Engineering Plan v1.1 §6, M6). The system computes this from `last_donation_date`; no one hand-edits an "available" flag to bypass it.
 7. Unavailable donors have their consent/request actions disabled (as in the prototype — Audit Findings §5.2).
-8. A donor record is **withdrawn** (soft-deleted) when the donor asks, or when consent to be listed is withdrawn. Withdrawal hides the donor from search immediately; the consent/reveal history stays in the audit log.
+8. A donor record is **withdrawn** (soft-deleted) when the donor asks, or when consent to be listed is withdrawn. Withdrawal hides the donor from search immediately; the consent/reveal history stays in the audit log. The donor-phone destruction period (how long after withdrawal the phone is destroyed) is open (AO-12).
 
-### 7.4 Expatriate requests — public tracking privacy boundary
+### 7.4 Expatriate requests — public tracking privacy boundary (decided Phase 0.1)
 
-The prototype's tracking is public by Request ID and exposes the applicant's name and area in the tracking result (Audit Findings §3.1, §3 #16). The backend must **confirm the boundary, not assume it**. Phase 1 decision:
+The prototype's tracking is public by Request ID and exposes the applicant's name and area in the tracking result (Audit Findings §3.1, §3 #16). That behaviour is deleted. Phase 1 decision (B §3.4):
 
-- **Public tracking shows:** Request ID, current status (Pending / Accepted / In Progress / Completed / Closed / Rejected / Cancelled), the four step notes (sanitised — no internal notes, no helper names unless the organisation decides otherwise), and the expense total with the "service charge ৳0" line. No applicant name, no beneficiary name, no phone, no area, no voucher images.
-- **Why:** a Request ID is guessable in structure (`EXP-YYYY-####`) and is routinely shared with family members; anyone holding the ID can track. The ID is therefore treated as a **low-security bearer token** — enough to see status, never enough to see identity.
+- **The Request ID is never a credential.** Tracking requires the Request ID **and** the 128-bit tracking secret issued at submission (`random_bytes(16)`, 32 hex chars; stored as a SHA-256 hash — `tracking_secret_hash` on `service_requests`, doc 06 §6.1). The secret is shown exactly once at submission; if the applicant loses it, a Super Admin can re-issue it (audited).
+- **Tracking is a POST with a body, never a GET/URL** (`POST /api/v1/expatriate-requests/track`, Doc 07 X2) — the secret must never appear in a URL, a log, or a referrer.
+- **Public tracking shows the Tier-S allowlist only:** Request ID, current status, service type, the four step notes (sanitised — no internal notes, no helper names), and the expense total with the "service charge ৳0" line. **No applicant name, no beneficiary name, no phone, no area, no details, no voucher images, no author identities.**
+- **Why:** a Request ID is guessable in structure (`EXP-YYYY-####`) and is routinely shared with family members; anyone holding the ID can track. The ID is therefore a public identifier only.
+- **Limits:** 10/min/IP + 5/min/Request ID; 10 failures in 60 minutes → 60-minute lock; uniform 404 for unknown IDs and wrong secrets.
 - **Member tracking shows more:** a logged-in Member viewing their own request sees the full detail (their own data).
 - **Helper/Super Admin tracking** shows the full record (subject to §7.1 scoping).
-- If the client later decides the public view should include the applicant's first name (as the prototype did), that is a **recorded client decision** changing this boundary — not a developer's quiet choice.
+- If the client later decides the public view should include the applicant's first name (as the prototype did), that is a **recorded client decision** changing this boundary — not a developer's quiet choice (AO-04).
 
 ### 7.5 Error-response discipline (403 vs 404)
 
@@ -497,7 +508,7 @@ The roles below are **deferred**. They are not Phase 1 roles, not seeded, and no
 | | |
 |---|---|
 | **Purpose** | A deputy to the Super Admin for day-to-day administration, without the most sensitive powers (role management, audit-log access, finance approval). |
-| **Recommended permissions** | `members.view/create/update/approve/suspend`, `directory.*` (except `directory.publish` — see note), `organisation.update`, `committee.manage`, `activities.*`, `content.*`, `media.*`, `reports.publish`, `contact_messages.view/reply`, `data_rights.manage`, `dashboard.view_admin`, `notifications.view_log`, `expatriate.requests.view/assign`, `donors.view/update`, `blood.requests.view/update`. **Not granted:** `roles.manage`, `users.manage_roles`, `members.reset_password` (or granted only with a second Super Admin's approval — a policy decision at creation time), `audit_logs.view`, `finance.approve`, `finance.reverse`, `settings.manage`. |
+| **Recommended permissions** | `members.view/create/update/approve/suspend`, `directory.*` (except `directory.publish` — see note), `organisation.update`, `committee.manage`, `activities.*`, `content.*`, `media.*`, `finance.reports.publish`, `contact_messages.view/reply`, `data_rights.manage`, `dashboard.view_admin`, `notifications.view_log`, `expatriate.requests.view/assign`, `donors.view/update`, `blood.requests.view/update`. **Not granted:** `roles.manage`, `users.manage_roles`, `members.reset_password` (or granted only with a second Super Admin's approval — a policy decision at creation time), `audit_logs.view`, `finance.approve`, `finance.reverse`, `settings.manage`. |
 | **Justify when** | The Super Admin is a bottleneck on routine approvals and content, but the organisation is not ready to split duties by function. |
 | **Caution** | This role is the easiest to over-grant. If it accumulates `finance.approve` and `audit_logs.view`, it is a second Super Admin in all but name — in which case, call it that. |
 
@@ -540,7 +551,7 @@ The roles below are **deferred**. They are not Phase 1 roles, not seeded, and no
 | | |
 |---|---|
 | **Purpose** | **Content Editor:** authors and edits all content (notices, news, events, jobs, FAQs, gallery) and uploads media. **News Editor:** a narrower variant — notices and news only. Create one or the other, not both, unless the volume justifies the split. |
-| **Recommended permissions (Content Editor)** | `content.create/update/archive`, `media.upload/manage`, `activities.create/update` (activity copy is content work; `activities.publish` stays with the Super Admin until the author/publisher split in §6.3 is formalised), `reports.publish` (no — reports are finance; excluded). **Not granted:** `content.publish` (until the split is formalised), `content.delete`, finance, members, audit logs. |
+| **Recommended permissions (Content Editor)** | `content.create/update/archive`, `media.upload/manage`, `activities.create/update` (activity copy is content work; `activities.publish` stays with the Super Admin until the author/publisher split in §6.3 is formalised), `finance.reports.publish` (no — reports are finance; excluded from the editor). **Not granted:** `content.publish` (until the split is formalised), `content.delete`, finance, members, audit logs. |
 | **Recommended permissions (News Editor)** | Same as Content Editor but scoped by content type (notices + news only) — enforced by a policy check on the post's category, not by a separate permission set. |
 | **Justify when** | Content volume grows beyond the Super Admin's capacity, or the organisation wants a named person responsible for what is published. |
 | **Caution** | The `content.publish` question must be decided **before** creating the role: either the editor publishes (and the Super Admin reviews by audit), or the editor authors and the Super Admin publishes (enforced separation, §6.3). Do not leave it ambiguous. |
@@ -595,7 +606,7 @@ These are not two different roles — they are the same actor at two stages, and
 
 | | |
 |---|---|
-| **Registered Community User** | Someone who has registered (name + mobile + password) but whose registration is **pending approval**. They can log in (Engineering Plan v1.1 §9.2: login succeeds, services are locked, and they see an "awaiting approval" screen). Their permissions: `profile.view_own`, `profile.update_own`, `notifications.view_own`, `content.view_public`. **Nothing else** — no request submission, no donor registration, no directory members-only view — until approved. |
+| **Registered Community User** | Someone who has registered (name + mobile + password) but whose registration is **pending approval**. They can log in (Engineering Plan v1.1 §9.2: login succeeds, services are locked, and they see an "awaiting approval" screen). **Recommended, pending Fahim's confirmation — REG-AUTH-01 (see Doc 15 §10).** Their permissions: `profile.view_own`, `profile.update_own`, `notifications.view_own`, `content.view_public`. **Nothing else** — no request submission, no donor registration, no directory members-only view — until approved. |
 | **Member** | The same user after Super Admin approval. Full Member permissions (§2.3). |
 | **Transition** | Approval is a single Super Admin action (`members.approve`) that flips the user's status from `pending` to `approved` and unlocks the Member permission set. Rejection flips it to `rejected` with a reason; the user is told, and may re-apply. The status lives on the user record, not on the role — the role stays `member` throughout, and the *effective* permission set is role **plus** status. This is why the member lifecycle is a state machine (doc 05 §9.2), not just a role. |
 
@@ -626,13 +637,13 @@ The authoritative matrix — with every permission from §4 crossed against ever
 This document **agrees** with Engineering Plan v1.1 §5 on the two-role Phase 1 model, the Super Admin and Helper power lists, the Member and Public definitions, the no-OTP login, the Super-Admin-mediated password reset, and the immutable audit log. It **extends** the plan in the following places (extensions, not contradictions — the plan states the principles; this document makes them enforceable):
 
 1. **Last-active-Super-Admin guard (§3.2)** — the plan does not state this guard. It is added here because a two-role model with a single Super Admin has a single point of failure, and the guard is cheap to enforce. It is a new rule, flagged as such.
-2. **Password policy (§5.1)** — the plan says "strong password" (Decision Sheet) and "passwords always hashed". This document fixes the numbers: 12 characters minimum (16 recommended for Super Admin), complexity, history of 5, no forced expiry. These numbers are blueprint decisions, not plan quotations.
-3. **Login throttling numbers (§5.2)** — the plan requires rate limiting and a temporary lock; this document fixes 5 attempts / 15 minutes (throttle) and 10 attempts / 30 minutes (lock). Blueprint decisions.
+2. **Password policy (§5.1)** — the plan says "strong password" (Decision Sheet) and "passwords always hashed". This document fixes the numbers: 12 characters minimum (16 enforced for Super Admin), no composition rules, mandatory breach screening, Argon2id (m=19 MiB, t=2, p=1), history of 5, no forced expiry — with a documented deviation from the NIST SP 800-63B-4 15-character single-factor floor (see §5.1). These numbers are blueprint decisions, not plan quotations.
+3. **Login throttling numbers (§5.2)** — the plan requires rate limiting and a temporary lock; this document fixes 5 attempts / 15 minutes (throttle) and 10 attempts / 30 minutes (lock, growing 30 → 60 → 240 minutes). Blueprint decisions.
 4. **Session lifetimes (§5.4)** — the plan does not fix session lifetimes. 120 minutes idle (Member/helper), 30 minutes idle (Super Admin), 12 hours absolute. Blueprint decisions.
 5. **Sensitive-action confirmation (§5.6)** — the plan does not require re-authentication for sensitive actions. Added here as a governance control for a high-concentration-of-power model.
 6. **Separation of duties (§6)** — the plan's finance lifecycle (§9.4) implies entry vs approval, but does not state the "never approve your own entry" rule explicitly. This document makes it an enforced rule, and states its consequence for single-Super-Admin organisations plainly.
 7. **Donor-consent correction (§7.3)** — the plan (§9.3) already describes donor-side consent correctly. This document explicitly records that the prototype's requester-click consent is **not** consent and is not carried forward. That is a correction of the prototype, not of the plan.
-8. **Public-tracking privacy boundary (§7.4)** — the plan does not specify what public tracking shows. The prototype shows applicant name and area; this document narrows the public view to status + sanitised steps + expense total, and flags any widening as a recorded client decision.
+8. **Public-tracking privacy boundary (§7.4)** — the plan does not specify what public tracking shows. The prototype shows applicant name and area; this document narrows the public view to the Tier-S allowlist and replaces Request-ID-as-bearer-token with the secret-authenticated tracking design; any widening is a recorded client decision (AO-04).
 9. **Deferred-role catalogue (§8)** — the plan names the deferred roles in one line ("President, General Secretary, Treasurer ইত্যাদি"). This document evaluates each deferred role named in the task brief with a recommended permission set, so the future decision is a configuration change.
 
 ## 11. Open questions
@@ -640,11 +651,11 @@ This document **agrees** with Engineering Plan v1.1 §5 on the two-role Phase 1 
 | # | Question | Status |
 |---|---|---|
 | D11 | The expatriate wizard is 3 steps in the Direction D build but Design System §7.1 describes 4 steps. Does the step-count difference change any permission (e.g. is a review step a separate approval)? **No** — the wizard's step count is a UX matter; it does not create or remove a permission. The submit guard (all fields complete before a request is created) is the control that matters, and it exists regardless of step count. | Under review — UX only; no RBAC impact. |
-| RBAC-1 | Should the public tracking view include the applicant's first name (as the prototype did), or stay at status-only (§7.4)? | Under review — client decision required. Default is status-only. |
-| RBAC-2 | Should the organisation hold two Super Admins from day one (§3.2 recommendation), or start with one? | Under review — client decision required. |
-| RBAC-3 | Is MFA for Super Admins (§5.8) enabled at launch or deferred? | Under review — client decision required. |
-| RBAC-4 | Who is authorised to request the §3.2 recovery bootstrap, and through what channel? | Under review — to be agreed at handover and recorded in the operations runbook. |
-| RBAC-5 | Exact lockout/throttling numbers (§5.2) and session lifetimes (§5.4) are blueprint decisions; confirm with the client that the trade-off (security vs convenience) is acceptable. | Under review. |
+| RBAC-1 | Should the public tracking view include the applicant's first name (as the prototype did), or stay at the Tier-S allowlist (§7.4)? | Under review — client decision required (AO-04). Default is the Tier-S allowlist. |
+| RBAC-2 | Should the organisation hold two Super Admins from day one (§3.2 go-live expectation), or start with one? | Under review — client decision required (REG-AUTH-05). Go-live expectation: two Super Admins from day one where possible. |
+| RBAC-3 | Is MFA for Super Admins (§5.8) enabled at launch or deferred? | Under review — client decision required (AO-02). TOTP is built behind a feature flag (§5.8). |
+| RBAC-4 | Who is authorised to request the §3.2 recovery bootstrap, and through what channel? | Under review — to be agreed at handover and recorded in the operations runbook (AO-07). |
+| RBAC-5 | Exact lockout/throttling numbers (§5.2) and session lifetimes (§5.4) are blueprint decisions; confirm with the client that the trade-off (security vs convenience) is acceptable. | **Closed (Phase 0.1):** the values are adopted — 5/15 min throttle, 10 → 30 min lock growing 30 → 60 → 240 min (§5.2); sessions 120/30 min idle, 12 h absolute, 30-day mobile tokens (§5.4). Confirm with the client that the trade-off is acceptable. |
 
 ---
 

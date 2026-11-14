@@ -28,7 +28,7 @@ Three clients must be served — the Next.js public website (M11), the Filament 
 ## Disadvantages
 
 - **More upfront design work than server-rendered pages:** every screen needs an endpoint (or an endpoint that serves it), and the envelope, pagination, filtering, and error conventions must be defined before the first client is built. Doc 07 is that design work.
-- **Over-fetching/under-fetching trade-offs:** a REST list endpoint returns a fixed shape; a client that needs a slightly different shape either accepts extra fields or needs a new endpoint (or a query parameter). This is manageable at 108 endpoints and is preferable to GraphQL's complexity at this scale.
+- **Over-fetching/under-fetching trade-offs:** a REST list endpoint returns a fixed shape; a client that needs a slightly different shape either accepts extra fields or needs a new endpoint (or a query parameter). This is manageable at 132 endpoints and is preferable to GraphQL's complexity at this scale.
 - **Versioning is a commitment:** supporting v1 for 12 months after v2 means maintaining two versions in that window. The alternative (breaking clients silently) is worse.
 
 ## Security implications
@@ -51,7 +51,7 @@ Three clients must be served — the Next.js public website (M11), the Filament 
 
 ## Final recommendation
 
-**REST, API-first, versioned as `/api/v1`, with the response/error envelopes, pagination, filtering, and conventions specified in Doc 07.** 108 endpoints (listed in Doc 07 §14; 6 wholly proposed, 4 with behaviour-level proposals — the plan's ~70 was a pre-inventory estimate). The Laravel 13 JSON:API resources are available as a future representation option but are not adopted for v1.
+**REST, API-first, versioned as `/api/v1`, with the response/error envelopes, pagination, filtering, and conventions specified in Doc 07.** 132 endpoints (listed in Doc 07 §14; 7 wholly proposed, 0 with behaviour-level proposals outstanding — the plan's ~70 was a pre-inventory estimate). The Laravel 13 JSON:API resources are available as a future representation option but are not adopted for v1.
 
 ## Reason for selection
 

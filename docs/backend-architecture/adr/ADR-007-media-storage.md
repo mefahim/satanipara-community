@@ -19,14 +19,14 @@ The platform stores media: activity photos, gallery images, committee photos, re
 
 ## Advantages
 
-- **Local first:** zero cost, zero configuration, files live on the VPS and are backed up with the application (Doc 11 §6). Adequate for the expected volume (tens to low hundreds of images, plus PDFs).
+- **Local first:** zero cost, zero configuration, files live on the VPS and are backed up with the application (Doc 11 §7). Adequate for the expected volume (tens to low hundreds of images, plus PDFs).
 - **Facade abstraction:** all file access goes through Laravel's `Storage` facade, so the disk can be flipped to S3-compatible later without touching call sites (`store('x', 'public')` works identically on either disk).
 - **S3-compatible later:** durable (11-nines class), off-server by construction, CDN-friendly — available when volume, CDN, or off-server durability requires it, without a rewrite.
 - **Private files are private on either disk:** they live on a non-public disk and are served through a controller that checks the policy, then returns a signed, time-limited URL (Doc 07 §11).
 
 ## Disadvantages
 
-- **Local:** a second server or a CDN migration later means moving files; the VPS disk is a single point of failure for media (mitigated by the backup, which includes uploads — Doc 11 §6).
+- **Local:** a second server or a CDN migration later means moving files; the VPS disk is a single point of failure for media (mitigated by the backup, which includes uploads — Doc 11 §7).
 - **S3-compatible from day one:** per-GB + per-request cost, credentials to manage, and public-vs-signed URL decisions for member photos and documents from the start — cost and complexity the project does not yet need.
 - **Either:** the team must be disciplined about never writing to `public_path()` directly; a single hard-coded write creates a migration problem later. Code review enforces this.
 
@@ -43,7 +43,7 @@ The platform stores media: activity photos, gallery images, committee photos, re
 
 ## Maintenance implications
 
-- One abstraction (the Storage facade) to maintain. The backup includes the uploads directory, so media is covered by the same backup/restore discipline as the database (Doc 11 §6, §7.3).
+- One abstraction (the Storage facade) to maintain. The backup includes the uploads directory, so media is covered by the same backup/restore discipline as the database (Doc 11 §7, §7.3).
 - Image handling: the backend stores the original and generates the display sizes it needs (thumbnail, standard, wide). EXIF data is stripped from published images (Doc 08 §3.6).
 
 ## Final recommendation

@@ -55,3 +55,5 @@ The platform has two first-party clients: the Next.js public website (a single-p
 ## Reason for selection
 
 All clients are first-party (the organisation's own website and its own app). Sanctum is the documented, first-party answer for exactly that shape, and it is what Engineering Plan v1.1 specified. Passport would add an OAuth2 server — authorisation codes, consent screens, client registration, RSA keys — for a need that does not exist, and its cost (to secure, maintain, and explain) is disproportionate. A custom token system would be strictly worse than the maintained first-party package.
+
+> Phase 0.1 note: no database dependency — verified 2026-11-14 (the MySQL 8.4 switch does not affect this ADR).

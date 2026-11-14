@@ -49,7 +49,7 @@ An ADR records one significant technical decision: what was decided, what else w
 |---|---|---|
 | [ADR-001](ADR-001-laravel-version.md) | Laravel version (13) | **Confirmed** |
 | [ADR-002](ADR-002-php-version.md) | PHP version (8.4 / 8.5) | **Confirmed** |
-| [ADR-003](ADR-003-database.md) | Database (PostgreSQL, with MySQL alternative) | **Recommended** — pending hosting confirmation |
+| [ADR-003](ADR-003-database.md) | Database (MySQL 8.4 LTS + InnoDB) | **Confirmed** — decided by Fahim, Phase 0.1 |
 | [ADR-004](ADR-004-authentication.md) | Authentication (Sanctum) | **Confirmed** |
 | [ADR-005](ADR-005-rbac-implementation.md) | RBAC implementation (Spatie Permission v8) | **Confirmed** |
 | [ADR-006](ADR-006-api-architecture.md) | API architecture (REST /api/v1, API-first) | **Confirmed** |
@@ -63,7 +63,7 @@ An ADR records one significant technical decision: what was decided, what else w
 
 ## Notes on the statuses
 
-- **Database (ADR-003) is Recommended, not Confirmed.** PostgreSQL is the lean, but the deciding constraint is hosting: PostgreSQL is the better default on a VPS; MySQL/MariaDB is the better choice if shared-hosting portability in Bangladesh becomes a requirement (Research Notes §6). The decision is confirmed when the hosting arrangement is confirmed.
+- **Database (ADR-003) is Confirmed.** MySQL 8.4 LTS + InnoDB, decided by Fahim (Phase 0.1). The Phase 0 PostgreSQL lean is superseded; the hosting-portability question that used to decide it (Doc 13 Q-26) is closed.
 - **Media, queue, cache, and search (ADR-007–ADR-010) are Recommended.** Each is a "start simple, upgrade when justified" decision. The recommendation is firm; the status is Recommended because the upgrade trigger (volume, latency, search quality) is a future measurement, and because the scaffold-time checks in Research Notes §9 have not yet been run.
 - **Deployment (ADR-012) is Recommended** pending hosting and domain confirmation. The architecture is not in doubt; the account, the domain, and the server do not exist yet.
 - **Everything else is Confirmed** on the evidence in the Research Notes (primary sources checked 2026-11-14) and the Decision Sheet.

@@ -12,7 +12,7 @@ The system needs a queue for work that should not block a web request: sending n
 
 ## Options considered
 
-1. **Database driver** (jobs in a `jobs`/`failed_jobs` table; `FOR UPDATE SKIP LOCKED` where supported — PostgreSQL ≥ 9.5 qualifies).
+1. **Database driver** (jobs in a `jobs`/`failed_jobs` table; `FOR UPDATE SKIP LOCKED` where supported — MySQL ≥ 8.0.1 qualifies, so MySQL 8.4 qualifies).
 2. **Redis driver** (with Horizon v5 for monitoring, dashboards, and auto-scaling).
 3. **SQS** (fully managed, durable, per-operation cost) — rejected: only sensible if already on AWS, which this project is not.
 4. **Sync driver** — rejected for production: jobs run inline in the web request, so a slow notification blocks the response. Acceptable for local development and tests only.

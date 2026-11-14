@@ -31,7 +31,7 @@ The Phase 0 blueprint is accepted when **all** of the following hold:
 - [x] **G-06 — Role and permission matrix completed.** (Doc 04 + `diagrams/RBAC-MATRIX.md`.)
 - [x] **G-07 — Backend architecture documented.** (Doc 05.)
 - [x] **G-08 — Database schema and ERD prepared.** (Doc 06 + `diagrams/ERD.md`.)
-- [x] **G-09 — API endpoint inventory completed.** (Doc 07: 108 endpoints.)
+- [x] **G-09 — API endpoint inventory completed.** (Doc 07: 132 endpoints.)
 - [x] **G-10 — Security architecture documented.** (Doc 08.)
 - [x] **G-11 — Privacy and consent rules documented.** (Doc 06 §11, doc 08 §8, doc 04 §9.)
 - [x] **G-12 — Admin dashboard functional requirements completed.** (Doc 09 — planning only, no UI.)
@@ -40,9 +40,7 @@ The Phase 0 blueprint is accepted when **all** of the following hold:
 - [x] **G-15 — Development roadmap prepared.** (Doc 12.)
 - [x] **G-16 — Open questions and assumptions documented.** (Doc 13.)
 - [x] **G-17 — Root README updated.** (Root `README.md`, updated from the approved draft in this set.)
-- [x] **G-18 — All documentation reviewed for consistency.** (Coordinator review: endpoint count,
-      table count, restore-test cadence, and permission names reconciled across docs; see the
-      supplementary checks below.)
+- [x] **G-18 — All documentation reviewed for consistency.** (Coordinator review: endpoint count, table count, restore-test cadence, and permission names reconciled across docs; see the supplementary checks below.) **Unticked in Phase 0.1, re-ticked after Batch 6 passed (Doc 15 §12, 2026-11-14):** the claim was false — Phase 0.1 found 31 MySQL reconciliation items (A), 26 database/API mismatches (C), and 12 broken references (D), plus 39 further issues found and fixed in Batch 6. All 13 Batch 6 checks pass.
 - [x] **G-19 — Existing prototype preserved.** (`index.html`, `alternatives/`, and
       `docs/direction-d/`, `docs/redesign/`, `docs/v1/` are untouched; only
       `docs/backend-architecture/` is added and the root `README.md` is updated.)
@@ -74,17 +72,13 @@ These checks were applied across the whole set in addition to the §17 gate:
       "তথ্য হালনাগাদ হচ্ছে" rule, not by a number.
 - [x] **P0-06 — No prices.** No document in the set contains a price, a quotation, or a cost figure.
 - [x] **P0-07 — Divergences explicit.** Every place where the blueprint diverges from Engineering Plan
-      v1.1 (Laravel 12 → 13; design tokens/fonts; Filament 3 → 5; PostgreSQL 16 → current major;
-      Redis/Horizon and S3 as day-one → deferred; endpoint inventory 108 vs the plan's ~70 estimate;
-      6 added tables) is stated explicitly with its reason, and every agreement with the plan cites
+      v1.1 (Laravel 12 → 13; design tokens/fonts; Filament 3 → 5; PostgreSQL 16 → MySQL 8.4 LTS (Phase 0.1, Confirmed — Fahim);
+      Redis/Horizon and S3 as day-one → deferred; endpoint inventory 132 vs the plan's ~70 estimate;
+      8 added tables) is stated explicitly with its reason, and every agreement with the plan cites
       the plan section.
 - [x] **P0-08 — Open questions open.** Every open question (document 13) is listed with a named
       decision-maker; none is resolved by guessing. D11 (wizard 3 vs 4 steps) is listed as open.
-- [x] **P0-09 — Terminology consistent.** Module names M1–M12, Request ID format `EXP-YYYY-####`, the
-      status enum, `/api/v1`, the response/error envelopes, money as `numeric(12,2)`, role names, and
-      permission names (`resource.action`) match the Decision Sheet exactly, in every document.
-      Reconciled in review: endpoint count (108 everywhere), table count (44 application tables
-      everywhere), restore-test cadence (monthly automated check + quarterly full rehearsal everywhere).
+- [x] **P0-09 — Terminology consistent.** Module names M1–M12, Request ID format `EXP-YYYY-####`, the status enum, `/api/v1`, the response/error envelopes, money as `numeric(12,2)`, role names, and permission names (`resource.action`) match the Decision Sheet exactly, in every document. **Unticked in Phase 0.1, re-ticked after Batch 6 passed (Doc 15 §12, 2026-11-14):** the claim was false — the endpoint count was cited inconsistently (108 vs the plan's ~70), the table count was wrong (44 vs 47 defined), and permission names `users.create` / `users.update` / `reports.publish` / `finance.publish` contradicted Doc 04. Corrected in Phase 0.1 (132 endpoints, 47 application tables, canonical permission names) and verified by Batch 6 (checks C2/C3/C5/C10).
 - [x] **P0-10 — No code, no mockups, no redesign.** The set contains no Laravel code, no migrations,
       no dashboard UI or mockups, and no redesign of Direction D.
 - [x] **P0-11 — Coordinator review.** The Phase 0 coordinator has reviewed the set against the Decision
@@ -107,8 +101,7 @@ passing on staging first.
 - [ ] **AC-M1-02.** Given a mobile number that is already registered, when a second registration is
       submitted with it, then it is rejected with a bilingual error and no second account is created.
       (REQ-M1-002)
-- [ ] **AC-M1-03.** Given a pending account, when the owner tries to log in, then login is refused with
-      a bilingual message that the account awaits approval. (REQ-M1-004)
+- [ ] **AC-M1-03.** Given a pending account, when the owner logs in, then login succeeds and the owner sees an 'awaiting approval' screen with services locked. (REQ-M1-004; Recommended, pending Fahim's confirmation — REG-AUTH-01.)
 - [ ] **AC-M1-04.** Given an approved account, when the member logs in with the correct mobile number
       and password, then a session (web) or token (app) is issued and the member reaches their dashboard.
       When the password is wrong, login fails, the attempt is counted, and after the defined number of
@@ -203,9 +196,7 @@ passing on staging first.
       `closed`; before confirmation it stays `completed`. (REQ-M5-011)
 - [ ] **AC-M5-08.** Given a request in `in_progress` with no update for 72 hours, when the scheduler
       runs, then the Super Admin receives a reminder. (REQ-M5-012)
-- [ ] **AC-M5-09.** Given a Request ID, when a visitor tracks it without logging in, then the status,
-      the 4-node Meridian timeline, and the expense ledger are shown — and nothing beyond the boundary
-      agreed in document 13, Q-02 (in particular, no beneficiary phone or address). (REQ-M5-013)
+- [ ] **AC-M5-09.** Given a Request ID and the tracking secret, when a visitor tracks it without logging in, then the status, the service type, the 4-node Meridian timeline (Pending → Accepted → In Progress → Completed; `closed` shown as a completion banner; `rejected`/`cancelled` replace the timeline with a terminal-state notice), and the expense ledger are shown — and nothing beyond the Tier-S allowlist (Doc 04 §7.4; in particular, no beneficiary phone or address). (REQ-M5-013)
 - [ ] **AC-M5-10.** Given a new request submission, when it is saved, then every Helper and the Super
       Admin receive a browser/push notification containing the Request ID; for an urgent request the
       backup helper is notified as well. (REQ-M5-014)
@@ -246,8 +237,7 @@ passing on staging first.
       only). (REQ-M7-003)
 - [ ] **AC-M7-04.** Given a job circular that is not verified, when publishing is attempted, then it is
       refused and the circular stays unpublished. (REQ-M7-004)
-- [ ] **AC-M7-05.** Given content in `draft`, when it is submitted for review, then it is not public
-      until a reviewer publishes it; a scheduled publish goes live at the set time. (REQ-M7-005)
+- [ ] **AC-M7-05.** Given content in `draft`, when it is submitted for review, then it is not public until it is published; in Phase 1 `review` is a same-person checkpoint (the Super Admin authors and publishes — Doc 05 §9.3), not a second-person approval; a scheduled publish goes live at the set time. (REQ-M7-005)
 - [ ] **AC-M7-06.** Given a gallery photo, when it is uploaded, then thumbnails and a WebP version are
       generated by a queue job, and the photo is not public until its consent flag is set. (REQ-M7-006)
 - [ ] **AC-M7-07.** Given the video gallery in Phase 1, when it is opened, then it shows the labelled
@@ -323,7 +313,7 @@ passing on staging first.
       details and a map (once supplied), and a submitted message appears in the Super Admin's inbox.
       Until real details exist, no invented phone number or address is shown. (REQ-M11-008)
 
-### M12 — Mobile App (Phase 3)
+### M12 — Mobile App (Future Mobile; plan Phase 3)
 
 - [ ] **AC-M12-01.** Given the API, when a mobile client calls it, then the same endpoints and the same
       response envelope serve it as serve the web client, with Sanctum token authentication.
@@ -400,11 +390,9 @@ asserted.
 ### 3.6 Backup & restore
 
 - [ ] **AC-X-BKP-01.** A nightly backup (database + uploads) runs to local storage **and** one off-server
-      S3-compatible disk; `backup:clean` runs on schedule; retention is 30 days (daily) and 12 weeks
-      (weekly).
-- [ ] **AC-X-BKP-02.** A restore from backup is performed on staging at least monthly (plan v1.1 §12
-      requires quarterly as a minimum; the blueprint's monthly test is the stricter bar) and the result is
-      recorded. An untested backup does not count as a backup.
+      S3-compatible disk; `backup:clean` runs on schedule; retention is 30 days (daily), 12 weeks (weekly),
+      and 12 months (monthly).
+- [ ] **AC-X-BKP-02.** Monthly automated restore check + quarterly full restore rehearsal, mandatory, documented (Doc 06 §13), and the result is recorded. An untested backup does not count as a backup.
 - [ ] **AC-X-BKP-03.** Recovery meets RPO 24 hours and RTO 4 hours in the drill.
 
 ### 3.7 Documentation
@@ -416,17 +404,19 @@ asserted.
 - [ ] **AC-X-DOC-04.** The blueprint documents are updated in the same change as any behaviour change,
       so the docs and the system never disagree.
 
-## 4. Phase acceptance (per Engineering Plan v1.1 §15)
+## 4. Phase acceptance (per Engineering Plan v1.1 §15 — plan phase scheme, for traceability)
 
-| Phase | Deliverable | Acceptance (plan v1.1 §15) |
+| Phase (plan v1.1) | Deliverable | Acceptance (plan v1.1 §15) | Doc 12 equivalent |
 |---|---|---|
-| Phase 0 | Final UI/UX (all screens), sitemap, OpenAPI draft, server and repository setup, CI/CD | Client's written Design Sign-off |
-| Phase 1A | Identity (ordinary login), simple 2-role access, community data model, Filament admin structure, audit log | Ordinary login and member approval flow pass on staging |
-| Phase 1B | Expatriate support, blood donors, finance ledger, notifications (Browser Push) | All state machines in plan §9 pass end-to-end tests |
-| Phase 1C | Complete Next.js site, bilingual content, gallery, public finance page | Lighthouse budgets and responsive checks pass |
-| Phase 1D | Real data entry support, UAT, security test, production deploy, admin training (1 session + recording) | Client sign-off on the Go-Live checklist |
-| Phase 2 | Report generator, QR member card, newsletter (payment gateway subject to merchant-account readiness, separate scope) | Feature-based UAT |
-| Phase 3 | Flutter app, push, offline cache, store submission | Approved and published in both stores |
+| Phase 0 | Final UI/UX (all screens), sitemap, OpenAPI draft, server and repository setup, CI/CD | Client's written Design Sign-off | Doc 12 Phase 0 |
+| Phase 1A | Identity (ordinary login), simple 2-role access, community data model, Filament admin structure, audit log | Ordinary login and member approval flow pass on staging | Doc 12 Phases 1–3 |
+| Phase 1B | Expatriate support, blood donors, finance ledger, notifications (Browser Push) | All state machines in plan §9 pass end-to-end tests | Doc 12 Phases 5–6 |
+| Phase 1C | Complete Next.js site, bilingual content, gallery, public finance page | Lighthouse budgets and responsive checks pass | Doc 12 Phase 7 |
+| Phase 1D | Real data entry support, UAT, security test, production deploy, admin training (1 session + recording) | Client sign-off on the Go-Live checklist | Doc 12 Phase 9 + go-live |
+| Phase 2 | Report generator, QR member card, newsletter (payment gateway subject to merchant-account readiness, separate scope) | Feature-based UAT | Post-launch (no Doc 12 phase) |
+| Phase 3 | Flutter app, push, offline cache, store submission | Approved and published in both stores | Future Mobile |
+
+Where this table and Doc 12 disagree on ordering, Doc 12 governs the build order.
 
 **Timings are plan estimates, not commitments:** website (Phase 0–1D) approximately 12 weeks; complete
 (with apps) approximately 18 weeks (plan v1.1 §15). If the organisation's data is late, the affected

@@ -56,7 +56,7 @@ Each row names the risk, the concrete control in this system, and where it is ve
 |---|---|---|---|
 | A01 | Broken Access Control | Every endpoint policy-checked (Doc 07 §8.3). Spatie Permission v8 roles/permissions registered on the Gate; Filament `canAccessPanel()`/`can*()` hooks enforce the same rules in the admin panel. Helper boundary: helpers see expatriate requests only. Object-level policies: members see only their own records; donor phones only via the consent flow. Direct-object references are checked, never trusted (see §3.4). Default-deny: a route with no policy is unreachable until one is written | Authorisation tests (Doc 10 §5): every endpoint tested as anonymous, member, helper, Super Admin, and as another member |
 | A02 | Cryptographic Failures | TLS everywhere (HTTPS + HSTS, §7). Phone numbers and beneficiary fields encrypted at rest (§6). Passwords hashed with the framework default (bcrypt/Argon2id); never plaintext — the prototype stored demo passwords in plaintext in the HTML file (Audit Findings §5.5) and that must never be repeated. Signed URLs for private files, short-lived (§6.3). Secrets in environment, never in git (§9). Old/weak TLS versions disabled; no mixed content | Security tests; deployment checklist (Doc 11) |
-| A03 | Injection | Eloquent / parameterised queries everywhere; raw SQL only through parameter binding, never string concatenation (§3.1). No `eval`, no unserialising user input. Cache `serializable_classes=false` (Laravel 13 default) hardens against deserialisation gadget chains if APP_KEY leaks (Research Notes §1). Command execution with user input is forbidden; where a shell binary is needed (e.g. `pg_dump` via spatie/laravel-backup) it is invoked by the package with fixed arguments, never with user-supplied paths | Security tests: injection payloads against every input |
+| A03 | Injection | Eloquent / parameterised queries everywhere; raw SQL only through parameter binding, never string concatenation (§3.1). No `eval`, no unserialising user input. Cache `serializable_classes=false` (Laravel 13 default) hardens against deserialisation gadget chains if APP_KEY leaks (Research Notes §1). Command execution with user input is forbidden; where a shell binary is needed (e.g. `mysqldump` via spatie/laravel-backup) it is invoked by the package with fixed arguments, never with user-supplied paths | Security tests: injection payloads against every input |
 | A04 | Insecure Design | State machines enforced server-side (expatriate status transitions, finance publish/reverse, consent grant/revoke — Doc 07 §14). Business rules that the prototype faked in the browser (unique Request IDs, server timestamps, server-computed totals, assignment) are enforced by the server (Audit Findings §6). Rate limits on login, tracking, and public submission (Doc 07 §9). Threat modelling repeated at each phase; new features get a security review before merge | Design review per phase (Doc 12); state-machine tests |
 | A05 | Security Misconfiguration | Secure defaults (§4): debug off in production, Telescope disabled in production, error pages generic, directory listing off, unused services closed, framework and packages patched (see §10). Environment-specific configuration reviewed at every deploy; staging mirrors production configuration (Doc 11) | CI configuration checks; deploy checklist |
 | A06 | Vulnerable and Outdated Components | Pinned major versions with `^` constraints (Laravel ^13.0, Sanctum ^4.0, Filament ^5.0, Spatie Permission ^8.0 — Decision Sheet). Weekly dependency audit in CI (Doc 10 §8); security advisories triaged within one working day for critical severity; no package installed without a licence and maintenance check (see §10) | CI dependency audit |
@@ -70,7 +70,7 @@ Each row names the risk, the concrete control in this system, and where it is ve
 ### 3.1 SQL injection
 
 - All database access goes through Eloquent or the query builder with parameter binding. Raw expressions (`whereRaw`, `DB::raw`) require a second reviewer's approval in code review and must bind every variable; a raw expression with string interpolation of user input is a blocking review finding.
-- Database credentials grant only the permissions the application needs (no `SUPERUSER`, no `DROP` on the application role in production if the deployment process can separate migration privileges — to be confirmed at scaffold time).
+- Database credentials grant only the permissions the application needs (no `SUPER` privilege, no `DROP`/`ALTER` on the application role in production — MySQL 8.4 uses granular privileges; the app user gets only the DML privileges it needs, per Doc 04 §5.7 / Doc 06 §8.2; the two-user design is mandatory, not conditional).
 - Error responses never include SQL (Doc 07 §3.2).
 
 ### 3.2 Cross-site scripting (XSS)
@@ -109,17 +109,17 @@ Each row names the risk, the concrete control in this system, and where it is ve
 
 ### 3.7 Authentication attacks
 
-- **Brute force / credential stuffing:** strict login rate limiting (5 attempts/minute per IP + phone, growing lockout — Doc 07 §9). The login error message is identical whether the phone number exists or not, and whether the password or the phone was wrong.
-- **Session hijacking:** session cookie `HttpOnly`, `Secure`, `SameSite`; session ID regenerated on login and on privilege change; idle and absolute session timeouts set (values to be confirmed at scaffold time; a 2-hour idle timeout is the recommended starting point). Concurrent-session policy to be confirmed in Sprint 1.
+- **Brute force / credential stuffing:** strict login rate limiting (5 attempts per 15 minutes per IP + phone, growing lockout — Doc 07 §9, Doc 04 §5.2). The login error message is identical whether the phone number exists or not, and whether the password or the phone was wrong.
+- **Session hijacking:** session cookie `HttpOnly`, `Secure`, `SameSite`; session ID regenerated on login and on privilege change; idle and absolute session timeouts set per Doc 04 §5.4 (120 min member/helper idle, 30 min Super Admin idle, 12 h absolute). Concurrent-session policy to be confirmed in Sprint 1.
 - **Token theft (mobile):** tokens are hashed at rest; the plaintext value exists only at creation. Tokens expire (Doc 07 §8.2) and are pruned. A compromised token's damage is limited by policies — a token never grants more than the user's permissions.
 - **Password attacks:** passwords are hashed with the framework default (bcrypt cost or Argon2id as configured at scaffold time). No maximum password length below 72 bytes (bcrypt limit) is imposed silently; long passwords are handled per the framework's behaviour. Passwords are never logged, never returned by any endpoint, and never emailed.
 - **No security questions, no OTP in Phase 1.** Both are out of scope; neither may be improvised at implementation time.
 
 ### 3.8 Privilege escalation
 
-- Role assignment is Super Admin-only (`users.create` / `users.update`, Doc 07 §14.12) and audited. A user cannot assign themselves a role; the API rejects any request body field that would change the caller's own role.
+- Role assignment is Super Admin-only (`members.create` + `users.manage_roles` jointly, Doc 07 §14.12 AD4/AD5) and audited. A user cannot assign themselves a role; the API rejects any request body field that would change the caller's own role.
 - The helper role is enforced by the same policy layer as everything else — there is no "helper mode" flag on the client that the server trusts.
-- A proposed self-lockout guard (a Super Admin cannot remove their own Super Admin role) is listed in Doc 07 §17 item 5 for Sprint 1 confirmation.
+- The self-lockout guard (a Super Admin cannot remove their own Super Admin role) is **mandatory** (decided Phase 0.1; Doc 04 §3.2, Doc 07 §17 item 6, AD5).
 - Filament panel access is gated by `canAccessPanel()` in addition to the route middleware; a user with no panel permission receives a 403, not a filtered panel.
 
 ### 3.9 API abuse
@@ -146,7 +146,7 @@ Each row names the risk, the concrete control in this system, and where it is ve
 ### 3.13 Backup security
 
 - Backups contain the full database, including encrypted phone columns. Backups are therefore as sensitive as the database itself: they are encrypted at rest on the off-server disk where the provider supports it, access to the backup disk is restricted to the deployment identity, and backup files are never emailed, never stored on a developer's laptop, and never included in a repository.
-- The backup schedule and restore test are defined in Doc 11 §6. A backup that cannot be restored is worthless; the restore test is mandatory, not optional.
+- The backup schedule and restore test are defined in Doc 11 §7. A backup that cannot be restored is worthless; the restore test is mandatory, not optional.
 
 ### 3.14 Secret management
 
@@ -180,9 +180,9 @@ Each row names the risk, the concrete control in this system, and where it is ve
 Full detail is in Doc 07 §8; this section states the security requirements that the implementation must satisfy:
 
 1. Sanctum 4.x (`^4.0`); cookie auth for the first-party SPA, bearer tokens for the Flutter app; never tokens for the SPA.
-2. Passwords: minimum 8 characters, letter + digit; hashed; never logged or returned; changed only by the owner (with current-password confirmation) or by a Super Admin (audited).
+2. Passwords: the single policy in Doc 04 §5.1 governs — minimum 12 characters for all accounts, 16 enforced for Super Admin; no composition rules; mandatory breach screening (HIBP k-anonymity + local ≥10,000 list + context blocklist); Argon2id (m=19 MiB, t=2, p=1), bcrypt cost ≥12 fallback; history 5; no expiry. Passwords are hashed; never logged or returned; changed only by the owner (with current-password confirmation) or by a Super Admin (audited).
 3. Login: rate-limited with growing lockout; identical error for unknown phone and wrong password; failed attempts logged (without the password).
-4. Sessions: database driver to start; regenerated on login; idle timeout (recommended 2 hours, confirm at scaffold); `HttpOnly`/`Secure`/`SameSite` cookies.
+4. Sessions: database driver to start; regenerated on login; idle timeout per Doc 04 §5.4 (120 min member/helper, 30 min Super Admin idle; 12 h absolute); `HttpOnly`/`Secure`/`SameSite` cookies.
 5. Tokens: hashed at rest, expiry configured, pruned daily, revocable per token and all-at-once; token values never appear in a list response.
 6. No OTP in Phase 1 (scope decision). No self-service password reset by email in Phase 1 (no email provider confirmed). Password reset is Super Admin-only and audited.
 7. Super Admin accounts: created only through the documented process; the initial Super Admin is created by the deployment process (seeded by a secure, one-time procedure), not by a public registration endpoint — public registration creates a *pending member application*, never an admin.
@@ -298,10 +298,10 @@ Until then the system is described as "in development" or "under security review
 ## 14. Open security decisions (for Sprint 1)
 
 1. Concurrent-session policy (one session per user? multiple?).
-2. Idle and absolute session timeout values.
-3. Mobile token expiry value.
+2. Idle and absolute session timeout values. — **Decided (Phase 0.1):** 120 min member/helper idle, 30 min Super Admin idle, 12 h absolute (Doc 04 §5.4).
+3. Mobile token expiry value. — **Decided (Phase 0.1):** 30 days (Doc 04 §5.4, Doc 07 §8.2).
 4. Whether the CSP needs any `unsafe-inline` exception for a named dependency.
-5. Whether the database application role is separated from the migration role.
+5. Whether the database application role is separated from the migration role. — **Decided (Phase 0.1):** two users, mandatory — `app` (DML only) and `migrate` (DDL) (ADR-003, Doc 04 §5.7, Doc 06 §8.2).
 6. Log retention period (recommendation: audit logs retained for the life of the system; application logs 90 days — to be confirmed with the organisation).
 7. The named incident contact and the notification wording for a data breach.
-8. The public-tracking privacy boundary (shared with Doc 07 §17 item 1) — it is a security decision as much as a product decision.
+8. The public-tracking privacy boundary (shared with Doc 07 §17 item 1) — **decided as a mechanism (Phase 0.1):** Request ID + 128-bit tracking secret, POST only, Tier-S allowlist (Doc 04 §7.4, Doc 07 §8.3/X2). Open only: AO-04 (Tier-S view: first name / beneficiary name?).
