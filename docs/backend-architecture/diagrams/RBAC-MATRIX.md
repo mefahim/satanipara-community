@@ -193,7 +193,7 @@ This is the authoritative matrix. Every permission is from doc 04 §4.2. Every g
 | `expatriate.updates.create` | ✓ | ◐ | — | — | EH: only on an assigned request. |
 | `expatriate.expenses.create` | ✓ | ◐ | — | — | EH: only on an assigned request. No service-charge field exists. |
 | `expatriate.expenses.view` | ✓ | ✓ | ◐ | — | EH: on requests they may view. MB: on own requests. |
-| `expatriate.track` | ✓ | ✓ | ✓ | ✓ | Public tracking by Request ID — status + sanitised steps + expense total only; no applicant identity (doc 04 §7.4). |
+| `expatriate.track` | ✓ | ✓ | ✓ | ✓ | Public tracking by Request ID + 128-bit tracking secret (POST only) — request_no, status, service snapshot, 4-node timeline with visible notes, expense lines + total, service charge 0; no applicant/beneficiary identity, no details, no vouchers, no photos (Doc 04 §7.4). |
 | `expatriate.emergency.manage` | ✓ | — | — | — | ERT roster (3–5). SA only. |
 
 ### 3.6 Blood donor (M6)

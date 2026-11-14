@@ -62,11 +62,13 @@ erDiagram
         bigint user_id FK
         varchar platform
         text fcm_token
+        binary(32) fcm_token_hash UK
     }
     push_subscriptions {
         bigint id PK
         bigint user_id FK
-        text endpoint UK
+        text endpoint
+        binary(32) endpoint_hash UK
         text auth_token
     }
 
@@ -333,16 +335,25 @@ erDiagram
         bigint category_id FK
         bigint project_id FK
         bigint activity_id FK
+        varchar item_bn
         decimal amount
         varchar status
         bigint entered_by FK
         bigint approved_by FK
+        timestamp approved_at
+        timestamp published_at
+        bigint rejected_by FK
+        text rejection_reason
+        bigint discarded_by FK
+        text discard_reason
     }
     ledger_reversals {
         bigint id PK
-        bigint ledger_entry_id FK
+        bigint ledger_entry_id FK_UK
         bigint reversal_entry_id FK_UK
+        text reason_bn
         bigint created_by FK
+        bigint approved_by FK
     }
     finance_categories {
         bigint id PK
@@ -478,6 +489,8 @@ erDiagram
 
 ---
 
+Note: `ledger_entries.status` is `draft` / `published` / `reversed` / `discarded` — no `approved` state. `ledger_entry_id` is UNIQUE on `ledger_reversals`: one reversal per original, ever.
+
 ## 3. Relationship guide
 
 One paragraph per major relationship, with cardinalities and delete behaviours. "Delete behaviour" states what the foreign key does (`CASCADE`, `SET NULL`, `RESTRICT`, or "no FK — polymorphic").
@@ -486,8 +499,8 @@ One paragraph per major relationship, with cardinalities and delete behaviours. 
 
 - **Users ↔ roles (many-to-many, via `model_has_roles`).** A user holds roles; a role is held by many users. Phase 1 policy is one role per user (doc 04 §3.3), but the schema supports many. Deleting a role removes its assignments (Spatie cascade); deleting a user removes their assignments. The role/permission rows themselves are never soft-deleted (doc 06 §2.2).
 - **Roles ↔ permissions (many-to-many, via `role_has_permissions`).** A role holds many permissions; a permission belongs to many roles. This is the table the Role–Permission Matrix (`diagrams/RBAC-MATRIX.md`) is a picture of. Deleting a permission removes it from all roles; deleting a role removes its permission links.
-- **Users → user_devices (one-to-many).** A user has many devices (one per login device, each with an FCM token). Delete behaviour: `CASCADE` — deleting a user deletes their devices. Devices are ephemeral rows, never soft-deleted.
-- **Users → push_subscriptions (one-to-many).** A user has many browser push subscriptions (one per browser). Delete behaviour: `CASCADE`. A subscription is deleted when it expires or the push service returns 410 Gone.
+- **Users → user_devices (one-to-many).** A user has many devices (one per login device, each with an FCM token). Uniqueness is (`user_id`, `fcm_token_hash`) (`uk_user_token_hash`) — one row per device token per user; `fcm_token_hash` is the SHA-256 of the plaintext token, computed in application code before encryption (Doc 06 §2.3). Delete behaviour: `CASCADE` — deleting a user deletes their devices. Devices are ephemeral rows, never soft-deleted.
+- **Users → push_subscriptions (one-to-many).** A user has many browser push subscriptions (one per browser). Uniqueness is `endpoint_hash` (`uk_endpoint_hash`) — one row per endpoint, globally; `endpoint_hash` is a STORED generated column, `UNHEX(SHA2(endpoint, 256))` (Doc 06 §2.4). Delete behaviour: `CASCADE`. A subscription is deleted when it expires or the push service returns 410 Gone.
 - **Users → users, self-reference (`approved_by`).** A Super Admin approves a Member; the approver is recorded. Delete behaviour: `SET NULL` — the approval record survives even if the approving admin's account is later removed.
 
 ### 3.2 Community
@@ -530,7 +543,7 @@ One paragraph per major relationship, with cardinalities and delete behaviours. 
 ### 3.6 Finance
 
 - **Finance_categories / projects / activities → ledger_entries (one-to-many).** An entry belongs to one category (`RESTRICT` — a category with entries cannot be deleted), optionally to one project (`SET NULL`) and optionally to one activity (`SET NULL`). Its voucher is a `media` row (`SET NULL`). Delete behaviour: **there is no delete** — `ledger_entries` has no `deleted_at` (doc 06 §7.1). A draft that is wrong is discarded only while still a draft (audit-logged); a published entry is corrected by a reversal.
-- **Users → ledger_entries (two relationships).** `entered_by` (`RESTRICT`) and `approved_by` (`SET NULL`). The service enforces `entered_by ≠ approved_by` (doc 04 §6.1) — the separation of duties is an application rule, and the two columns are what make it auditable.
+- **Users → ledger_entries (two relationships).** `entered_by` (`RESTRICT`) and `approved_by` (`SET NULL`). The separation of duties (`entered_by ≠ approved_by`, doc 04 §6.1) is enforced by the service, by named `CHECK chk_ledger_dual_control`, and by the BEFORE UPDATE trigger (§7.1) — it is not an application-only rule.
 - **Ledger_entries ↔ ledger_reversals (one-to-many, via two FKs).** A reversal row links an original entry (`ledger_entry_id`) to its reversal entry (`reversal_entry_id`, UNIQUE — one reversal row per reversal entry). The reversal entry is itself a full `ledger_entries` row of equal and opposite amount. Both FKs are `RESTRICT`.
 - **Projects (standalone).** A project has a budget (`numeric(12,2)`) and a status. **Spent is computed** (the sum of its published expense entries), never stored — there is no `spent` column.
 

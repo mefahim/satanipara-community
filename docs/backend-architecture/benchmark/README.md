@@ -1,0 +1,168 @@
+# Bengali search benchmark — reproducibility package
+
+Satanipara Community backend blueprint, `docs/backend-architecture/benchmark/`.
+Phase 0.1.1. The scripts in this directory re-run Investigator E's
+Phase 0.1 Bengali full-text benchmark against a local MySQL server, so
+the results can be reproduced — and, crucially, re-measured on MySQL 8.4.
+
+## What this is
+
+A benchmark of Bengali search approaches on MySQL, on a **synthetic**
+dataset (no real organisation data — every name, notice and activity is
+generated; see `generate_dataset.py`). It compares, for the same queries:
+
+| Approach | SQL pattern |
+|---|---|
+| `ngram_nl` | `FULLTEXT (cols) WITH PARSER ngram`, `NATURAL LANGUAGE MODE` |
+| `ngram_bool` | Same index, `BOOLEAN MODE` (`+a +b` for AND, `term*` wildcard) |
+| `default_ft` | `FULLTEXT (cols)` with the default parser, natural language mode (on a duplicate copy of the table) |
+| `like_pct` | `title_bn LIKE '%term%' OR body_bn LIKE '%term%'` (full scan) |
+| `like_prefix` | `name_bn LIKE 'term%'` / `title_bn LIKE 'term%'` (B-tree index) |
+| `app_level` | Python substring scan over all rows (one-time load, then per-query) |
+
+Test cases: **35 cases, 133 timed queries, 133 count pairs** — see
+`queries.md` for the full list with expected-behaviour notes.
+(Correction: Phase 0.1 report E §3.3 said "37 cases, 133 timed queries,
+134 count pairs". The runner defines 35 distinct case labels and the raw
+results contain 35 cases and 133 count pairs; the extra "134th" count
+entry is the `rows` row-count line, not a case. The 133 timed queries
+were correct.)
+
+## Results summary — accurately labelled: MySQL 8.0.46, NOT 8.4
+
+All numbers below were measured on **MySQL 8.0.46-0ubuntu0.24.04.5**
+(Ubuntu 24.04) on 2026-11-14, on the synthetic 3,900-row dataset
+(`posts` 1,800; `persons` 1,500; `activities` 600; generator seed
+20261114). **No number in this package was measured on MySQL 8.4.**
+Do not relabel them as 8.4 results.
+
+- **Recommendation (adopted, Doc 15 §9.4 / ADR-010): ngram `FULLTEXT` +
+  `BOOLEAN MODE` as the primary search.** Boolean counts matched
+  `LIKE '%term%'` exactly in every single-word case (e.g. `রক্তদান`
+  112 = 112, `বৃত্তি` 142 = 142, `মোহাম্মদ` 37 = 37, partial `রক্তদা`
+  282 = 282, 2-char `রক` 704 = 704), including partial words the
+  default parser cannot match at all.
+- **NATURAL LANGUAGE MODE must NOT be the default.** It matched ~100%
+  of all rows for nearly every Bengali query (`রক্তদান` → 1800/1800
+  posts; `মাদরাসা` → 1800/1800) and its top-20 for `রক্তদান`
+  contained only **8/20** genuinely matching rows. (Scout's database
+  engine defaults to natural-language mode — boolean mode must be set
+  explicitly if Scout is adopted.)
+- **Default-parser FULLTEXT** is the fastest option (median
+  0.12–0.92 ms on 8.0.46 for the measured cases) and perfectly precise
+  for whole words — but returns **0 rows** for any partial word.
+- **`LIKE '%term%'`** is correct but a full table scan
+  (`EXPLAIN: type=ALL`); fine at 3,900 rows (0.1–5.6 ms), degrades
+  linearly with table size.
+- **Prefix/autocomplete = `LIKE 'term%'` on a B-tree index**
+  (0.18–0.24 ms, exact). Never `term*` in boolean mode: the wildcard
+  is ignored for prefixes longer than the token size, so `শিক্ষা*`
+  returned 792 rows (substring anywhere) vs 60 for true prefix.
+- **Spelling variants are NOT tolerated by any approach**
+  (`সাতানিপাড়া` 928 vs `শাতানিপাড়া` 54 vs `সাতানীপাড়া` 54 — three
+  disjoint result sets). Mitigation is application-side, not a
+  different MySQL index.
+- **1-character queries are a footgun in both ngram modes** (`র`:
+  NL → 0 rows; `র*` boolean → all 1,800 rows). Require ≥2 characters
+  per term for ngram search.
+- **Index cost is small at this scale:** ngram FT on posts ~262 KB
+  against 1.59 MB data; build 548 ms (posts) / 96 ms (persons) /
+  130 ms (activities); inserting 100 rows with all indexes present
+  took 24.5 ms (8.0.46 run; 28–39 ms on re-runs — wall-clock, not a
+  pass criterion).
+- **Pagination verified consistent** (`সাতানিপাড়া`, NL mode,
+  `LIMIT 10 OFFSET 0/10/20`, zero overlap between pages) — but do not
+  paginate on natural-language totals: the NL total (1,800) is
+  meaningless.
+- **Known dataset/index limit:** the benchmark `persons` FULLTEXT
+  index covers names only, so `শিক্ষক` (a profession) returns 0 under
+  boolean / default / LIKE and 175 under NL (bigram noise). The
+  production index must also cover `profession_bn` / `area_bn`
+  (Doc 06 §3.2).
+
+Timings are for **relative comparison between approaches**, not
+production latency promises. At 3,900 rows everything is fast in
+absolute terms (worst measured: ~15 ms); the differences are about
+scaling behaviour and correctness.
+
+Full measured results: Doc 15 §9 (methodology, dataset, results,
+recommendation, re-test checklist) and the Phase 0.1 report
+`E-bengali-benchmark.md` in the Phase 0.1 work area. The raw
+8.0.46 result files (`raw_results.json/.md`, ~62 KB) are **not**
+included here — they are regenerated by running the benchmark
+(see `RUN-ON-8.4.md`).
+
+## MySQL 8.4 — PENDING measurement
+
+**MySQL 8.4 numbers do not exist yet.** What was verified (Phase 0.1,
+from the official MySQL 8.4 Reference Manual §14.9.8, "ngram Full-Text
+Parser", read 2026-11-14, compared with the identical §14.9.8 in the
+8.0 manual): the ngram parser is a built-in plugin, default
+`ngram_token_size` 2 (range 1–10, startup-only), index syntax
+`FULLTEXT (cols) WITH PARSER ngram` — the same in 8.0 and 8.4; and the
+NL-union / boolean-phrase / wildcard-ignored semantics are stated
+identically. **Therefore the feature-set equivalence claim is verified
+from primary sources; no timing was measured on 8.4.** Absolute
+millisecond values may shift on 8.4; the behavioural findings (match
+sets, precision, mode semantics) are not expected to change — but
+"not expected to" is not "measured". **Re-run this exact package on
+the production MySQL 8.4 instance before launch** (see
+`RUN-ON-8.4.md`) and record the 8.4 results separately; do not
+overwrite the 8.0.46 summary above with 8.4 numbers without labelling
+which run produced which.
+
+## Files in this package
+
+| File | What it is |
+|---|---|
+| `README.md` | This file. |
+| `generate_dataset.py` | Synthetic dataset generator (deterministic, seed 20261114 by default; 1,800 posts + 1,500 persons + 600 activities = 3,900 rows). Writes `seed.sql` **on demand** — generated datasets stay OUT of the repo (see below). |
+| `schema.sql` | Benchmark schema (MySQL 8.4-compatible; InnoDB + `utf8mb4` / `utf8mb4_0900_ai_ci`). Creates the scratch database `bench`. Indexes are created by the runner in stages. |
+| `queries.md` | The 35 test cases with expected-behaviour notes and the measured 8.0.46 reference counts. |
+| `run_benchmark.py` | Benchmark runner (counts, 3-rep profile timings, EXPLAIN, app-level timings, pagination, insert maintenance). Connection parameters are arguments / env vars; writes `raw_results.json`, `raw_results.md`, `count_debug.sql` to the output directory and records the server version in the output. |
+| `RUN-ON-8.4.md` | Step-by-step instructions for running the whole package against MySQL 8.4. |
+
+Total package size: well under 1 MB of text. No generated datasets, no
+binary files.
+
+## Generated datasets stay OUT of the repo
+
+`seed.sql` (~1.8 MB, 3,900 `INSERT`s) is generated on demand by
+`generate_dataset.py` and must **not** be committed: the Phase 0.1 raw
+files totalled ~1.98 MB, above the <1 MB threshold for inclusion, and
+the generated file is reproducible byte-for-byte from the generator
+(md5 `b2164ed52f58e36d3954a42cebacad40` at the defaults — verified
+2026-11-14 by re-running the generator twice and comparing with the
+Phase 0.1 `seed.sql`). Add `seed.sql`, `raw_results.json`,
+`raw_results.md` and `count_debug.sql` to `.gitignore` under this
+directory if they are ever generated in a checkout (the runner writes
+outputs to `--out-dir`; point it outside the repo or to an ignored
+directory).
+
+No real personal data is involved anywhere in this package: all names,
+figures and texts are invented for testing. Production validation on
+real org data remains pending (Doc 15 §9.5).
+
+## Quick start (local re-run on 8.0.46 — the verified path)
+
+```sh
+cd docs/backend-architecture/benchmark
+python3 generate_dataset.py            # writes seed.sql (3,900 rows)
+python3 run_benchmark.py --out-dir /tmp/bench-out
+# read /tmp/bench-out/raw_results.md; compare counts with queries.md
+```
+
+For MySQL 8.4, follow `RUN-ON-8.4.md` instead — same commands, on an
+8.4 server, with the version recorded in the output.
+
+## Reproducibility check (2026-11-14, Worker D)
+
+- Generator re-run twice: identical md5 `b2164ed52f58e36d3954a42cebacad40`,
+  identical to the Phase 0.1 `seed.sql`; row counts 1800 / 1500 / 600.
+- Original runner re-run on local MySQL 8.0.46-0ubuntu0.24.04.5: exit 0,
+  133 timed queries (3 reps, 133/133 durations each), **all 133 count
+  pairs identical** to the Phase 0.1 run; pagination overlap `[]`.
+- Packaged runner (this directory) re-run on the same server: exit 0,
+  same 133/133 counts identical; output records
+  `mysql_version: 8.0.46-0ubuntu0.24.04.5`, `ngram_token_size: 2`.
+- Full log: `../TEST-LOG.md` in the Phase 0.1.1 work area (not in the repo).

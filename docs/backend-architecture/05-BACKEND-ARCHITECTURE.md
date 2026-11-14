@@ -101,7 +101,7 @@ In order of weight:
 - **No native vector search.** Laravel 13 vector search is PostgreSQL-only. There is no Phase 1 use case; if semantic search is ever wanted, it needs an external service and a new ADR.
 - **Full-text search is less configurable** than PostgreSQL's native search (no built-in Bengali dictionary; weaker stemming/language handling). Bengali search quality was measured on MySQL 8.0.46 in Phase 0.1 (Investigator E): ngram `FULLTEXT` + BOOLEAN MODE is the recommended primary — see §10.4 and ADR-010. Re-test on MySQL 8.4 is required before any performance claim.
 - **DDL is not transactional.** Every DDL statement causes an implicit commit before and after it. A failed multi-statement migration leaves a half-applied schema; there is no automatic rollback. Mitigation (mandatory, not advisory): one DDL statement per migration, idempotent migrations, pre-deploy backup as the only rollback, staging-first migration runs, post-deploy schema-drift check (Doc 06 §10, Doc 11 §4.3).
-- **No partial unique indexes, no exclusion constraints, no deferrable constraints, no materialised views, no `FILTER` aggregates, no JSONB.** The two partial-index invariants in this blueprint (one current committee term; single-holder committee roles) are preserved with STORED generated columns + unique indexes (Doc 06 §§4.1–4.2). `FILTER` aggregates are rewritten as `SUM/COUNT(CASE WHEN …)`. The two JSON columns (`media.variants`, `activity_log.before`/`after`) use MySQL `JSON`. No blueprint query uses a materialised view (the monthly finance summary is computed on read from published entries, not a view — Doc 06 §9.1, Phase 0.1 decision on M-08).
+- **No partial unique indexes, no exclusion constraints, no deferrable constraints, no materialised views, no `FILTER` aggregates, no JSONB.** The two partial-index invariants in this blueprint (one current committee term; single-holder committee roles) are preserved with STORED generated columns + unique indexes (Doc 06 §§4.1–4.2). `FILTER` aggregates are rewritten as `SUM/COUNT(CASE WHEN …)`. The two JSON columns (`media.variants`, `activity_log.before`/`after`) use MySQL `JSON`. No blueprint query uses a materialised view (the monthly finance summary is computed on read from published entries, not a view — Doc 06 §9.1, Phase 0.1 decision on M-08). The two `TEXT` uniqueness invariants (one row per push endpoint; one device row per user per FCM token) are likewise preserved with `BINARY(32)` SHA-256 hash columns + unique indexes (Doc 06 §§2.3–2.4): a STORED generated column for the plaintext `endpoint`, an application-computed hash for the encrypted `fcm_token` (a generated column cannot hash ciphertext). No `UNIQUE` index is placed on a `TEXT` column, with or without a prefix.
 
 ### 3.4 What is verified / unverified
 
@@ -306,7 +306,7 @@ What the prototype is **not**:
 
 ### 7.3 Endpoint inventory (summary)
 
-Engineering Plan v1.1 estimated **~70 endpoints** under `/api/v1`. The full inventory in doc 07 §14 lists **132 endpoints** (7 wholly proposed, 0 with behaviour-level proposals outstanding — the 4 Phase 0 behaviour-level proposals were all decided in Phase 0.1) against the schema in doc 06; the OpenAPI specification is produced in Sprint 1 of development (Plan v1.1 §8 note) and must cover the doc 07 inventory and no others without a scope decision. The resource groups below are the complete scope; the OpenAPI document must cover all of them and no others without a scope decision:
+Engineering Plan v1.1 estimated **~70 endpoints** under `/api/v1`. The full inventory in doc 07 §14 lists **134 endpoints** (7 wholly proposed, 0 with behaviour-level proposals outstanding — the 4 Phase 0 behaviour-level proposals were all decided in Phase 0.1) against the schema in doc 06; the OpenAPI specification is produced in Sprint 1 of development (Plan v1.1 §8 note) and must cover the doc 07 inventory and no others without a scope decision. The resource groups below are the complete scope; the OpenAPI document must cover all of them and no others without a scope decision:
 
 | Group | Resources (summary) |
 |---|---|
@@ -422,7 +422,7 @@ Any state ──(applicant cancels)──▶ cancelled        [see rules below]
 |---|---|---|
 | `pending → accepted` | Assigned helper, or a helper taking the request, or Super Admin. | Assignment is recorded (helper id + timestamp). A request cannot be accepted by two helpers — the first acceptance wins; a concurrent second acceptance is rejected (row-level lock / atomic update). |
 | `accepted → in_progress` | Assigned helper or Super Admin. | Means work has started. The helper may add updates and expenses from this state onward. |
-| `in_progress → completed` | Assigned helper or Super Admin. | **Requires at least one expense entry OR an explicit "no expenses incurred" declaration** (Plan v1.1 §9.1). A request cannot be marked completed with an empty expense record and no declaration. The completion must include a summary update (what was done) and, where applicable, a photo. |
+| `in_progress → completed` | Assigned helper or Super Admin. | **Requires at least one expense entry OR an explicit "no expenses incurred" declaration** (Plan v1.1 §9.1). A request cannot be marked completed with an empty expense record and no declaration. The completion must include a summary update (what was done) and, where applicable, a photo. The photo is stored on the request record for helpers/admins and the logged-in applicant; it is **not** part of the Tier-S public tracking view (AO-21 for any future inclusion). |
 | `completed → closed` | The **applicant** confirms (or a Super Admin closes it after confirmation is received out of band and recorded). | Closure is the applicant's act, not the helper's. A helper cannot close their own completed request. Guest applicants confirm via the secret-authenticated X11 endpoint (Doc 07 §14.7). |
 | `pending → rejected` | Super Admin (or the assigned helper, where the organisation allows it — the permission `expatriate.requests.reject` is Super Admin + assigned helper; the policy decision is recorded at build time). | A reason is **mandatory**. The applicant is notified with the reason. |
 | Any state → `cancelled` | The **applicant** (their own request), or a Super Admin with a reason. | Cancellation is terminal. A cancelled request cannot be re-opened; a new request is submitted instead. |
@@ -487,8 +487,8 @@ Per Engineering Plan v1.1 §9.4:
 ```
 draft ──(verify + publish, by someone other than the enterer)──▶ published (locked)
                                                               │
-                                                              └──(error found)──▶ reversal entry
-                                                                     (original stays, untouched)
+                                                              └──(error found)──▶ reversal entry (draft → approved)
+                                                                     (original stays, except its status becomes `reversed`)
 published ──(monthly summary)──▶ included in monthly summary (automatic)
 ```
 
@@ -496,7 +496,7 @@ published ──(monthly summary)──▶ included in monthly summary (automati
 |---|---|
 | Entry | A Super Admin (or future Treasurer) enters a draft (`finance.create`): type (income/expense/donation), category, project/activity link, amount `numeric(12,2)`, date, payee, voucher image. |
 | Approval / publish | A **different** person verifies and publishes (`finance.approve`). Self-approval is rejected by the system (doc 04 §6.1). Publishing locks the entry — it becomes immutable. |
-| Correction | A published entry is **never edited and never deleted**. An error is corrected by a **reversal entry** (equal and opposite, linked to the original) that itself goes through draft → approval. The original stays in the ledger forever (Decision Sheet; Plan v1.1 §6, M8). |
+| Correction | A published entry is **never edited and never deleted**, except for the single `published → reversed` status flip when its reversal is approved. An error is corrected by a **reversal entry** (equal and opposite, linked to the original) that itself goes through draft → approval. The original stays in the ledger forever, its status becoming `reversed` (Decision Sheet; Plan v1.1 §6, M8). |
 | Monthly summary | Published entries are automatically included in the monthly summary (computed, not hand-typed — doc 06 §9). The summary is published (`finance.reports.publish`) and is what the public sees. |
 | Annual report | Yearly roll-up, published as a file (PDF) + metadata, with an `audited` flag. The prototype's `.txt` browser-generated download (Audit Findings §2.3) is replaced by a real published file. |
 
@@ -682,7 +682,7 @@ Per Engineering Plan v1.1, cited in the Decision Sheet as **plan estimates, not 
 
 ## 15. Changes from Engineering Plan v1.1
 
-This document **agrees** with Engineering Plan v1.1 on: the modular monolith (§4), the M1–M12 module catalogue, one API/one database, MySQL 8.4 LTS + InnoDB (supersedes the plan's PostgreSQL 16 — see §2.3), Sanctum, Spatie Permission, Filament admin, Next.js public web, Flutter app later, the state machines (§9), statistics computed not stored, money entries never edited/deleted (reversal only), RPO 24h / RTO 4h, the API-first approach under `/api/v1` (132-endpoint inventory in doc 07; the plan estimated ~70), Web Push (VAPID) + FCM/APNs, and the performance budgets (§14.2, as plan figures).
+This document **agrees** with Engineering Plan v1.1 on: the modular monolith (§4), the M1–M12 module catalogue, one API/one database, MySQL 8.4 LTS + InnoDB (supersedes the plan's PostgreSQL 16 — see §2.3), Sanctum, Spatie Permission, Filament admin, Next.js public web, Flutter app later, the state machines (§9), statistics computed not stored, money entries never edited/deleted (reversal only), RPO 24h / RTO 4h, the API-first approach under `/api/v1` (134-endpoint inventory in doc 07; the plan estimated ~70), Web Push (VAPID) + FCM/APNs, and the performance budgets (§14.2, as plan figures).
 
 It **diverges** from the plan, with reasons, in the following places (per the Decision Sheet's divergence list):
 

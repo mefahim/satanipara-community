@@ -113,7 +113,7 @@ create migrations, build a dashboard UI, or redesign Direction D.
 | 04 | `04-USER-ROLES-PERMISSIONS.md` | User roles and permissions — RBAC and governance; Phase 1 two-role model, granular permission catalogue, full Role–Permission Matrix. |
 | 05 | `05-BACKEND-ARCHITECTURE.md` | Backend architecture: Laravel 13 modular monolith, MySQL 8.4 LTS, Sanctum auth, state machines, queues, media, notifications. |
 | 06 | `06-DATABASE-DESIGN.md` | Database design: 47 application tables in 7 domains (49 defined, 57 physical), per-table schema, migration order, financial integrity, privacy, backup/recovery. |
-| 07 | `07-API-ARCHITECTURE.md` | API architecture: `/api/v1`, response/error envelopes, pagination, rate limits, and the full 132-endpoint inventory. |
+| 07 | `07-API-ARCHITECTURE.md` | API architecture: `/api/v1`, response/error envelopes, pagination, rate limits, and the full 134-endpoint inventory. |
 | 08 | `08-SECURITY-ARCHITECTURE.md` | Security architecture: OWASP Top 10 threat model, controls, encryption, uploads, incident response, acceptance. |
 | 09 | `09-ADMIN-DASHBOARD-REQUIREMENTS.md` | Admin dashboard functional requirements (planning only — no UI): per-module screens, actions, filters, permissions, states. |
 | 10 | `10-TESTING-QUALITY-STRATEGY.md` | Testing and quality strategy: PSR-12, Pest/PHPUnit, API contract tests, CI/CD, observability, performance budgets. |
@@ -206,7 +206,7 @@ This blueprint **agrees with** Engineering Plan v1.1 on its core architecture, a
 - Laravel modular monolith + REST API; MySQL 8.4 LTS + InnoDB; Sanctum; Spatie Permission; Filament admin; Next.js
   public web; Flutter app; one API and one database (plan §3–§4, §6–§8).
 - 39 tables named in 7 domains in the plan (§7 — the plan states 38; the mechanical count is 39, Doc 06 §1.4), extended to 47 application tables in this blueprint
-  (doc 06); 132 endpoints under `/api/v1` in the full inventory (doc 07), against the plan's ~70
+  (doc 06); 134 endpoints under `/api/v1` in the full inventory (doc 07), against the plan's ~70
   estimate (§8).
 - Expatriate state machine `pending → accepted → in_progress → completed → closed`, with
   `rejected`/`cancelled` (plan §9).

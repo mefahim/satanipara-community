@@ -31,7 +31,7 @@ The Phase 0 blueprint is accepted when **all** of the following hold:
 - [x] **G-06 — Role and permission matrix completed.** (Doc 04 + `diagrams/RBAC-MATRIX.md`.)
 - [x] **G-07 — Backend architecture documented.** (Doc 05.)
 - [x] **G-08 — Database schema and ERD prepared.** (Doc 06 + `diagrams/ERD.md`.)
-- [x] **G-09 — API endpoint inventory completed.** (Doc 07: 132 endpoints.)
+- [x] **G-09 — API endpoint inventory completed.** (Doc 07: 134 endpoints.)
 - [x] **G-10 — Security architecture documented.** (Doc 08.)
 - [x] **G-11 — Privacy and consent rules documented.** (Doc 06 §11, doc 08 §8, doc 04 §9.)
 - [x] **G-12 — Admin dashboard functional requirements completed.** (Doc 09 — planning only, no UI.)
@@ -73,7 +73,7 @@ These checks were applied across the whole set in addition to the §17 gate:
 - [x] **P0-06 — No prices.** No document in the set contains a price, a quotation, or a cost figure.
 - [x] **P0-07 — Divergences explicit.** Every place where the blueprint diverges from Engineering Plan
       v1.1 (Laravel 12 → 13; design tokens/fonts; Filament 3 → 5; PostgreSQL 16 → MySQL 8.4 LTS (Phase 0.1, Confirmed — Fahim);
-      Redis/Horizon and S3 as day-one → deferred; endpoint inventory 132 vs the plan's ~70 estimate;
+      Redis/Horizon and S3 as day-one → deferred; endpoint inventory 134 vs the plan's ~70 estimate;
       8 added tables) is stated explicitly with its reason, and every agreement with the plan cites
       the plan section.
 - [x] **P0-08 — Open questions open.** Every open question (document 13) is listed with a named
@@ -185,8 +185,7 @@ passing on staging first.
       backup helper, assigned-by, assigned-at) is recorded and visible to the helper queue.
       (REQ-M5-006)
 - [ ] **AC-M5-04.** Given a request in `in_progress`, when the helper adds a note, a photo, and an
-      expense line, then all three appear on the tracking timeline/ledger with actor and timestamp, and
-      the expense total updates. (REQ-M5-008, REQ-M5-009)
+      expense line, then the note (sanitised, without actor) and the expense line appear on the **public** tracking timeline/ledger, the expense total updates, and the photo and actor appear only on the **authenticated** view (helper/admin/logged-in applicant, Doc 07 X5) — never on the public view (Doc 04 §7.4). (REQ-M5-008, REQ-M5-009)
 - [ ] **AC-M5-05.** Given a request, when its expense total is viewed, then it is the sum of its expense
       lines, the service charge is shown as ৳০, and **no service-charge field exists** in the request,
       the API, or the database. (REQ-M5-009)
@@ -196,7 +195,7 @@ passing on staging first.
       `closed`; before confirmation it stays `completed`. (REQ-M5-011)
 - [ ] **AC-M5-08.** Given a request in `in_progress` with no update for 72 hours, when the scheduler
       runs, then the Super Admin receives a reminder. (REQ-M5-012)
-- [ ] **AC-M5-09.** Given a Request ID and the tracking secret, when a visitor tracks it without logging in, then the status, the service type, the 4-node Meridian timeline (Pending → Accepted → In Progress → Completed; `closed` shown as a completion banner; `rejected`/`cancelled` replace the timeline with a terminal-state notice), and the expense ledger are shown — and nothing beyond the Tier-S allowlist (Doc 04 §7.4; in particular, no beneficiary phone or address). (REQ-M5-013)
+- [ ] **AC-M5-09.** Given a Request ID and the tracking secret, when a visitor tracks it without logging in, then the status, the service type, the 4-node tracking timeline (Pending → Accepted → In Progress → Completed; `closed` shown as a completion banner; `rejected`/`cancelled` replace the timeline with a terminal-state notice), and the expense ledger (itemised lines + total + constant service charge 0, without vouchers) are shown — and nothing beyond the Tier-S allowlist (Doc 04 §7.4; in particular, no applicant/beneficiary name or phone, no area, no details, no vouchers, no author identities). (REQ-M5-013)
 - [ ] **AC-M5-10.** Given a new request submission, when it is saved, then every Helper and the Super
       Admin receive a browser/push notification containing the Request ID; for an urgent request the
       backup helper is notified as well. (REQ-M5-014)
@@ -258,8 +257,15 @@ passing on staging first.
 - [ ] **AC-M8-04.** Given an annual report, when it is downloaded, then it is a real published file for
       that year with an audited flag; no report is labelled "audited" unless it is audited.
       (REQ-M8-005)
-- [ ] **AC-M8-05.** Given the ledger, when the nightly scheduler runs, then the monthly summary is
-      updated from the entries. (REQ-M8-006)
+- [ ] **AC-M8-05.** Given the ledger, when the monthly summary is viewed, then it is computed on read
+      from published entries (15-minute cache) and reflects reversals posted since the last view; there
+      is no nightly summary update and no stored snapshot in Phase 1. (REQ-M8-006)
+- [ ] **AC-M8-06.** Given a draft ledger entry, when it is edited (F3a) or discarded (F3b), then the edit succeeds only while `draft`, the discard is a status change (never a delete), the `entry_no` is retained and never reused, and a discarded entry can never change again. (REQ-M8-002)
+- [ ] **AC-M8-07.** Given a published ledger entry, when any direct database update or delete is attempted (bypassing the application), then it is refused by the database trigger (SQLSTATE 45000) — except the single `published → reversed` status flip performed by the reversal service. (REQ-M8-002)
+- [ ] **AC-M8-08.** Given a published entry, when a reversal is created (F6) and approved (F4) by a different person from the reversal creator, then the reversal entry is published, the link row records the approver, and the original becomes `reversed`; a second reversal of the same original is refused (409), and a reversal entry can never itself be reversed. (REQ-M8-002)
+- [ ] **AC-M8-09.** Given a reversed or discarded entry, when any modification of any kind is attempted (edit, delete, re-publish, second reversal, un-reverse), then it is refused at the application and database layers. (REQ-M8-002)
+- [ ] **AC-M8-10.** Given the application database user, when a `DELETE` on a ledger table, a `TRUNCATE`, or a `DROP TRIGGER` is attempted, then it is refused by privilege (1142); the migration user's delete is refused by the trigger (45000). (REQ-M8-002)
+- [ ] **AC-M8-11.** Given a ledger entry, when the enterer attempts to approve it, then approval is refused by the service and by the database CHECK, including for Super Admins. (REQ-M8-002; Doc 04 §6.1)
 
 ### M9 — Notifications
 

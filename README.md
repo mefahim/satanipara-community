@@ -201,7 +201,7 @@ resolved from Packagist at scaffold time, never asserted here):
   Larastan for static analysis, Telescope for local development only.
 
 **What the plan changed:** this architecture follows Engineering Plan v1.1 (Laravel modular monolith +
-REST API, MySQL 8.4 LTS, Sanctum, Spatie, Filament, Next.js, Flutter, one API/DB, 47 application tables (49 defined, 57 physical), 132
+REST API, MySQL 8.4 LTS, Sanctum, Spatie, Filament, Next.js, Flutter, one API/DB, 47 application tables (49 defined, 57 physical), 134
 endpoints, expatriate state machine, immutable ledger, RPO/RTO) except for three explicit divergences:
 Laravel 12 → 13 (Laravel 12 bug fixes ended 2026-08-13, security-only until 2027-02-24); the plan's
 design tokens/fonts → Direction D tokens (above); and the plan's pinned versions (Filament 3 → 5,
@@ -333,7 +333,7 @@ python3 -m http.server 8000
   `04-USER-ROLES-PERMISSIONS.md` (Super Admin governance, granular permissions, Role–Permission
   Matrix), `05-BACKEND-ARCHITECTURE.md` (Laravel 13, MySQL 8.4 LTS, Sanctum, state machines),
   `06-DATABASE-DESIGN.md` (47 application tables, migration order, financial integrity, privacy),
-  `07-API-ARCHITECTURE.md` (132-endpoint inventory), `08-SECURITY-ARCHITECTURE.md` (OWASP threat
+  `07-API-ARCHITECTURE.md` (134-endpoint inventory), `08-SECURITY-ARCHITECTURE.md` (OWASP threat
   model), `09-ADMIN-DASHBOARD-REQUIREMENTS.md` (functional spec, planning only),
   `10-TESTING-QUALITY-STRATEGY.md` (testing, CI/CD, observability),
   `11-DEPLOYMENT-OPERATIONS.md` (environments, hosting, backup/DR, handover),

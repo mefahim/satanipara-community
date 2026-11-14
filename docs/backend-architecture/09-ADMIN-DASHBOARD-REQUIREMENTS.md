@@ -159,7 +159,7 @@ Each module below follows the same structure: purpose, main screens, actions, da
 
 - **Purpose:** record, approve-and-publish (one step), reject, and reverse ledger entries; publish annual reports; view project accounts (if confirmed).
 - **Main screens:** ledger list (year-grouped, kind-filtered); entry form; entry detail (with reversal history); annual-report list; finance summary.
-- **Actions:** create an entry (draft); approve-and-publish an entry (one step); reject an entry (reason required — stays `draft`); reverse an entry (reason required — the original is never edited or deleted); upload an annual report (PDF, with audited flag).
+- **Actions:** create an entry (draft); edit a draft entry (F3a — `id`, `entry_no`, `entered_by` never change); discard a draft entry (F3b — reason required, status change, never a delete, `entry_no` never reused); approve-and-publish an entry (one step); reject an entry (reason required — stays `draft`); reverse an entry (reason required — two steps: create the reversal draft, then approve it; the original becomes `reversed` only when the reversal is approved, and is never otherwise edited or deleted); upload an annual report (PDF, with audited flag).
 - **Data displayed:** date, item, kind (income/expense/donation), category, amount (BDT), payee, receipt, status (draft/published/reversed/discarded), reversal link where applicable; totals computed server-side.
 - **Filters:** by year, kind, category, status, date range. **Search:** by item or payee.
 - **Forms:** entry form (date, item, kind, category, amount, payee, receipt upload). **Validation:** amount ≠ 0 with two decimals; date valid; kind in enum; receipt passes upload checks.

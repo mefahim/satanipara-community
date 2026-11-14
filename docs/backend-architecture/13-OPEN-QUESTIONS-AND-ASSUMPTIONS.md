@@ -1,14 +1,13 @@
 # 13 — Open Questions and Assumptions
 
-**Status:** Under review — nothing in this document is decided. Every question here needs an answer
-from the named decision-maker before the affected work is built. Nothing in this document is resolved
-by guessing.
+**Status:** Mixed — read each question's own **Status** line; the header does not override it. **Decided (Phase 0.1, 2026-11-14):** Q-26 (MySQL 8.4 LTS + InnoDB, by Fahim) and Q-05 (password policy, Doc 04 §5.1) except AO-01. **Decided in part:** Q-02 (tracking mechanism + Tier-S allowlist; open AO-03, AO-04, AO-18–AO-21), Q-11 (dual control mandatory, approve IS publish; open only the public summary level), Q-13 (Bengali search measured on MySQL 8.0.46, ngram + BOOLEAN MODE recommended; re-test on 8.4 + real data still open), Q-22 (service catalogue is a table with seed candidates; open only the final list). **Recommended, pending Fahim's confirmation:** Q-16 (404 for unknown activity ID — Doc 15 §8 R-8 / §11 REG-PROD-06). **Open:** Q-01, Q-03, Q-04 (in part — see its Status line), Q-06–Q-10, Q-12, Q-14–Q-15, Q-17–Q-21, Q-23–Q-25, Q-27, and the AO register (§AO). Every open question needs an answer from the named decision-maker before the affected work is built. Nothing in this document is resolved by guessing.
 **Sources:** the repository audit (document 01), Engineering Plan v1.1 §17 (its ten open decisions,
 reproduced in §2), the Decision Sheet (including the unresolved D11), and the research notes
 (unverified items, §9).
 **Rule:** an open question stays open until the decision-maker answers it in writing, with the date and
-the evidence recorded. When a question is answered, it is removed from this document in the same change
-that records the decision in the affected blueprint document.
+the evidence recorded. When a question is answered, its Status line is updated in the same change
+that records the decision in the affected blueprint document; the question is removed from §1 only
+when it is fully closed (as Q-26 is kept here as a closed record, not deleted, so the decision stays findable).
 
 ---
 
@@ -25,20 +24,19 @@ that records the decision in the affected blueprint document.
   backend accepts the wizard's data regardless of step count (document 02, REQ-M5-003), so the backend
   is not blocked — but the frontend build is.
 - **Decided by:** Fahim / the design owner, confirming against the design system.
-- **Status:** Open (unresolved since the Direction D QA report, 2026-11-14).
+- **Status:** Open (unresolved since the Direction D QA report, 2026-11-14; Doc 15 §11 REG-PROD-03 — blocks the Phase 7 web client build, backend NOT blocked). Working basis until decided: the 3-step wizard as built (Doc 13 §3 A-14).
 
 ### Q-02 — Public tracking privacy boundary
 
-- **Question:** anyone with a Request ID can track a request publicly with no login (prototype
-  `doTrack()`). The prototype's tracking result exposes the applicant's name and area in `#trMeta`, plus
+- **Question (prototype behaviour, now superseded — see Phase 0.1 position below):** in the prototype, anyone with a Request ID could track a request publicly with no login (`doTrack()`). The prototype's tracking result exposes the applicant's name and area in `#trMeta`, plus
   the service, the beneficiary ("for whom"), the 4-step timeline with notes, and the expense ledger.
-  What exactly may a non-logged-in visitor see?
-- **Phase 0.1 position (Doc 04 §7.4, Doc 07 §8.3/X2):** the mechanism is decided — Request ID **and** a 128-bit tracking secret (`random_bytes(16)`, 32 hex chars, SHA-256 hash stored), submitted by `POST /api/v1/expatriate-requests/track` (never GET/URL). The public view is the Tier-S allowlist only (status, service type, 4-node timeline, expense ledger — no applicant/beneficiary name or phone, no details, no vouchers, no author identities). The prototype's name/area exposure is NOT carried forward. The only open part is AO-04: whether the Tier-S view should additionally include the applicant's first name or the beneficiary name (default: no).
+  What exactly may a non-logged-in visitor see? (Answer, Phase 0.1: only the Tier-S allowlist, with Request ID **and** tracking secret — the prototype's name/area exposure is deleted.)
+- **Phase 0.1 position (Doc 04 §7.4, Doc 07 §8.3/X2 — canonical wording; full field table in Worker C `ALLOWLIST.md`):** the mechanism is decided — Request ID **and** a 128-bit tracking secret (`random_bytes(16)`, 32 hex chars, SHA-256 hash stored), submitted by `POST /api/v1/expatriate-requests/track` (never GET/URL). The public view is the Tier-S allowlist only: `request_no`; `status`; `service` (`key`, `name_bn`); the 4-node tracking timeline (Pending → Accepted → In Progress → Completed, per node `label_en`, `reached_at`, latest applicant-visible `note_bn`/`note_en` — no author identities, no internal notes); itemised expense lines (`item_bn`, `item_en`, `kind`, `amount`) + server-computed `expense_total` + the constant `service_charge: 0` ("expense ledger" means exactly this — itemised lines without vouchers). **No applicant/beneficiary name or phone, no details, no vouchers, no author identities** — and no `urgency`/`needed_by`, no request-level timestamps, no rejection/cancellation reasons, no `no_expense_declaration` flag, no update photos, no plain notes. The prototype's name/area exposure is NOT carried forward. Open parts: AO-03 (secret validity after a terminal status, recommended 90 days) and AO-04 (whether the Tier-S view should additionally include the applicant's first name or the beneficiary name — default: no), plus AO-18–AO-21 (B-only Tier-S fields held out of the allowlist).
 - **Why it matters:** expatriate requests are the most sensitive module (plan v1.1 §6 M5); beneficiary
   phone/address are encrypted in the backend design. Publishing an applicant's name and area to anyone
   who guesses or shares an ID is a privacy decision, not a default.
 - **Decided by:** the organisation (Super Admin / client), with Fahim.
-- **Status:** Open only for AO-04 (Tier-S view: first name / beneficiary name?). The mechanism and the Tier-S allowlist are decided (Phase 0.1).
+- **Status:** Open for AO-03 (secret validity after a terminal status, recommended 90 days), AO-04 (Tier-S view: first name / beneficiary name?), and AO-18–AO-21 (B-only Tier-S fields). The mechanism and the Tier-S core allowlist are decided (Phase 0.1).
 
 ### Q-03 — Does expatriate submission require login in production?
 
@@ -64,7 +62,7 @@ that records the decision in the affected blueprint document.
   have only a note. The mechanism determines whether accounts need an email address, whether an email
   service is needed in Phase 1, and what the admin panel must support.
 - **Decided by:** Fahim, with the organisation.
-- **Status:** Open.
+- **Status:** **Decided in part (Phase 0.1):** the Phase 1 mechanism is the Super-Admin-mediated temporary password (Doc 04 §5.5, Doc 15 §10 C-22) — system-generated, random ≥16 characters, single-use, 24-hour expiry, no reset link, no `new_password` field. Open only: (i) whether a self-service/email reset flow is added later (needs an email address on the account + an email-sending decision — the prototype has neither); (ii) AO-05, the identity-verification procedure and the outbound delivery channel for the temporary password.
 
 ### Q-05 — Password policy
 
@@ -124,7 +122,7 @@ that records the decision in the affected blueprint document.
 - **Why it matters:** it sets the `visibility` defaults on every person/directory record and the
   `GET /public/stats` response. Getting it wrong publishes personal data or hides public information.
 - **Decided by:** the organisation (policy decision).
-- **Status:** Open.
+- **Status:** Open. Default until decided: the plan's proposal (Doc 13 §2, decision 6) — the organisation must confirm or change it.
 
 ### Q-11 — Finance public summary level
 
@@ -187,7 +185,7 @@ that records the decision in the affected blueprint document.
 - **Why it matters:** it affects the API contract and SEO (a 404 is correct for a missing resource; a
   silent fallback is confusing and can mask broken links).
 - **Decided by:** Fahim.
-- **Status:** Open.
+- **Status:** **Recommended, pending Fahim's confirmation:** 404 for an unknown activity ID (Doc 15 §8 R-8 / §11 REG-PROD-06) — the prototype's silent fallback to the first activity is not carried forward. Fahim's word closes it; until then the API contract must not assume either behaviour.
 
 ### Q-17 — Emergency escalation rules
 
@@ -218,7 +216,7 @@ that records the decision in the affected blueprint document.
   not as a section count. If the organisation wants the 11-part structure literally, that is a design
   decision, not a backend change.
 - **Decided by:** Fahim / the design owner.
-- **Status:** Open.
+- **Status:** Open (the literal 11-part-vs-9-section question). Decided and not re-opened here: Direction D governs the frontend (Doc 15 §10 C-4); the 11-part list is a content checklist, not a section count. What is open is only whether the organisation wants the 11-part structure literally.
 
 ### Q-20 — Language and theme preference persistence
 
@@ -343,7 +341,7 @@ An assumption is not a fact; if it is invalidated, the affected requirement or d
 | A-05 | Browser/push notification (Web Push) is sufficient for helper alerts, and helpers will grant notification permission at first dashboard login. | Helpers refuse permission, change browsers frequently, or need SMS. Mitigation in the plan: the dashboard bell badge showing unread requests is the backup. | The organisation (helpers). |
 | A-06 | The database is MySQL 8.4 LTS (InnoDB). If the project ever needs PostgreSQL-only features (notably Laravel native vector search), that is a new decision with a migration cost, not a reversion. | Fahim reverses the database decision. | Fahim (Decided 2026-11-14, Phase 0.1; ADR-003). |
 | A-07 | The 7 demo services in the prototype's `SVC` object are close to the final service list, and the list can be finalised without changing the request workflow. | The organisation wants a materially different service catalogue (see Q-22). | The organisation. |
-| A-08 | The public tracking page can show at least the request status and timeline without login, as the prototype does. | The organisation decides public tracking must be authenticated or masked (see Q-02). | The organisation. |
+| A-08 | **CLOSED (superseded, Phase 0.1).** The public tracking page showed at least the request status and timeline without login, as the prototype did. Phase 0.1 decided tracking is **secret-authenticated** (Request ID + 128-bit tracking secret, POST only — Doc 04 §7.4, Doc 07 X2), so the assumption's trigger has fired and the assumption no longer governs anything. The Tier-S allowlist is the live rule. | — (closed) | — |
 | A-09 | Finance figures can be published as a monthly/project summary once audited, and the organisation will supply audited figures. | The organisation decides finance is members-only, or cannot supply audited figures. | The organisation. |
 | A-10 | The 80%+ business-logic test-coverage target and the performance budgets (LCP ≤2.5 s, API p95 ≤300 ms, Lighthouse 90+, 500 concurrent users, 99.5% uptime) are achievable on the planned stack and are treated as targets to test against, not guarantees. | Load testing shows the targets cannot be met on the planned hosting; the targets are then revised with evidence, not ignored. | The build team, by measurement. |
 | A-11 | Real photos, committee lists, and directory entries can be published with individual consent, and consent can be collected in time for launch. | Members or photographed people refuse consent, or consent cannot be collected. | The organisation. |
@@ -359,7 +357,7 @@ An assumption is not a fact; if it is invalidated, the affected requirement or d
 
 ## AO — Awaiting Organisation decisions (Phase 0.1 register)
 
-Every decision classified Awaiting Organisation in Phase 0.1, merged from Investigator B §6.2 (AO-01–AO-17) and the D/C open items, deduplicated. "Owner" is the party who must decide; "Blocks" is what cannot proceed (or cannot be called final) until it is decided. The full register with implications and blocked phases is Doc 15 §11.
+Every decision classified Awaiting Organisation in Phase 0.1, merged from Investigator B §6.2 (AO-01–AO-17) and the D/C open items, deduplicated. "Owner" is the party who must decide; "Blocks" is what cannot proceed (or cannot be called final) until it is decided. The full register with implications and blocked phases is Doc 15 §11. Phase 0.1.1 adds AO-18–AO-21 (Tier-S B-only fields held out of the allowlist; see Doc 15 §11).
 
 | # | Decision | Owner | Blocks |
 |---|---|---|---|
@@ -380,3 +378,7 @@ Every decision classified Awaiting Organisation in Phase 0.1, merged from Invest
 | AO-15 | Any time-based purge of former-member records (currently: none). | Organisation | Nothing in Phase 1. |
 | AO-16 | Confirmation of the blueprint's retention periods as organisational policy (2-year `notifications_log`, 1-year read-notification prune, 90-day application logs, 30-day backups, 30-day deletion grace). | Organisation | Handover sign-off (the build implements the blueprint figures; the runbook records them as "to be confirmed at handover"). |
 | AO-17 | Phone-number change re-verification by a Super Admin (Doc 07 M2). Default until decided: **required** (the phone is the login identifier). | Organisation (with Fahim) | Member profile-update build (M2). |
+| AO-18 | Should the Tier-S tracking view additionally include the request timing preference (`urgency`, `needed_by`) and/or the request-level timestamps (`created_at`, `updated_at`)? These appear only in Investigator B §3.4.3 — in no repo doc's Tier-S summary. (Default until decided: no — excluded.) | Organisation (Doc 13 Q-02) | The tracking response shape (X2). |
+| AO-19 | Should the Tier-S tracking view additionally include the `rejection_reason` / `cancellation_reason` text for terminal requests? It appears only in Investigator B §3.4.3 — in no repo doc's Tier-S summary. (Default until decided: no — excluded; a `rejected`/`cancelled` request shows `status` + empty `timeline` only.) | Organisation (Doc 13 Q-02) | The tracking response shape (X2); the terminal-state notice copy. |
+| AO-20 | Should the Tier-S tracking view additionally include the `no_expense_declaration` flag? It appears only in Investigator B §3.4.3 — in no repo doc's Tier-S summary. (Default until decided: no — excluded; a completed request with no expenses shows `expenses: []` and `expense_total: 0`.) | Organisation (Doc 13 Q-02) | The tracking response shape (X2). |
+| AO-21 | Should the Tier-S tracking view additionally include plain (non-transition) progress notes and/or update photos (incl. the completion photo, Doc 05 §9.1)? Doc 03 §14 and Doc 14 AC-M5-04 state or imply they are included; every Tier-S summary excludes them. (Default until decided: no — excluded; plain notes and photos stay visible only to the logged-in applicant, helpers, and Super Admins.) | Organisation (Doc 13 Q-02) | The tracking response shape (X2); whether the completion photo ever reaches the public view. |

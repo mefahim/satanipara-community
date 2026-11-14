@@ -3,8 +3,8 @@
 | | |
 |---|---|
 | Status | **Recommended** |
-| Date | 2026-11-14 (rewritten Phase 0.1 for MySQL 8.4 LTS) |
-| Sources | Research Notes §7.3 (laravel.com/docs/13.x/scout — primary for the driver list) and §6; Decision Sheet; Audit Findings §2.3 (prototype search was browser-side array filtering); Investigator E Bengali benchmark (Phase 0.1, measured on MySQL 8.0.46) |
+| Date | 2026-11-14 (rewritten Phase 0.1 for MySQL 8.4 LTS; reproducibility package added Phase 0.1.1) |
+| Sources | Research Notes §7.3 (laravel.com/docs/13.x/scout — primary for the driver list) and §6; Decision Sheet; Audit Findings §2.3 (prototype search was browser-side array filtering); Investigator E Bengali benchmark (Phase 0.1, measured on MySQL 8.0.46); Doc 15 §9 |
 
 ## Context
 
@@ -17,15 +17,19 @@ The platform needs server-side search over: the people directory (names, roles, 
 3. **Typesense** (similar to Meilisearch, C++).
 4. **Algolia** (hosted/paid) — rejected: a paid hosted dependency for a small community platform with no demonstrated need.
 
-## Measured basis (Phase 0.1, Investigator E — MySQL 8.0.46, synthetic dataset, 3,900 rows)
+## Measured basis (Phase 0.1, Investigator E — MySQL 8.0.46, synthetic dataset, 3,900 rows; 35 cases, 133 timed queries, 133 count pairs)
 
 - **ngram `FULLTEXT` + BOOLEAN MODE is the recommended primary:** boolean counts identical to `LIKE '%term%'` in every single-word case.
 - **NATURAL LANGUAGE MODE must NOT be the default:** it matched ~100% of rows (e.g. `রক্তদান` → 1800/1800, top-20 precision 8/20). Scout's database engine defaults to natural-language mode — boolean mode must be set explicitly if Scout is adopted.
-- **Default-parser `FULLTEXT` is fastest (0.15–0.92 ms) but returns 0 rows for partials** — not usable as the primary for Bengali partial-name search.
+- **Default-parser `FULLTEXT` is fastest (median 0.12–0.92 ms across the measured cases) but returns 0 rows for partials** — not usable as the primary for Bengali partial-name search.
 - **`LIKE 'term%'` with a B-tree index is for prefix/autocomplete** (never `term*`).
-- **Rules:** minimum 2 characters per term; escape boolean operators; split multi-word input with `+` AND operators. **Spelling variants are NOT tolerated by any approach.**
-- **Index coverage:** the `persons` FULLTEXT index must add `profession_bn` / `area_bn` (a name-only index cannot answer `শিক্ষক`).
+- **Rules:** minimum 2 characters per term; escape boolean operators; split multi-word input with `+` AND operators. **Spelling variants are NOT tolerated by any approach** (boolean returns only the variant's own rows — the variant result sets are disjoint).
+- **Index coverage:** the `persons` FULLTEXT index must add `profession_bn` / `area_bn` (a name-only index cannot answer `শিক্ষক`: boolean / default / LIKE return 0, NL returns 175 rows of bigram noise).
 - 8.0 vs 8.4 ngram feature-set equivalence verified from the MySQL 8.4 manual §14.9.8; **no timings measured on 8.4 — re-run required** (Doc 15 §9 re-test checklist).
+
+## Reproduction
+
+The benchmark is reproducible from `docs/backend-architecture/benchmark/` (Phase 0.1.1): `generate_dataset.py` (deterministic synthetic dataset, seed 20261114), `schema.sql`, `queries.md` (the 35 cases), `run_benchmark.py` (connection parameters as arguments/env, records the server version in its output), `README.md` (the accurately labelled 8.0.46 results summary), and `RUN-ON-8.4.md` (step-by-step 8.4 run guide). The generated `seed.sql` (~1.8 MB) is produced on demand and is not committed. The package was verified end-to-end on MySQL 8.0.46 on 2026-11-14 (generator byte-identical to Phase 0.1; packaged runner reproduced all 133 count pairs exactly).
 
 ## Advantages
 

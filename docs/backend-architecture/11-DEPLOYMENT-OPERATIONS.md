@@ -54,6 +54,8 @@ This is a starting size for a small community platform (a few thousand users), n
 | `redis` | Redis | **Only when adopted** (per Decision Sheet: database queue/cache to start; Redis + Horizon v5 only when latency/volume justifies it). The Compose file includes it commented out, not running |
 | `nginx` | Nginx | TLS termination, static-asset serving, reverse proxy to `app` |
 
+- **Database users (provisioned at scaffold, recorded in the runbook, never in git):** `satanipara_app` (application runtime), `satanipara_migrate` (deploy pipeline only — migrations and trigger creation), `satanipara_backup` (nightly `mysqldump`), `satanipara_report` (`SELECT`-only, created only when the Finance Auditor role is needed). Full per-table grants: Doc 06 §7.1 / Doc 08 §3.1. The migration user's credentials are held only by the deploy pipeline; the application container never has them at runtime. The post-deploy smoke test asserts the four ledger triggers exist (schema-drift check).
+
 - One image, three roles (`app`/`worker`/`scheduler`) — the same build is deployed everywhere, so a bug cannot exist in one role and not the others.
 - Container logs go to the host's log collection (see §5); a container that exits is restarted automatically, and repeated restarts alert.
 - **The Next.js public website** (M11) is a separate deployment concern: it may run on the same VPS (as a Node service or a static export behind Nginx) or on the organisation's chosen hosting. The decision is recorded at the start of the website phase (Doc 12, Phase 7); this document does not decide it. Whichever is chosen, the website talks to the API over HTTPS and never to the database.
