@@ -7,7 +7,7 @@ import { fmtDateTime, esc } from '../js/lib/format.js';
 import { field, errorSummary, validateRequired } from '../js/components/forms.js';
 const STRINGS = {
 bn: {
-'title':'আমার প্রোফাইল', 'profile.title':'আমার প্রোফাইল', 'profile.name':'নাম', 'profile.nameBn':'নাম (বাংলা)', 'profile.nameEn':'নাম (English)', 'profile.phone':'মোবাইল', 'profile.role':'ভূমিকা',
+'title':'আমার প্রোফাইল', 'profile.sub':'নিজের তথ্য ও পাসওয়ার্ড — শুধু নিজের জন্য।', 'profile.title':'আমার প্রোফাইল', 'profile.name':'নাম', 'profile.nameBn':'নাম (বাংলা)', 'profile.nameEn':'নাম (English)', 'profile.phone':'মোবাইল', 'profile.role':'ভূমিকা',
 'profile.area':'এলাকা', 'profile.lastLogin':'শেষ লগইন', 'profile.memberSince':'সদস্য হওয়ার তারিখ', 'profile.roleSa':'সুপার অ্যাডমিন', 'profile.roleHelper':'সহায়ক',
 'profile.save':'প্রোফাইল সংরক্ষণ করুন', 'profile.saved':'প্রোফাইল সংরক্ষণ করা হয়েছে।',
 'pw.title':'পাসওয়ার্ড পরিবর্তন', 'pw.note':'আসল ব্যবস্থায় পাসওয়ার্ড Argon2id দিয়ে সংরক্ষিত হয়; ১২ অক্ষর সর্বনিম্ন (সুপার অ্যাডমিনের জন্য ১৬), লঙ্ঘিত পাসওয়ার্ড যাচাই করা হয়। এই প্রোটোটাইপে পরিবর্তনটি অনুকরণ করা হয়েছে।',
@@ -17,7 +17,7 @@ bn: {
 'session.title':'সেশন', 'session.idle':'নিষ্ক্রিয় সময়সীমা', 'session.minutes':'মিনিট'
 },
 en: {
-'title':'My profile', 'profile.title':'My profile', 'profile.name':'Name', 'profile.nameBn':'Name (Bengali)', 'profile.nameEn':'Name (English)', 'profile.phone':'Mobile', 'profile.role':'Role',
+'title':'My profile', 'profile.sub':'Your own details and password — for you only.', 'profile.title':'My profile', 'profile.name':'Name', 'profile.nameBn':'Name (Bengali)', 'profile.nameEn':'Name (English)', 'profile.phone':'Mobile', 'profile.role':'Role',
 'profile.area':'Area', 'profile.lastLogin':'Last login', 'profile.memberSince':'Member since', 'profile.roleSa':'Super Admin', 'profile.roleHelper':'Helper',
 'profile.save':'Save profile', 'profile.saved':'Profile saved.',
 'pw.title':'Change password', 'pw.note':'In the real system passwords are stored with Argon2id; 12 characters minimum (16 for Super Admin), with breach screening. This change is simulated in the prototype.',
@@ -37,7 +37,7 @@ export const Profile = {
     const lang = getLang();
     const u = ctx.user;
     const idle = u.role === 'super-admin' ? store.settings.system.session_sa_idle_min : store.settings.system.session_helper_idle_min;
-    return `<span class="demo-badge">${t('app.demo')}</span><div class="view-head"><div><h1>${t('profile.title')}</h1></div></div>
+    return `<span class="demo-badge">${t('app.demo')}</span><div class="view-head"><div><h1>${t('profile.title')}</h1><p class="sub">${t('profile.sub')}</p></div></div>
     <section class="card"><h3>${t('profile.title')}</h3>
     <dl class="kv">
       <dt>${t('profile.name')}</dt><dd>${esc(lang === 'bn' ? u.name_bn : u.name_en)}</dd>

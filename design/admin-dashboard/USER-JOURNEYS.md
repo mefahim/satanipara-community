@@ -9,7 +9,7 @@ Demo logins: Super Admin `01990000000` / `AdminDemo-2026` (second SA
 `01990000002` / `AdminDemo-2026b`); Helper `01990000001` /
 `HelperDemo-2026`. All simulated; reload resets state.
 
-## Navigation flow
+## Navigation flow (v2)
 
 ```mermaid
 flowchart TD
@@ -33,11 +33,19 @@ flowchart TD
     OP & CM & ORG & ACT & CON & FIN & COM & ADM -->|unknown route / id| NF["#/404"]
 ```
 
+**v2 navigation by viewport (one nav system, `js/app.js`):** <640px —
+compact topbar (56px) + **bottom nav** (SA: Dashboard, Requests, Members,
+Finance, More; Helper: Dashboard, Requests, Notifications, Profile, More);
+**More** and the hamburger open the full-nav sheet (all grouped nav items
++ language segment + theme button). 640–1199px — **adaptive rail** (76px,
+icon + label). ≥1200px — **collapsible sidebar** (264px; collapse button
+→ rail). Active destination = ink-strong + surface-2 bg + 6px gold dot,
+with `aria-current="page"`. Breadcrumbs link to their real parent.
+
 Role switching is a labelled DEMO control in the topbar user menu
-(Super Admin ⇄ Helper). It re-renders the nav and re-runs the route guard;
-switching while on a denied route lands on `#/dashboard`. The demo switch
-picks the first Super Admin, so it cannot select the second Super Admin —
-cross-user approval in one session needs logout + login instead (QA D9).
+(Super Admin ⇄ Helper, all three demo accounts listed with a ✓ on the
+current one). It re-renders the nav and re-runs the route guard;
+switching while on a denied route lands on `#/dashboard`.
 
 ## State machines
 
@@ -126,15 +134,21 @@ session-only in the prototype).
 
 ## Journey B — Overview / attention triage
 
-1. SA lands on `#/dashboard`: counts (members, pending approvals, active
-   requests, published finance), urgent requests, pending approvals,
-   recent audit events, current-year finance summary (published figures
-   only, year selectable), system health.
+1. SA lands on `#/dashboard`: greeting + live Dhaka date, then a "যা
+   দেখা দরকার" attention list (pending member approvals, urgent
+   requests, >72 h stale requests, pending finance drafts, unread
+   messages — each a real link to the filtered list, hidden when zero),
+   then compact KPI stat cards, urgent requests + pending approvals,
+   sortable recent requests, finance snapshot (published 2026 income /
+   expense / net, plus the 4-row preview ৳230,000 vs full-year ৳320,000
+   and a pending-drafts link), notifications (rows link to their related
+   record), recent admin activity (rows link to `#/audit/<id>`).
 2. Every count is a link to the filtered list (e.g. pending members →
    `#/members?status=pending`).
 3. Helper lands on the reduced `#/dashboard`: own queue only (assigned
    requests, pending/urgent/in-progress counts), no finance, members, or
-   system figures.
+   system figures; the queue search filters by request no./service/
+   applicant and the queue table sorts.
 
 **Open questions:** Q-10 (which statistics are public vs members-only —
 settings field is a placeholder); Q-11 (public finance summary level —
@@ -214,12 +228,18 @@ family; activity categories are the seeded set).
 1. `#/expatriate` → queue: KPIs (pending / active / urgent / stale >72 h),
    search by Request ID/applicant, filters (status/service/urgency/
    assigned/unassigned), stale badge on `in_progress` >72 h.
-2. `#/expatriate/:requestNo` → detail: service, for whom, details,
-   urgency, applicant (SA always; Helper only when assigned), country,
-   Meridian progress (Pending → Accepted → In Progress → Completed →
-   Closed), assigned helper, expense ledger with server-computed total,
-   constant service charge 0 (no service-charge field anywhere), status
-   history with actor/timestamp/note, progress photos with captions.
+2. `#/expatriate/:requestNo` → detail: **Summary card first** (status,
+   priority, assigned helper, last update absolute + relative "X ago",
+   latest note, expense summary, next permitted action), then service,
+   for whom, details, urgency, applicant (SA always; Helper only when
+   assigned), country, Meridian progress (Pending → Accepted → In
+   Progress → Completed → Closed) with **per-step timestamps** from the
+   update history, assigned helper, expense ledger with server-computed
+   total, constant service charge 0 (no service-charge field anywhere),
+   status history with actor/timestamp/note, progress photos with
+   captions. SA-only exits (close / reject / cancel) stay visible to
+   Helpers as **disabled options with the reason written out** ("— শুধু
+   সুপার অ্যাডমিন" + an explanation box), never silently hidden.
 3. Claim (Helper, unassigned pending) / assign (SA, primary + backup).
 4. Transition: pick new status + note ≥10 chars → confirm modal naming
    the request + from → to → applied, audited, toast.
@@ -227,7 +247,8 @@ family; activity categories are the seeded set).
    notes; "no expense incurred" declaration as the alternative.
 6. Completion gate: ≥1 expense line OR no-expense declaration.
    Closure gate: applicant confirmation only (checkbox on the transition
-   form; Helper can never close).
+   form; Helper can never close — the UI explains this instead of
+   silently gating it).
 7. Emergency flag + ERT escalation placeholder; 999 disclaimer permanent
    on every expatriate screen ("এই সেবা জরুরি সেবার বিকল্প নয় — আগে ৯৯৯-এ
    কল করুন").
@@ -324,15 +345,18 @@ path; the prototype shows the blocked state + one-admin warning banner).
 
 1. `#/notifications` → own inbox (mark read / mark all read / clear own;
    type + related-record deep-link). Each admin sees only their own inbox.
+   **Opening a related record marks the notification read** (bell count
+   drops).
 2. `#/notifications/log` → delivery log (Super Admin only). Derived from
    inbox rows + the routing rule (labelled on screen); a new request
    notifies the Super Admin + all Helpers, urgent also the backup helper.
 3. `#/messages` → contact-message inbox; `#/messages/:id` → detail +
    reply ≥10 chars (stored as the record, conveyed out of band in Phase
    1 — no email provider); mark resolved.
-4. `#/reports` → Reports & Analytics — **not built** (see
-   `SCREEN-INVENTORY.md` #44). Date-range summaries, per-module
-   breakdowns, export CSV are specified but have no screen yet.
+4. `#/reports` → Reports & Analytics — date-range summaries, per-module
+   breakdowns, export CSV (real file download; Excel/PDF are labelled
+   simulated exports with a CSV fallback). No sidebar item points at it,
+   by design; reachable by direct URL.
 
 **Open questions:** Q-14 (Reverb driver for realtime notifications —
 prototype simulates with toast + bell badge, labelled simulated);
@@ -353,9 +377,11 @@ AO-13 (notifications_log cold storage after 2 years).
    create/edit). `#/audit` → view + filter only (actor/action/target/
    old→new/IP/timestamp Asia-Dhaka; no edit/delete; action codes shown
    as log identifiers). `#/audit/:id` → entry detail.
-4. `#/settings` → grouped form (brand & identity, contact & office,
-   policy copy incl. no-service-charge statement + 999 disclaimer + ERT
-   size, system). Every change audited with old→new values.
+4. `#/settings` → tabbed form (`?tab=brand/contact/policy/system/
+   sessions`): brand & identity, contact & office, policy copy incl.
+   no-service-charge statement + 999 disclaimer + ERT size, system.
+   Sessions + MFA are labelled simulated, never presented as real.
+   Every change audited with old→new values.
 5. `#/health` → queue status + last successful backup (demo values).
    `#/data-rights` → access/correction/deletion queue (30-day grace).
 
@@ -370,19 +396,25 @@ hosting/handover ownership — no screen impact).
 1. Log in as Helper → reduced `#/dashboard` shows only "আমার সারি"
    (own queue): assigned requests with pending / urgent / in-progress
    counts.
-2. `#/expatriate` → full queue (all requests, all statuses) with the
+2. On mobile the Helper bottom nav is Dashboard, Requests,
+   Notifications, Profile, More; on desktop the Helper sidebar has
+   exactly 4 items.
+3. `#/expatriate` → full queue (all requests, all statuses) with the
    same filters as the SA queue; applicant contact visible only for
-   assigned requests.
-3. Claim an unassigned pending request → it becomes assigned to the
+   assigned requests. The detail Summary card's "পরবর্তী করণীয়" tells
+   the Helper what they can do next — and why close/reject/cancel are
+   Super Admin only.
+4. Claim an unassigned pending request → it becomes assigned to the
    Helper; or accept a request assigned to them (`pending → accepted`).
-4. Advance only assigned requests: `accepted → in_progress →
+5. Advance only assigned requests: `accepted → in_progress →
    completed`, note ≥10 chars on every transition; add update notes +
    photos; add itemised expenses or declare no expense.
-5. Mark `completed` (closure is the applicant's act — the Helper requests
-   closure, never closes). No reject action exists for Helpers.
-6. `#/notifications` → own inbox only; `#/profile` → own profile, edit
+6. Mark `completed` (closure is the Super Admin's job after the
+   applicant confirms — the Helper sees the explanation, never a bare
+   "not allowed"). No reject action exists for Helpers.
+7. `#/notifications` → own inbox only; `#/profile` → own profile, edit
    own details, change own password.
-7. Any deep-link to a Super Admin route (`#/finance`, `#/members`,
+8. Any deep-link to a Super Admin route (`#/finance`, `#/members`,
    `#/users`, `#/settings`, `#/audit`, `#/blood/requests`,
    `#/content/news`, …) → `#/denied` screen naming the required
    permission.

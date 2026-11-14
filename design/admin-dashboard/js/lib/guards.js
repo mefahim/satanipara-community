@@ -2,11 +2,11 @@
 import { t } from '../i18n.js';
 export const PERMISSIONS = {
   'super-admin': new Set([
-    'users.view','users.manage','roles.view','members.view','members.approve','directory.view','directory.manage',
+    'users.view','users.manage','roles.view','members.view','members.manage','members.approve','directory.view','directory.manage',
     'organisation.manage','activities.manage','expatriate.requests.view','expatriate.requests.manage','expatriate.requests.reject',
     'blood.view','blood.manage','content.manage','gallery.manage','faq.manage','finance.view','finance.manage','finance.publish',
     'reports.view','notifications.view','notifications.manage','messages.view','audit.view','settings.manage','health.view',
-    'data_rights.manage','expatriate.emergency.manage','service_types.manage'
+    'data_rights.manage','expatriate.emergency.manage','service_types.manage','profile.view'
   ]),
   'expatriate-helper': new Set([
     'expatriate.requests.view','expatriate.requests.claim','expatriate.requests.advance',

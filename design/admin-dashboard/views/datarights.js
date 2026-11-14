@@ -2,10 +2,14 @@
 // via links from #/users and #/settings. Deletion has a 30-day grace period;
 // records are ANONYMISED, not deleted, where finance/request records exist.
 // AO-11 (which name fields are anonymised) is still undecided — noted, not guessed.
+// v2: shared statGrid + renderTable (stacked on mobile, sortable), grace days
+// measured against the live clock instead of the frozen 2026-11-14 date.
 import { t, getLang, registerStrings } from '../js/i18n.js';
-import { store, writeAudit } from '../js/lib/store.js';
+import { store, writeAudit, now } from '../js/lib/store.js';
 import { fmtDate, fmtNum, esc } from '../js/lib/format.js';
 import { plainBadge } from '../js/components/badges.js';
+import { renderTable, bindTableSort } from '../js/components/table.js';
+import { statGrid } from '../js/components/stat.js';
 const STRINGS = {
 bn: {
 'title':'তথ্য-অধিকার অনুরোধ', 'note':'সদস্যদের তথ্য পাওয়া / সংশোধন / মোছার অনুরোধ। এই পাতা সাইডবারে নেই — #/users ও #/settings থেকে আসা যায়।',
@@ -38,7 +42,6 @@ en: {
 'confirm.completeTitle':'Mark this request complete?', 'confirm.completeBody':'The request will be marked complete.'
 }};
 registerStrings('datarights', STRINGS);
-const AS_OF = new Date('2026-11-14T00:00:00+06:00');
 function memberName(id, lang){
   const m = store.members.find(x => x.id === id);
   if(!m) return id;
@@ -46,7 +49,7 @@ function memberName(id, lang){
 }
 function daysLeft(iso){
   if(!iso) return null;
-  return Math.max(0, Math.ceil((new Date(iso) - AS_OF) / 86400000));
+  return Math.max(0, Math.ceil((new Date(iso) - now()) / 86400000));
 }
 export const DataRights = {
   route: '#/data-rights',
@@ -57,27 +60,32 @@ export const DataRights = {
   render(ctx){
     const lang = getLang();
     const rows = [...store.data_requests].sort((a, b) => b.requested_at.localeCompare(a.requested_at));
+    const sort = ctx.query.sort ? { key: ctx.query.sort, dir: ctx.query.dir === 'desc' ? 'desc' : 'asc' } : null;
+    const countBy = s => store.data_requests.filter(r => r.status === s).length;
     return `<span class="demo-badge">${t('app.demo')}</span><div class="view-head"><div><h1>${t('datarights.title')}</h1><p class="sub muted">${t('datarights.note')}</p></div></div>
+    ${statGrid([
+      { num: fmtNum(countBy('pending'), lang), label: t('datarights.status.pending') },
+      { num: fmtNum(countBy('in_progress'), lang), label: t('datarights.status.in_progress') },
+      { num: fmtNum(countBy('in_grace'), lang), label: t('datarights.status.in_grace') },
+      { num: fmtNum(countBy('completed'), lang), label: t('datarights.status.completed') }
+    ])}
     <section class="card"><p>${t('datarights.grace.note')}</p><p class="small muted mt-4">${t('datarights.anon.note')}</p></section>
-    <section class="card"><div class="table-wrap"><table class="tbl"><thead><tr>
-      <th>${t('datarights.col.type')}</th><th>${t('datarights.col.member')}</th><th>${t('datarights.col.status')}</th>
-      <th>${t('datarights.col.requested')}</th><th>${t('datarights.col.grace')}</th><th>${t('datarights.col.actions')}</th>
-    </tr></thead><tbody>
-    ${rows.map(r => {
-      const left = daysLeft(r.grace_ends_at);
-      return `<tr><td>${plainBadge(t('datarights.type.' + r.type))}</td>
-      <td>${esc(memberName(r.member_id, lang))}</td>
-      <td>${plainBadge(t('datarights.status.' + r.status))}</td>
-      <td>${fmtDate(r.requested_at, lang)}</td>
-      <td>${r.grace_ends_at ? fmtDate(r.grace_ends_at, lang) + (left !== null ? ` · ${fmtNum(left, lang)} ${t('datarights.grace.daysLeft')}` : '') : '—'}</td>
-      <td><div class="row">
+    <section class="card">${renderTable({ columns: [
+      { key: 'type', label: t('datarights.col.type'), sortable: true, render: r => plainBadge(t('datarights.type.' + r.type)) },
+      { key: 'member_id', label: t('datarights.col.member'), render: r => esc(memberName(r.member_id, lang)) },
+      { key: 'status', label: t('datarights.col.status'), sortable: true, render: r => plainBadge(t('datarights.status.' + r.status)) },
+      { key: 'requested_at', label: t('datarights.col.requested'), sortable: true, render: r => fmtDate(r.requested_at, lang) },
+      { key: 'grace_ends_at', label: t('datarights.col.grace'), render: r => {
+        const left = daysLeft(r.grace_ends_at);
+        return r.grace_ends_at ? fmtDate(r.grace_ends_at, lang) + (left !== null ? ` · ${fmtNum(left, lang)} ${t('datarights.grace.daysLeft')}` : '') : '—';
+      } },
+      { key: 'actions', label: t('datarights.col.actions'), render: r => `<div class="row">
         ${r.status === 'pending' ? `<button type="button" class="btn btn-secondary btn-sm" data-start="${r.id}">${t('datarights.act.start')}</button>` : ''}
         ${r.status === 'in_progress' ? `<button type="button" class="btn btn-primary btn-sm" data-complete="${r.id}">${t('datarights.act.complete')}</button>` : ''}
         ${r.status === 'in_grace' ? `<button type="button" class="btn btn-primary btn-sm" data-anon="${r.id}">${t('datarights.act.anonymise')}</button>` : ''}
         ${(r.status === 'pending' || r.status === 'in_progress' || r.status === 'in_grace') ? `<button type="button" class="btn btn-ghost btn-sm" data-cancel="${r.id}">${t('datarights.act.cancelReq')}</button>` : ''}
-      </div></td></tr>`;
-    }).join('')}
-    </tbody></table></div></section>`;
+      </div>` }
+    ], rows, page: parseInt(ctx.query.page || '1', 10), perPage: 20, stacked: true, sort })}</section>`;
   },
   onMount(ctx){ bindDataRights(ctx); },
   onUnmount(){}
@@ -85,12 +93,17 @@ export const DataRights = {
 function bindDataRights(ctx){
   const root = document.getElementById('view');
   if(!root) return;
+  bindTableSort(root, (key, dir) => {
+    const qs = new URLSearchParams({ ...ctx.query, sort: key, dir, page: 1 });
+    location.hash = '#/data-rights?' + qs.toString();
+  });
   const find = id => store.data_requests.find(x => x.id === id);
   root.querySelectorAll('[data-start]').forEach(b => b.addEventListener('click', () => {
     const r = find(b.dataset.start); if(!r) return;
     const old = r.status; r.status = 'in_progress';
     writeAudit(ctx.user.id, ctx.role, 'data_request.start', 'data_request', r.id, old, 'in_progress');
-    Promise.resolve(ctx.rerender()).then(() => ctx.toast(t('datarights.msg.started')));
+    ctx.rerender();
+    ctx.toast(t('datarights.msg.started'));
   }));
   root.querySelectorAll('[data-complete]').forEach(b => b.addEventListener('click', () => {
     const r = find(b.dataset.complete); if(!r) return;
@@ -99,7 +112,8 @@ function bindDataRights(ctx){
       onConfirm: () => {
         const old = r.status; r.status = 'completed';
         writeAudit(ctx.user.id, ctx.role, 'data_request.complete', 'data_request', r.id, old, 'completed');
-        Promise.resolve(ctx.rerender()).then(() => ctx.toast(t('datarights.msg.completed')));
+        ctx.rerender();
+        ctx.toast(t('datarights.msg.completed'));
       } });
   }));
   root.querySelectorAll('[data-anon]').forEach(b => b.addEventListener('click', () => {
@@ -109,7 +123,8 @@ function bindDataRights(ctx){
       onConfirm: () => {
         const old = r.status; r.status = 'completed';
         writeAudit(ctx.user.id, ctx.role, 'data_request.anonymise', 'data_request', r.id, old, 'completed');
-        Promise.resolve(ctx.rerender()).then(() => ctx.toast(t('datarights.msg.anonymised')));
+        ctx.rerender();
+        ctx.toast(t('datarights.msg.anonymised'));
       } });
   }));
   root.querySelectorAll('[data-cancel]').forEach(b => b.addEventListener('click', () => {
@@ -119,7 +134,8 @@ function bindDataRights(ctx){
       onConfirm: () => {
         const old = r.status; r.status = 'cancelled';
         writeAudit(ctx.user.id, ctx.role, 'data_request.cancel', 'data_request', r.id, old, 'cancelled');
-        Promise.resolve(ctx.rerender()).then(() => ctx.toast(t('datarights.msg.cancelled')));
+        ctx.rerender();
+        ctx.toast(t('datarights.msg.cancelled'));
       } });
   }));
 }

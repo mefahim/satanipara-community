@@ -2,11 +2,15 @@
 // DEMO data only. Household-member links exist in demo data for hh-1/hh-2
 // (persons + members carry household_id); hh-3 has none, so its detail keeps
 // the honest empty state instead of inventing family relationships.
+// v2: shared statCard/statGrid, real table sorting (?sort=&dir=), field()
+// select variants, .link-more, no 350 ms toast delay.
 import { t, getLang, registerStrings } from '../js/i18n.js';
+import { go, hashWithQuery } from '../js/lib/router.js';
 import { store, filterList, writeAudit } from '../js/lib/store.js';
 import { fmtNum, esc } from '../js/lib/format.js';
-import { renderTable, bindTableRows } from '../js/components/table.js';
+import { renderTable, bindTableRows, bindTableSort } from '../js/components/table.js';
 import { renderFilters, bindFilters } from '../js/components/filters.js';
+import { statGrid } from '../js/components/stat.js';
 import { badge, plainBadge } from '../js/components/badges.js';
 import { field, errorSummary, validateRequired } from '../js/components/forms.js';
 import { emptyState } from '../js/components/states.js';
@@ -57,13 +61,11 @@ const consentLabel = c => t(K + (c === 'granted' ? 'consent.granted' : c === 'wi
 const visBadge = v => plainBadge(visLabel(v));
 const consentBadge = c => badge(c === 'granted' ? 'published' : 'draft', consentLabel(c));
 const nm = (it, lang) => lang === 'bn' ? (it.name_bn || it.name_en) : (it.name_en || it.name_bn);
-function go(hash){ location.hash = hash; }
-function listHash(q, archived){
-  const p = new URLSearchParams();
-  if(q) p.set('q', q);
-  if(archived) p.set('archived', archived);
-  const s = p.toString();
-  return '#/households' + (s ? '?' + s : '');
+// Query state for the list: q / archived / sort / dir. Patches merge over the
+// current query so a sort click never drops the active search or chip.
+function tableSort(ctx){
+  const k = ctx.query.sort, d = ctx.query.dir;
+  return k && ['name_bn', 'area', 'members_count', 'visibility'].includes(k) && (d === 'asc' || d === 'desc') ? { key: k, dir: d } : null;
 }
 
 export const Households = {
@@ -85,11 +87,12 @@ export const Households = {
   onMount(ctx){
     const lang = getLang();
     bindTableRows(document.getElementById('view'));
+    bindTableSort(document.getElementById('view'), (key, dir) => go(hashWithQuery('#/households', ctx.query, { sort: key, dir })));
     ctx.shell.setTitle(t(K + (ctx.path === '/households/new' ? 'form.titleNew' : ctx.params.id ? 'detail.title' : 'list.title')));
     ctx.shell.setBreadcrumb(['nav.community', 'nav.households']);
     bindFilters(document.getElementById('view'), {
-      onSearch: q => go(listHash(q, ctx.query.archived)),
-      onChip: v => go(listHash(ctx.query.q, v === 'all' ? '' : v)),
+      onSearch: q => go(hashWithQuery('#/households', ctx.query, { q })),
+      onChip: v => go(hashWithQuery('#/households', ctx.query, { archived: v === 'all' ? '' : v })),
       onClear: () => go('#/households')
     });
     const form = document.getElementById('hh-form');
@@ -129,25 +132,27 @@ function listHtml(ctx, lang){
   return `<span class="demo-badge">${t('app.demo')}</span>
   <div class="view-head"><div><h1>${t(K + 'list.title')}</h1><p class="sub">${t(K + 'list.sub')}</p></div>
   <div class="row"><a class="btn btn-primary" href="#/households/new">${t(K + 'list.new')}</a></div></div>
-  <div class="stat-grid"><a class="stat" href="#/households"><div class="num">${fmtNum(store.households.length, lang)}</div><div class="lbl">${t(K + 'list.title')}</div></a>
-  <a class="stat" href="#/households?archived=active"><div class="num">${fmtNum(store.households.filter(h => !h.archived).length, lang)}</div><div class="lbl">${t(K + 'chip.active')}</div></a>
-  <a class="stat" href="#/households?archived=archived"><div class="num">${fmtNum(store.households.filter(h => h.archived).length, lang)}</div><div class="lbl">${t(K + 'chip.archived')}</div></a>
-  <a class="stat" href="#/households"><div class="num">${fmtNum(store.households.filter(h => h.visibility === 'public').length, lang)}</div><div class="lbl">${t(K + 'vis.public')}</div></a></div>
+  ${statGrid([
+    { href: '#/households', num: fmtNum(store.households.length, lang), label: t(K + 'list.title') },
+    { href: '#/households?archived=active', num: fmtNum(store.households.filter(h => !h.archived).length, lang), label: t(K + 'chip.active') },
+    { href: '#/households?archived=archived', num: fmtNum(store.households.filter(h => h.archived).length, lang), label: t(K + 'chip.archived') },
+    { href: '#/households', num: fmtNum(store.households.filter(h => h.visibility === 'public').length, lang), label: t(K + 'vis.public') }
+  ])}
   <div class="mt-6">${renderFilters({ q, chips, activeChip: arch || 'all' })}</div>
   ${rows.length ? renderTable({ columns: [
-    { key: 'name_bn', label: t(K + 'list.colName'), render: r => `<strong>${esc(nm(r, lang))}</strong>${r.archived ? ' ' + badge('draft', t(K + 'chip.archived')) : ''}` },
-    { key: 'area', label: t(K + 'list.colArea'), render: r => esc(r.area || '') },
-    { key: 'members_count', label: t(K + 'list.colMembers'), render: r => fmtNum(r.members_count ?? 0, lang) },
+    { key: 'name_bn', label: t(K + 'list.colName'), sortable: true, render: r => `<strong>${esc(nm(r, lang))}</strong>${r.archived ? ' ' + badge('draft', t(K + 'chip.archived')) : ''}` },
+    { key: 'area', label: t(K + 'list.colArea'), sortable: true, render: r => esc(r.area || '') },
+    { key: 'members_count', label: t(K + 'list.colMembers'), sortable: true, render: r => fmtNum(r.members_count ?? 0, lang) },
     { key: 'visibility', label: t(K + 'list.colVisibility'), render: r => visBadge(r.visibility) },
     { key: 'consent_status', label: t(K + 'list.colConsent'), render: r => consentBadge(r.consent_status) }
-  ], rows, page: 1, perPage: 20, onRowClick: r => '#/households/' + r.id, stacked: true }) : emptyState(t('common.empty'), t(K + 'list.new'), '#/households/new')}`;
+  ], rows, page: 1, perPage: 20, onRowClick: r => '#/households/' + r.id, stacked: true, sort: tableSort(ctx) }) : emptyState(t('common.empty'), t(K + 'list.new'), '#/households/new')}`;
 }
 
 function detailHtml(ctx, hh, lang){
   const linkedPersons = store.persons.filter(p => p.household_id === hh.id);
   const linkedMembers = store.members.filter(m => m.household_id === hh.id);
-  const personRow = p => `<div class="list-row"><div class="grow"><strong>${esc(nm(p, lang))}</strong><br><span class="small muted">${esc(p.profession_bn || '')}${p.age_band ? ' · ' + esc(p.age_band) : ''}</span></div></div>`;
-  const memberRow = m => `<div class="list-row"><div class="grow"><strong>${esc(nm(m, lang))}</strong><br><span class="small muted num">${esc(m.member_id || '')}</span></div></div>`;
+  const personRow = p => `<a class="list-row" href="#/directory/${p.id}"><div class="grow"><strong>${esc(nm(p, lang))}</strong><br><span class="small muted">${esc(p.profession_bn || '')}${p.age_band ? ' · ' + esc(p.age_band) : ''}</span></div></a>`;
+  const memberRow = m => `<a class="list-row" href="#/members/${m.id}"><div class="grow"><strong>${esc(nm(m, lang))}</strong><br><span class="small muted num">${esc(m.member_id || '')}</span></div></a>`;
   return `<span class="demo-badge">${t('app.demo')}</span>
   <div class="view-head"><div><h1>${esc(nm(hh, lang))}</h1><p class="sub">${t(K + 'detail.title')}</p></div>
   <div class="row"><a class="btn btn-secondary" href="#/households/${hh.id}?edit=1">${t(K + 'detail.edit')}</a>
@@ -166,13 +171,12 @@ function detailHtml(ctx, hh, lang){
   <section class="card"><h3>${t(K + 'detail.linksTitle')}</h3>
     ${linkedMembers.length ? linkedMembers.map(memberRow).join('') : emptyState(t(K + 'detail.linksEmpty'))}</section>
   </div></div>
-  <p class="mt-4"><a href="#/households">${t('common.back')}</a></p>`;
+  <p class="mt-4"><a class="link-more" href="#/households">${t('common.back')}</a></p>`;
 }
 
 function formHtml(ctx, hh){
   const isNew = !hh;
   const v = hh || { name_bn: '', name_en: '', area: 'সাতানীপাড়া', members_count: '', visibility: 'members-only', consent_status: 'granted' };
-  const opt = (val, cur, label) => `<option value="${val}"${val === cur ? ' selected' : ''}>${label}</option>`;
   return `<span class="demo-badge">${t('app.demo')}</span>
   <div class="view-head"><div><h1>${t(K + (isNew ? 'form.titleNew' : 'form.titleEdit'))}</h1></div></div>
   <form id="hh-form" class="card" novalidate>
@@ -181,11 +185,16 @@ function formHtml(ctx, hh){
     ${field({ id: 'f-name-en', label: t(K + 'form.nameEn'), value: v.name_en })}
     ${field({ id: 'f-area', label: t(K + 'form.area'), value: v.area })}
     ${field({ id: 'f-members', label: t(K + 'form.members'), type: 'number', value: String(v.members_count ?? ''), attrs: 'min="0" step="1"' })}
-    <div class="field"><label for="f-visibility">${t(K + 'form.visibility')}</label>
-      <select id="f-visibility" class="input">${opt('public', v.visibility, t(K + 'vis.public'))}${opt('members-only', v.visibility, t(K + 'vis.members'))}${opt('private', v.visibility, t(K + 'vis.private'))}</select>
-      <div class="hint">${t(K + 'form.consentHint')}</div></div>
-    <div class="field"><label for="f-consent">${t(K + 'form.consent')}</label>
-      <select id="f-consent" class="input">${opt('granted', v.consent_status, t(K + 'consent.granted'))}${opt('withdrawn', v.consent_status, t(K + 'consent.withdrawn'))}${opt('pending', v.consent_status, t(K + 'consent.pending'))}</select></div>
+    ${field({ id: 'f-visibility', label: t(K + 'form.visibility'), value: v.visibility, hint: t(K + 'form.consentHint'), options: [
+      { value: 'public', label: t(K + 'vis.public') },
+      { value: 'members-only', label: t(K + 'vis.members') },
+      { value: 'private', label: t(K + 'vis.private') }
+    ] })}
+    ${field({ id: 'f-consent', label: t(K + 'form.consent'), value: v.consent_status, options: [
+      { value: 'granted', label: t(K + 'consent.granted') },
+      { value: 'withdrawn', label: t(K + 'consent.withdrawn') },
+      { value: 'pending', label: t(K + 'consent.pending') }
+    ] })}
     <div class="row mt-4"><button type="submit" class="btn btn-primary">${t(K + 'form.save')}</button>
     <a class="btn btn-secondary" href="${isNew ? '#/households' : '#/households/' + hh.id}">${t(K + 'form.cancel')}</a></div>
   </form>`;
@@ -221,8 +230,6 @@ function saveHousehold(ctx, form){
   if(existing) Object.assign(existing, rec);
   else store.households.push(rec);
   writeAudit(ctx.user.id, ctx.role, existing ? 'household.update' : 'household.create', 'household', rec.id, existing ? 'updated' : null, rec.visibility);
-  // D7: toast AFTER navigation — the shell rebuilds #toasts on render, so a toast
-  // fired before go() is wiped. Same 350 ms pattern as the finance views.
   go('#/households/' + rec.id);
-  setTimeout(() => ctx.toast(t(K + 'toast.saved')), 350);
+  ctx.toast(t(K + 'toast.saved'));
 }

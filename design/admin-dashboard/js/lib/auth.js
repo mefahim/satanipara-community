@@ -31,6 +31,17 @@ export function login(phone, password){
   return { ok:true, user };
 }
 export function logout(){ session = null; }
+// Re-auth validation (DS v2, audit §6): the modal password field is now READ and
+// validated at prototype level — non-empty AND matching the acting account's
+// demo password. Wrong/empty input shows an inline error and never confirms.
+// Prototype-only: demo passwords are client-side by design (see README).
+export function validateReauth(password, user){
+  const pw = String(password || '');
+  if(!pw.trim()) return { ok:false, error:'empty' };
+  const acct = DEMO_ACCOUNTS.find(a => a.userId === (user && user.id));
+  if(!acct || acct.password !== pw) return { ok:false, error:'wrong' };
+  return { ok:true };
+}
 // DEMO role switch (labelled simulated): re-renders shell nav and re-runs the route guard.
 // The real system has no such control — roles are server-assigned.
 // D9: switchRole(role, userId?) — with a userId it switches to that exact demo account

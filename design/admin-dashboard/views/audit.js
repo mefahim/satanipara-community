@@ -3,14 +3,17 @@
 // Only ~10 demo rows are seeded (the audit brief said ~25 — reported as a gap).
 import { t, getLang, registerStrings } from '../js/i18n.js';
 import { store, filterList } from '../js/lib/store.js';
-import { fmtDateTime, esc } from '../js/lib/format.js';
-import { renderTable, bindTableRows } from '../js/components/table.js';
+import { fmtDateTime, fmtNum, esc } from '../js/lib/format.js';
+import { renderTable, bindTableRows, bindTableSort } from '../js/components/table.js';
+import { actionLabel } from '../js/lib/action-label.js';
 import { renderFilters, bindFilters } from '../js/components/filters.js';
 import { emptyState } from '../js/components/states.js';
+import { statGrid } from '../js/components/stat.js';
 const STRINGS = {
 bn: {
 'title':'অডিট লগ', 'crumbDetail':'অডিট বিবরণ', 'list.title':'অডিট লগ', 'list.note':'প্রতিটি গুরুত্বপূর্ণ কাজের রেকর্ড — কে, কী, কখন, কোন রেকর্ডে। এই লগ অপরিবর্তনীয়: কোনো সারি মোছা বা বদলানো যায় না।',
 'list.seedNote':'ডেমো তথ্যে ১০টি সারি আছে।', 'filter.all':'সব',
+'stat.total':'মোট রেকর্ড', 'stat.login':'লগইন', 'stat.finance':'অর্থ', 'stat.member':'সদস্য',
 'group.login':'লগইন', 'group.member':'সদস্য', 'group.request':'প্রবাসী অনুরোধ', 'group.finance':'অর্থ', 'group.blood':'রক্ত', 'group.export':'এক্সপোর্ট', 'group.settings':'সেটিংস', 'group.message':'বার্তা', 'group.other':'অন্যান্য',
 'col.time':'সময়', 'col.actor':'কার্যকরী', 'col.action':'কাজ', 'col.subject':'রেকর্ড', 'col.change':'পরিবর্তন',
 'detail.actor':'কার্যকরী', 'detail.role':'ভূমিকা', 'detail.action':'কাজ', 'detail.subject':'রেকর্ড', 'detail.subjectType':'রেকর্ডের ধরন',
@@ -37,6 +40,7 @@ bn: {
 en: {
 'title':'Audit log', 'crumbDetail':'Audit detail', 'list.title':'Audit log', 'list.note':'A record of every important action — who, what, when, on which record. This log is immutable: no row can be deleted or changed.',
 'list.seedNote':'The demo data has 10 rows.', 'filter.all':'All',
+'stat.total':'Total records', 'stat.login':'Logins', 'stat.finance':'Finance', 'stat.member':'Members',
 'group.login':'Login', 'group.member':'Member', 'group.request':'Expatriate request', 'group.finance':'Finance', 'group.blood':'Blood', 'group.export':'Export', 'group.settings':'Settings', 'group.message':'Message', 'group.other':'Other',
 'col.time':'Time', 'col.actor':'Actor', 'col.action':'Action', 'col.subject':'Record', 'col.change':'Change',
 'detail.actor':'Actor', 'detail.role':'Role', 'detail.action':'Action', 'detail.subject':'Record', 'detail.subjectType':'Record type',
@@ -84,14 +88,9 @@ function changeText(a){
   if(n === null) return String(o) + ' → —';
   return String(o) + ' → ' + String(n);
 }
-// D8: human-readable BN/EN label for the common audit action codes. Unknown codes
-// (e.g. a future action no label exists for yet) fall back to the raw code, never
-// to a bare translation key.
-export function actionLabel(action){
-  const key = 'audit.action.' + action;
-  const v = t(key);
-  return v === key ? action : v;
-}
+// D8 / audit D-10: actionLabel now lives in js/lib/action-label.js; re-exported
+// here so existing imports keep working.
+export { actionLabel } from '../js/lib/action-label.js';
 export const Audit = {
   route: '#/audit',
   title: { bn: 'অডিট লগ', en: 'Audit log' },
@@ -116,16 +115,24 @@ function listHtml(ctx, lang){
   rows = [...rows].sort((a, b) => b.created_at.localeCompare(a.created_at));
   const groups = ['login', 'member', 'request', 'finance', 'blood', 'export', 'settings', 'message', 'other'];
   const chips = [{ value: 'all', label: t('audit.filter.all') }, ...groups.map(g => ({ value: g, label: t('audit.group.' + g) }))];
+  const sort = ctx.query.sort ? { key: ctx.query.sort, dir: ctx.query.dir === 'desc' ? 'desc' : 'asc' } : null;
+  const all = store.activity_log;
   return `${head(t('audit.list.title'), t('audit.list.note'))}
+  ${statGrid([
+    { num: fmtNum(all.length, lang), label: t('audit.stat.total') },
+    { num: fmtNum(all.filter(a => actionGroup(a.action) === 'login').length, lang), label: t('audit.stat.login') },
+    { num: fmtNum(all.filter(a => actionGroup(a.action) === 'finance').length, lang), label: t('audit.stat.finance') },
+    { num: fmtNum(all.filter(a => actionGroup(a.action) === 'member').length, lang), label: t('audit.stat.member') }
+  ])}
   <p class="small muted">${t('audit.list.seedNote')}</p>
   ${renderFilters({ q, chips, activeChip: group })}
   ${rows.length ? renderTable({ columns: [
-    { key: 'created_at', label: t('audit.col.time'), render: a => fmtDateTime(a.created_at, lang) },
-    { key: 'actor', label: t('audit.col.actor'), render: a => esc(actorName(a.actor, lang)) },
-    { key: 'action', label: t('audit.col.action'), render: a => esc(actionLabel(a.action)) },
-    { key: 'subject_id', label: t('audit.col.subject'), render: a => `<span class="num">${esc(a.subject_id)}</span>` },
+    { key: 'created_at', label: t('audit.col.time'), sortable: true, render: a => fmtDateTime(a.created_at, lang) },
+    { key: 'actor', label: t('audit.col.actor'), sortable: true, render: a => esc(actorName(a.actor, lang)) },
+    { key: 'action', label: t('audit.col.action'), sortable: true, render: a => esc(actionLabel(a.action)) },
+    { key: 'subject_id', label: t('audit.col.subject'), sortable: true, render: a => `<span class="num">${esc(a.subject_id)}</span>` },
     { key: 'change', label: t('audit.col.change'), render: a => esc(changeText(a)) }
-  ], rows, page: parseInt(ctx.query.page || '1', 10), perPage: 20, onRowClick: a => '#/audit/' + a.id, stacked: true }) : emptyState(t('common.empty'), '', '')}`;
+  ], rows, page: parseInt(ctx.query.page || '1', 10), perPage: 20, onRowClick: a => '#/audit/' + a.id, stacked: true, sort }) : emptyState(t('common.empty'), '', '')}`;
 }
 function detailHtml(ctx, lang){
   const a = store.activity_log.find(x => x.id === ctx.params.id);
@@ -143,13 +150,17 @@ function detailHtml(ctx, lang){
     <dt>${t('audit.detail.time')}</dt><dd>${fmtDateTime(a.created_at, lang)}</dd>
   </dl>
   <p class="mt-4"><strong>${t('audit.col.change')}:</strong> <span class="num">${esc(changeText(a))}</span></p>
-  <p class="small muted mt-6">${t('audit.detail.immutable')}</p>
+  <div class="banner mt-4" role="note"><span>${t('audit.detail.immutable')}</span></div>
   <p class="mt-4"><a class="btn btn-primary" href="#/audit">${t('audit.back.list')}</a></p></section>`;
 }
 function bindAudit(ctx){
   const root = document.getElementById('view');
   if(!root) return;
   bindTableRows(root);
+  bindTableSort(root, (key, dir) => {
+    const qs = { ...ctx.query, sort: key, dir, page: 1 };
+    location.hash = '#/audit' + hashQs(qs);
+  });
   bindFilters(root, {
     onSearch: v => { location.hash = '#/audit' + hashQs({ ...ctx.query, q: v, page: 1 }); },
     onChip: v => { location.hash = '#/audit' + hashQs({ ...ctx.query, group: v === 'all' ? '' : v, page: 1 }); },

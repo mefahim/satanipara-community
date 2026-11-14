@@ -3,10 +3,11 @@
 // published entries are immutable; corrections only via reversal; approver ≠ enterer;
 // one reversal per original; reversed/discarded entries immutable; no service-charge field.
 import { t, getLang, registerStrings } from '../js/i18n.js';
-import { store, writeAudit, filterList, activeSuperAdmins } from '../js/lib/store.js';
+import { store, writeAudit, filterList, activeSuperAdmins, storeAdd } from '../js/lib/store.js';
 import { fmtBDT, fmtDate, fmtDateTime, fmtNum, esc } from '../js/lib/format.js';
 import { badge, plainBadge } from '../js/components/badges.js';
 import { renderTable, bindTableRows } from '../js/components/table.js';
+import { statGrid } from '../js/components/stat.js';
 import { renderFilters, bindFilters } from '../js/components/filters.js';
 import { field, errorSummary, validateRequired } from '../js/components/forms.js';
 import { emptyState } from '../js/components/states.js';
@@ -17,7 +18,7 @@ const STRINGS = {
     'title.overview': 'অর্থ — সারসংক্ষেপ', 'title.ledger': 'লেজার এন্ট্রি', 'title.new': 'নতুন এন্ট্রি', 'title.detail': 'এন্ট্রির বিবরণ', 'title.edit': 'খসড়া সম্পাদনা', 'title.reverse': 'বিপরীত এন্ট্রি তৈরি', 'title.pending': 'অনুমোদনের অপেক্ষায়',
     'crumb.detail': 'এন্ট্রির বিবরণ', 'crumb.new': 'নতুন এন্ট্রি', 'crumb.edit': 'সম্পাদনা', 'crumb.reverse': 'বিপরীত এন্ট্রি', 'crumb.pending': 'অনুমোদনের অপেক্ষায়', 'overview.intro': 'প্রকাশিত তথ্য শুধুমাত্র — খসড়া এখানে যোগ হয় না। সব অঙ্ক নমুনা তথ্য (DEMO)।',
     'overview.income': 'আয় (প্রকাশিত)', 'overview.donation': 'অনুদান (প্রকাশিত)', 'overview.expense': 'ব্যয় (প্রকাশিত)', 'overview.net': 'নিট উদ্বৃত্ত (প্রকাশিত)', 'overview.preview4': 'প্রাকদর্শন: প্রথম ৪টি সারি', 'overview.fullYear': 'পূর্ণ বছর: সব সারি',
-    'overview.snapshot': 'অর্থের সারসংক্ষেপ', 'overview.recent': 'সাম্প্রতিক প্রকাশিত এন্ট্রি', 'overview.pendingCard': 'অপেক্ষমাণ খসড়া', 'overview.pendingNone': 'কোনো খসড়া অপেক্ষমাণ নেই।', 'overview.publicNote': 'সাধারণের জন্য প্রকাশিত তথ্যই শুধু দেখানো হয়।',
+    'overview.snapshot': 'অর্থের সারসংক্ষেপ', 'overview.recent': 'সাম্প্রতিক প্রকাশিত এন্ট্রি', 'overview.pendingCard': 'অপেক্ষমাণ খসড়া', 'overview.pendingNone': 'কোনো খসড়া অপেক্ষমাণ নেই।',
     'overview.year': 'বছর', 'overview.gotoLedger': 'সব লেজার দেখুন', 'overview.gotoPending': 'অনুমোদনের সারি দেখুন', 'ledger.intro': 'বছর অনুযায়ী সাজানো লেজার। প্রকাশিত এন্ট্রি অপরিবর্তনীয় — সংশোধন শুধু বিপরীত এন্ট্রি দিয়ে।',
     'ledger.colNo': 'এন্ট্রি নম্বর', 'ledger.colDate': 'তারিখ', 'ledger.colItem': 'বিবরণ', 'ledger.colKind': 'ধরন', 'ledger.colCategory': 'শ্রেণি', 'ledger.colAmount': 'পরিমাণ', 'ledger.colStatus': 'অবস্থা', 'ledger.colEntered': 'প্রবেশকারী',
     'ledger.kindAll': 'সব', 'ledger.yearAll': 'সব বছর', 'ledger.statusAll': 'সব অবস্থা', 'ledger.sort': 'সাজান', 'ledger.sortDateDesc': 'তারিখ: নতুন আগে', 'ledger.sortDateAsc': 'তারিখ: পুরোনো আগে', 'ledger.sortAmtDesc': 'পরিমাণ: বেশি আগে', 'ledger.sortAmtAsc': 'পরিমাণ: কম আগে',
@@ -47,7 +48,7 @@ const STRINGS = {
     'title.overview': 'Finance — Overview', 'title.ledger': 'Ledger Entries', 'title.new': 'New Entry', 'title.detail': 'Entry Detail', 'title.edit': 'Edit Draft', 'title.reverse': 'Create Reversal Entry', 'title.pending': 'Pending Approval',
     'crumb.detail': 'Entry detail', 'crumb.new': 'New entry', 'crumb.edit': 'Edit', 'crumb.reverse': 'Reversal entry', 'crumb.pending': 'Pending approval', 'overview.intro': 'Published figures only — drafts are not included here. All amounts are demo data (DEMO).',
     'overview.income': 'Income (published)', 'overview.donation': 'Donations (published)', 'overview.expense': 'Expenses (published)', 'overview.net': 'Net balance (published)', 'overview.preview4': 'Preview: first 4 rows', 'overview.fullYear': 'Full year: all rows',
-    'overview.snapshot': 'Finance snapshot', 'overview.recent': 'Recently published entries', 'overview.pendingCard': 'Pending drafts', 'overview.pendingNone': 'No drafts are pending.', 'overview.publicNote': 'Only published information is shown to the public.',
+    'overview.snapshot': 'Finance snapshot', 'overview.recent': 'Recently published entries', 'overview.pendingCard': 'Pending drafts', 'overview.pendingNone': 'No drafts are pending.',
     'overview.year': 'Year', 'overview.gotoLedger': 'View full ledger', 'overview.gotoPending': 'View approval queue', 'ledger.intro': 'Ledger grouped by year. Published entries are immutable — correct them only with a reversal entry.',
     'ledger.colNo': 'Entry no.', 'ledger.colDate': 'Date', 'ledger.colItem': 'Description', 'ledger.colKind': 'Kind', 'ledger.colCategory': 'Category', 'ledger.colAmount': 'Amount', 'ledger.colStatus': 'Status', 'ledger.colEntered': 'Entered by',
     'ledger.kindAll': 'All', 'ledger.yearAll': 'All years', 'ledger.statusAll': 'All statuses', 'ledger.sort': 'Sort',
@@ -126,9 +127,9 @@ function doApprove(entry, ctx) {
         writeAudit(ctx.user.id, ctx.role, 'finance.publish', 'ledger_entry', entry.entry_no, old, 'published');
         msg = t('finance.act.approved');
       }
-      // Toast AFTER the re-render: the shell rebuilds #toasts on render, wiping any toast fired before it.
+      // Toasts survive navigation now (stable shell, DS v2 §2) — no 350ms delay.
+      ctx.toast(msg);
       ctx.rerender();
-      setTimeout(() => ctx.toast(msg), 350);
     } });
 }
 function reasonModal(ctx, { title, body, confirmLabel, danger, onReason }) {
@@ -141,11 +142,11 @@ function reasonModal(ctx, { title, body, confirmLabel, danger, onReason }) {
 }
 function doReject(entry, ctx) {
   reasonModal(ctx, { title: t('finance.act.reject'), body: t('finance.act.confirmReject'), confirmLabel: t('finance.act.reject'), danger: true,
-    onReason: r => { const old = entry.status; entry.status = 'rejected'; entry.rejection_reason_bn = r; writeAudit(ctx.user.id, ctx.role, 'finance.reject', 'ledger_entry', entry.entry_no, old, 'rejected'); ctx.rerender(); setTimeout(() => ctx.toast(t('finance.act.rejected')), 350); } });
+    onReason: r => { const old = entry.status; entry.status = 'rejected'; entry.rejection_reason_bn = r; writeAudit(ctx.user.id, ctx.role, 'finance.reject', 'ledger_entry', entry.entry_no, old, 'rejected'); ctx.toast(t('finance.act.rejected')); ctx.rerender(); } });
 }
 function doDiscard(entry, ctx) {
   reasonModal(ctx, { title: t('finance.act.discard'), body: t('finance.act.confirmDiscard'), confirmLabel: t('finance.act.discard'), danger: true,
-    onReason: r => { const old = entry.status; entry.status = 'discarded'; entry.discard_reason_bn = r; writeAudit(ctx.user.id, ctx.role, 'finance.discard', 'ledger_entry', entry.entry_no, old, 'discarded'); ctx.rerender(); setTimeout(() => ctx.toast(t('finance.act.discarded')), 350); } });
+    onReason: r => { const old = entry.status; entry.status = 'discarded'; entry.discard_reason_bn = r; writeAudit(ctx.user.id, ctx.role, 'finance.discard', 'ledger_entry', entry.entry_no, old, 'discarded'); ctx.toast(t('finance.act.discarded')); ctx.rerender(); } });
 }
 function actionButtons(entry, ctx) {
   // Draft: edit / approve (or blocked explanation) / reject / discard. Published: reverse only. Others: none.
@@ -180,27 +181,27 @@ function overviewHtml(ctx) {
   const s = yearSums(year);
   const drafts = store.ledger_entries.filter(e => e.status === 'draft');
   const recent = [...s.pub].sort((a, b) => b.entry_date.localeCompare(a.entry_date)).slice(0, 5);
-  // Money totals use compact card numerals, not the giant .stat numerals: a ৳৩,২০,০০০
-  // Bengali figure at the .stat 4rem size overflows its cell and is clipped by .stat-grid.
-  const stat = (href, num, label) => `<a class="card" style="text-decoration:none;color:inherit" href="${href}"><div class="num" style="font-size:32px;font-weight:800;line-height:1.2">${num}</div><div class="small muted">${label}</div></a>`;
+  // Shared stat cards (DS v2, audit D-13) replace the hand-rolled .card stat
+  // with inline styles. Numbers are pre-formatted BDT strings.
+  const stats = statGrid([
+    { href: '#/finance/ledger?kind=income&year=' + year, num: fmtBDT(s.income, lang), label: t('finance.overview.income') },
+    { href: '#/finance/ledger?kind=donation&year=' + year, num: fmtBDT(s.donation, lang), label: t('finance.overview.donation') },
+    { href: '#/finance/ledger?kind=expense&year=' + year, num: fmtBDT(s.expense, lang), label: t('finance.overview.expense') },
+    { href: '#/finance/ledger?year=' + year, num: fmtBDT(s.net, lang), label: t('finance.overview.net') }
+  ]);
   return head(t('finance.title.overview'), t('finance.overview.intro')) + `
   <div class="filters"><label class="small" for="fin-year">${esc(t('finance.overview.year'))}</label>
     <select class="input" id="fin-year" style="max-width:160px">${years().map(y => `<option value="${y}"${y === year ? ' selected' : ''}>${y}</option>`).join('')}</select></div>
-  <div class="two-col">
-    ${stat('#/finance/ledger?kind=income&year=' + year, fmtBDT(s.income, lang), t('finance.overview.income'))}
-    ${stat('#/finance/ledger?kind=donation&year=' + year, fmtBDT(s.donation, lang), t('finance.overview.donation'))}
-    ${stat('#/finance/ledger?kind=expense&year=' + year, fmtBDT(s.expense, lang), t('finance.overview.expense'))}
-    ${stat('#/finance/ledger?year=' + year, fmtBDT(s.net, lang), t('finance.overview.net'))}
-  </div>
+  ${stats}
   <div class="two-col mt-6">
     <section class="card"><h3>${esc(t('finance.overview.snapshot'))}</h3>
       <dl class="kv"><dt>${esc(t('finance.overview.preview4'))}</dt><dd class="num">${fmtBDT(s.preview4, lang)}</dd>
       <dt>${esc(t('finance.overview.fullYear'))}</dt><dd class="num">${fmtBDT(s.fullPos, lang)}</dd></dl>
       <p class="small muted mt-4">${esc(year)} · ${esc(t('app.demo'))}</p>
-      <p class="mt-4"><a href="#/finance/ledger">${esc(t('finance.overview.gotoLedger'))}</a> · <a href="#/finance/reports">${esc(t('nav.reports'))}</a></p></section>
+      <p class="mt-4"><a class="link-more" href="#/finance/ledger">${esc(t('finance.overview.gotoLedger'))}</a> · <a class="link-more" href="#/finance/reports">${esc(t('nav.reports'))}</a></p></section>
     <section class="card"><h3>${esc(t('finance.overview.pendingCard'))} (${fmtNum(drafts.length, lang)})</h3>
       ${drafts.length ? drafts.map(e => `<div class="list-row"><div class="grow"><strong class="num">${esc(e.entry_no)}</strong> — ${esc(itemOf(e, lang))}<br><span class="small muted num">${fmtBDT(e.amount, lang)} · ${esc(uname(e.entered_by, lang))}</span></div>${statusBadge(e.status)}</div>`).join('') : `<p class="muted">${esc(t('finance.overview.pendingNone'))}</p>`}
-      <p class="mt-4"><a href="#/finance/pending">${esc(t('finance.overview.gotoPending'))}</a></p></section>
+      <p class="mt-4"><a class="link-more" href="#/finance/pending">${esc(t('finance.overview.gotoPending'))}</a></p></section>
   </div>
   <section class="card"><h3>${esc(t('finance.overview.recent'))}</h3>
     ${recent.length ? renderTable({ columns: [
@@ -296,7 +297,7 @@ function detailHtml(ctx) {
   </section>
   <aside class="card"><h3>${esc(t('finance.detail.item'))}</h3><p class="small" role="note">${esc(note)}</p>
     <p class="small muted mt-4">${esc(t('finance.overview.publicNote'))}</p>
-    <p class="mt-4"><a href="#/finance/ledger">${esc(t('finance.overview.gotoLedger'))}</a></p></aside></div>`;
+    <p class="mt-4"><a class="link-more" href="#/finance/ledger">${esc(t('finance.overview.gotoLedger'))}</a></p></aside></div>`;
 }
 function entryFormHtml(ctx, e, isReverse) {
   const lang = L();
@@ -310,8 +311,6 @@ function entryFormHtml(ctx, e, isReverse) {
     ? { item_bn: orig.item_bn, item_en: orig.item_en || '', kind: orig.kind, category: orig.category, project_id: orig.project_id || '', entry_date: new Date().toISOString().slice(0, 10), amount: '', payee_bn: orig.payee_bn, voucher: '' }
     : (e || { item_bn: '', item_en: '', kind: 'expense', category: 'fc-3', project_id: '', entry_date: new Date().toISOString().slice(0, 10), amount: '', payee_bn: '', voucher: '' });
   const amountVal = e ? Math.abs(e.amount) : '';
-  const catOpts = store.finance_categories.filter(c => c.active).map(c => `<option value="${c.id}"${c.id === vals.category ? ' selected' : ''}>${esc(lang === 'bn' ? c.name_bn : c.name_en)} — ${esc(t('finance.kind.' + c.kind))}</option>`).join('');
-  const projOpts = `<option value="">${esc(t('finance.form.projectNone'))}</option>` + store.projects.map(p => `<option value="${p.id}"${p.id === vals.project_id ? ' selected' : ''}>${esc(lang === 'bn' ? p.name_bn : p.name_en)}</option>`).join('');
   return head(t(isReverse ? 'finance.title.reverse' : editing ? 'finance.title.edit' : 'finance.title.new'),
     isReverse ? t('finance.reverse.intro') : editing ? t('finance.detail.draftNote') : '') + `
   ${isReverse && orig ? `<section class="card"><h3>${esc(t('finance.reverse.original'))}: <span class="num">${esc(orig.entry_no)}</span></h3>
@@ -320,12 +319,9 @@ function entryFormHtml(ctx, e, isReverse) {
   <form id="fin-form" novalidate><div id="fin-errors"></div>
     ${field({ id: 'f-item-bn', label: t('finance.form.itemBn'), value: vals.item_bn, required: true, attrs: isReverse ? 'readonly' : '', hint: isReverse ? t('finance.reverse.prefilled') : '' })}
     ${field({ id: 'f-item-en', label: t('finance.form.itemEn'), value: vals.item_en || '', attrs: isReverse ? 'readonly' : '' })}
-    <div class="field"><label for="f-kind">${esc(t('finance.form.kind'))} *</label>
-      <select id="f-kind" class="input" ${locked ? 'disabled' : ''}>${['income', 'expense', 'donation'].map(k => `<option value="${k}"${k === vals.kind ? ' selected' : ''}>${esc(t('finance.kind.' + k))}</option>`).join('')}</select></div>
-    <div class="field"><label for="f-category">${esc(t('finance.form.category'))} *</label>
-      <select id="f-category" class="input" ${locked ? 'disabled' : ''}>${catOpts}</select></div>
-    <div class="field"><label for="f-project">${esc(t('finance.form.project'))}</label>
-      <select id="f-project" class="input" ${locked ? 'disabled' : ''}>${projOpts}</select></div>
+    ${field({ id:'f-kind', label:t('finance.form.kind'), value: vals.kind, required:true, attrs: locked ? 'disabled' : '', options:[{ value:'income', label:t('finance.kind.income') }, { value:'expense', label:t('finance.kind.expense') }, { value:'donation', label:t('finance.kind.donation') }] })}
+    ${field({ id:'f-category', label:t('finance.form.category'), value: vals.category, required:true, attrs: locked ? 'disabled' : '', options: store.finance_categories.filter(c => c.active).map(c => ({ value: c.id, label: (lang === 'bn' ? c.name_bn : c.name_en) + ' — ' + t('finance.kind.' + c.kind) })) })}
+    ${field({ id:'f-project', label:t('finance.form.project'), value: vals.project_id || '', attrs: locked ? 'disabled' : '', options: [{ value:'', label:t('finance.form.projectNone') }, ...store.projects.map(p => ({ value: p.id, label: lang === 'bn' ? p.name_bn : p.name_en }))] })}
     ${field({ id: 'f-date', label: t('finance.form.date'), type: 'date', value: vals.entry_date, required: true })}
     ${isReverse
       ? `<p><strong>${esc(t('finance.reverse.amountAuto'))}:</strong> <span class="num">${fmtBDT(-orig.amount, lang)}</span></p>`
@@ -367,7 +363,8 @@ function saveEntry(ctx, e, isReverse) {
     e.item_bn = itemBn; e.item_en = g('f-item-en').trim(); e.kind = e.reverses ? e.kind : kind; e.category = e.reverses ? e.category : cat;
     e.project_id = e.reverses ? e.project_id : (g('f-project') || null); e.entry_date = date; e.amount = e.reverses ? e.amount : signed; e.payee_bn = payee; e.voucher = voucherName;
     writeAudit(ctx.user.id, ctx.role, 'finance.edit', 'ledger_entry', e.entry_no, 'draft', 'draft');
-    location.hash = '#/finance/' + e.entry_no; setTimeout(() => ctx.toast(t('finance.form.updated')), 350); return;
+    ctx.toast(t('finance.form.updated'));
+    location.hash = '#/finance/' + e.entry_no; return;
   }
   const no = nextEntryNo(date);
   const entry = { entry_no: no, entry_date: date, kind, category: isReverse ? orig.category : cat, project_id: isReverse ? orig.project_id : (g('f-project') || null),
@@ -375,10 +372,11 @@ function saveEntry(ctx, e, isReverse) {
     amount: signed, payee_bn: payee || (orig ? orig.payee_bn : ''), voucher: voucherName || ('ভাউচার ' + no),
     status: 'draft', entered_by: ctx.user.id, approved_by: null, approved_at: null };
   if (isReverse) { entry.reverses = orig.entry_no; entry.reversal_reason_bn = reason; }
-  store.ledger_entries.push(entry);
+  storeAdd('ledger_entries', entry);
   writeAudit(ctx.user.id, ctx.role, isReverse ? 'finance.reversal.create' : 'finance.create', 'ledger_entry', no, null, 'draft');
   const msg = t(isReverse ? 'finance.act.reversalCreated' : 'finance.act.created');
-  location.hash = '#/finance/pending'; setTimeout(() => ctx.toast(msg), 350);
+  ctx.toast(msg);
+  location.hash = '#/finance/pending';
 }
 
 // ---------- export ----------

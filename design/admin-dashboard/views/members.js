@@ -1,13 +1,18 @@
 // Members view — Journey C: member list + pending approvals, detail (profile /
 // family / requests / activity), edit. Super Admin only. All data DEMO-labelled.
 // Demo gaps (reported, not invented): no date of birth (age band shows updating),
-// no visibility/consent fields beyond donor opt-in, no household link, expatriate
-// requests carry no member link so request history matches on phone only.
+// no visibility/consent fields beyond donor opt-in; expatriate requests carry no
+// member link so request history matches on phone only. Members DO carry a
+// household_id in the demo data (m-1..m-4) — shown as a household link.
+// v2: shared statCard/statGrid, real table sorting (?sort=&dir=), field()
+// textarea/select variants, .link-more, no 350 ms toast delay.
 import { t, getLang, registerStrings } from '../js/i18n.js';
+import { buildQueryString } from '../js/lib/router.js';
 import { store, filterList, writeAudit } from '../js/lib/store.js';
 import { fmtDate, fmtPhoneMasked, fmtPhoneFull, fmtNum, esc } from '../js/lib/format.js';
 import { badge } from '../js/components/badges.js';
-import { renderTable, bindTableRows } from '../js/components/table.js';
+import { renderTable, bindTableRows, bindTableSort } from '../js/components/table.js';
+import { statGrid } from '../js/components/stat.js';
 import { field, errorSummary, validateRequired } from '../js/components/forms.js';
 import { emptyState } from '../js/components/states.js';
 import { notFoundHtml } from '../js/lib/guards.js';
@@ -34,13 +39,14 @@ const STRINGS = {
     'detail.tabRequests': 'অনুরোধের ইতিহাস', 'detail.tabActivity': 'কার্যক্রম',
     'detail.personal': 'ব্যক্তিগত তথ্য', 'detail.kName': 'নাম',
     'detail.kId': 'সদস্য আইডি', 'detail.kPhone': 'মোবাইল (বিস্তারিত দৃশ্যে)',
-    'detail.kArea': 'এলাকা', 'detail.kType': 'ধরন',
+    'detail.kArea': 'এলাকা', 'detail.kType': 'ধরন', 'detail.kHousehold': 'পরিবার',
     'detail.kStatus': 'সদস্যপদ অবস্থা', 'detail.kApplied': 'আবেদনের তারিখ',
     'detail.kDonor': 'রক্তদানে আগ্রহ', 'detail.kAge': 'বয়সের সীমা',
     'detail.kVisibility': 'দৃশ্যমানতা ও সম্মতি', 'detail.donorYes': 'হ্যাঁ',
     'detail.donorNo': 'না', 'detail.rejectionReason': 'প্রত্যাখ্যানের কারণ',
     'detail.suspensionReason': 'স্থগিতের কারণ', 'detail.familyTitle': 'পরিবার / গৃহস্থালি',
-    'detail.familyNote': 'পরিবারের সদস্য যোগ বা সম্পাদনা করা যায়। গৃহস্থালি রেকর্ডের সঙ্গে সংযোগ নমুনা তথ্যে নেই।',
+    'detail.familyNote': 'পরিবারের সদস্য যোগ বা সম্পাদনা করা যায়।',
+    'detail.familyHouseholdNote': 'এই সদস্যের পরিবারের রেকর্ড দেখুন:',
     'detail.familyEmpty': 'কোনো পরিবারের সদস্য নথিভুক্ত নেই।', 'detail.familyName': 'নাম',
     'detail.familyRelation': 'সম্পর্ক', 'detail.familyAdd': 'পরিবারের সদস্য যোগ করুন',
     'detail.familyAdded': 'পরিবারের সদস্য যোগ করা হয়েছে।', 'detail.reqTitle': 'প্রবাসী সহায়তার অনুরোধ',
@@ -95,12 +101,14 @@ const STRINGS = {
     'detail.tabRequests': 'Request history', 'detail.tabActivity': 'Activity',
     'detail.personal': 'Personal details', 'detail.kName': 'Name',
     'detail.kId': 'Member ID', 'detail.kPhone': 'Phone (detail view)', 'detail.kArea': 'Area', 'detail.kType': 'Type',
+    'detail.kHousehold': 'Household',
     'detail.kStatus': 'Membership status', 'detail.kApplied': 'Applied on',
     'detail.kDonor': 'Blood donor opt-in', 'detail.kAge': 'Age band',
     'detail.kVisibility': 'Visibility and consent', 'detail.donorYes': 'Yes',
     'detail.donorNo': 'No', 'detail.rejectionReason': 'Rejection reason',
     'detail.suspensionReason': 'Suspension reason', 'detail.familyTitle': 'Family / household',
-    'detail.familyNote': 'Family members can be added or edited. No household-record link exists in the demo data.',
+    'detail.familyNote': 'Family members can be added or edited.',
+    'detail.familyHouseholdNote': 'See this member’s household record:',
     'detail.familyEmpty': 'No family members recorded.', 'detail.familyName': 'Name',
     'detail.familyRelation': 'Relation', 'detail.familyAdd': 'Add family member',
     'detail.familyAdded': 'Family member added.', 'detail.reqTitle': 'Expatriate support requests',
@@ -136,6 +144,11 @@ const STRINGS = {
 };
 registerStrings('members', STRINGS);
 
+// Column keys that the shared table sort may order by (?sort=&dir=). The
+// legacy sort <select> (newest/oldest/name) still works and clears any
+// column sort when it changes.
+const LIST_SORT_KEYS = ['name_bn', 'member_id', 'status', 'created_at'];
+
 export const Members = {
   route: '#/members',
   title: { bn: 'সদস্য', en: 'Members' },
@@ -152,6 +165,11 @@ export const Members = {
     const view = document.getElementById('view');
     if(!view) return;
     const go = qs => { location.hash = '#/members' + qs; };
+    bindTableSort(view, (key, dir) => {
+      // On a detail page the sort stays on that member (tab preserved via query).
+      const base = ctx.params.id ? '#/members/' + ctx.params.id : '#/members';
+      location.hash = base + buildQuery(ctx, { sort: key, dir, page: 1 });
+    });
     const q = view.querySelector('[data-m-q]');
     if(q) q.addEventListener('change', () => go(buildQuery(ctx, { q: q.value, page: 1 })));
     const st = view.querySelector('[data-m-status]');
@@ -161,7 +179,7 @@ export const Members = {
     const ar = view.querySelector('[data-m-area]');
     if(ar) ar.addEventListener('change', () => go(buildQuery(ctx, { area: ar.value, page: 1 })));
     const so = view.querySelector('[data-m-sort]');
-    if(so) so.addEventListener('change', () => go(buildQuery(ctx, { sort: so.value, page: 1 })));
+    if(so) so.addEventListener('change', () => go(buildQuery(ctx, { sort: so.value, dir: '', page: 1 })));
     const pp = view.querySelector('[data-per-page]');
     if(pp) pp.addEventListener('change', () => go(buildQuery(ctx, { per: pp.value, page: 1 })));
     view.querySelectorAll('[data-action]').forEach(b => b.addEventListener('click', () => handleAction(ctx, b.dataset.action)));
@@ -176,27 +194,26 @@ export const Members = {
       if(!m || !validateRequired(name) || !validateRequired(rel)) return;
       m.family.push({ name_bn: name, relation_bn: rel });
       writeAudit(ctx.user.id, ctx.role, 'member.family.add', 'member', m.member_id || m.id, null, name);
-      ctx.rerender(); setTimeout(() => ctx.toast(t('members.detail.familyAdded')), 350);
+      ctx.rerender();
+      ctx.toast(t('members.detail.familyAdded'));
     });
   },
   onUnmount(){}
 };
 
 function findMember(id){ return store.members.find(m => m.id === id); }
-function buildQuery(ctx, patch){
-  const q = { ...ctx.query, ...patch };
-  const p = new URLSearchParams();
-  for(const [k, v] of Object.entries(q)) if(v !== '' && v !== undefined && v !== null) p.set(k, v);
-  const s = p.toString();
-  return s ? '?' + s : '';
+function buildQuery(ctx, patch){ return buildQueryString(ctx.query, patch); }
+function tableSort(ctx, keys){
+  const k = ctx.query.sort, d = ctx.query.dir;
+  return k && keys.includes(k) && (d === 'asc' || d === 'desc') ? { key: k, dir: d } : null;
 }
 function typeLabel(m){
-  const lang = getLang();
   if(m.type === 'expat') return t('members.list.type.expat');
   if(m.type === 'student') return t('members.list.type.student');
   return t('members.list.type.resident');
 }
 function nameOf(m){ const lang = getLang(); return lang === 'bn' ? m.name_bn : (m.name_en || m.name_bn); }
+function householdOf(m){ return m.household_id ? store.households.find(h => h.id === m.household_id) : null; }
 
 function listHtml(ctx){
   const lang = getLang();
@@ -205,26 +222,26 @@ function listHtml(ctx){
   if(ctx.query.status) rows = rows.filter(m => m.status === ctx.query.status);
   if(ctx.query.type) rows = rows.filter(m => m.type === ctx.query.type);
   if(ctx.query.area) rows = rows.filter(m => m.area === ctx.query.area);
+  const colSort = tableSort(ctx, LIST_SORT_KEYS);
   const sort = ctx.query.sort || 'newest';
-  rows.sort((a, b) => sort === 'oldest' ? a.created_at.localeCompare(b.created_at)
+  if(!colSort) rows.sort((a, b) => sort === 'oldest' ? a.created_at.localeCompare(b.created_at)
     : sort === 'name' ? nameOf(a).localeCompare(nameOf(b)) : b.created_at.localeCompare(a.created_at));
   const page = parseInt(ctx.query.page, 10) || 1;
   const per = Math.min(parseInt(ctx.query.per, 10) || 20, 50);
   const pages = Math.max(Math.ceil(rows.length / per), 1);
   const areas = [...new Set(store.members.map(m => m.area))];
   const c = s => store.members.filter(m => m.status === s).length;
-  const stat = (href, num, label) => `<a class="stat" href="${href}"><div class="num">${fmtNum(num, lang)}</div><div class="lbl">${label}</div></a>`;
   const chip = (value, label) => `<a class="chip" href="#/members${buildQuery(ctx, { status: value, page: 1 })}" aria-pressed="${(ctx.query.status || '') === value}">${label}</a>`;
   return `<span class="demo-badge">${t('app.demo')}</span>
   <div class="view-head"><div><h1>${pendingOnly ? t('members.list.pendingTitle') : t('members.list.title')}</h1>
   <p class="sub">${pendingOnly ? t('members.list.pendingNote') : t('members.list.subtitle')}</p></div></div>
-  <div class="stat-grid">
-    ${stat('#/members', store.members.length, t('members.list.countTotal'))}
-    ${stat('#/members?status=pending', c('pending'), t('members.list.countPending'))}
-    ${stat('#/members?status=approved', c('approved'), t('members.list.countApproved'))}
-    ${stat('#/members?status=rejected', c('rejected'), t('members.list.countRejected'))}
-    ${stat('#/members?status=suspended', c('suspended'), t('members.list.countSuspended'))}
-  </div>
+  ${statGrid([
+    { href: '#/members', num: fmtNum(store.members.length, lang), label: t('members.list.countTotal') },
+    { href: '#/members?status=pending', num: fmtNum(c('pending'), lang), label: t('members.list.countPending') },
+    { href: '#/members?status=approved', num: fmtNum(c('approved'), lang), label: t('members.list.countApproved') },
+    { href: '#/members?status=rejected', num: fmtNum(c('rejected'), lang), label: t('members.list.countRejected') },
+    { href: '#/members?status=suspended', num: fmtNum(c('suspended'), lang), label: t('members.list.countSuspended') }
+  ])}
   <div class="filters mt-4" role="search">
     <input class="input search-box" type="search" data-m-q value="${esc(ctx.query.q || '')}" placeholder="${esc(t('members.list.searchPh'))}" aria-label="${esc(t('members.list.searchPh'))}">
     ${chip('', t('members.list.statusAll'))}${chip('pending', t('members.list.status.pending'))}${chip('approved', t('members.list.status.approved'))}${chip('rejected', t('members.list.status.rejected'))}${chip('suspended', t('members.list.status.suspended'))}
@@ -245,15 +262,15 @@ function listHtml(ctx){
     </select>
   </div>
   <section class="card mt-4">${renderTable({ columns: [
-    { key: 'name_bn', label: t('members.list.colName'), render: m => `<strong>${esc(nameOf(m))}</strong>` },
-    { key: 'member_id', label: t('members.list.colId'), render: m => m.member_id ? `<span class="num">${esc(m.member_id)}</span>` : `<span class="muted small">${t('members.list.noId')}</span>` },
+    { key: 'name_bn', label: t('members.list.colName'), sortable: true, render: m => `<strong>${esc(nameOf(m))}</strong>` },
+    { key: 'member_id', label: t('members.list.colId'), sortable: true, render: m => m.member_id ? `<span class="num">${esc(m.member_id)}</span>` : `<span class="muted small">${t('members.list.noId')}</span>` },
     { key: 'phone', label: t('members.list.colPhone'), render: m => `<span class="num">${fmtPhoneMasked(m.phone)}</span>` },
     { key: 'area', label: t('members.list.colArea'), render: m => esc(m.area) },
     { key: 'type', label: t('members.list.colType'), render: m => typeLabel(m) },
-    { key: 'status', label: t('members.list.colStatus'), render: m => badge(m.status, t('members.list.status.' + m.status)) },
-    { key: 'created_at', label: t('members.list.colApplied'), render: m => fmtDate(m.created_at, lang) }
-  ], rows, page, perPage: per, onRowClick: m => '#/members/' + m.id, stacked: true })}
-  <div class="pagination"><span>${t('common.showing')} ${rows.length ? (page - 1) * per + 1 : 0}–${Math.min(page * per, rows.length)} ${t('common.of')} ${fmtNum(rows.length, lang)}</span>
+    { key: 'status', label: t('members.list.colStatus'), sortable: true, render: m => badge(m.status, t('members.list.status.' + m.status)) },
+    { key: 'created_at', label: t('members.list.colApplied'), sortable: true, render: m => fmtDate(m.created_at, lang) }
+  ], rows, page, perPage: per, onRowClick: m => '#/members/' + m.id, stacked: true, sort: colSort })}
+  <div class="pagination">
     ${page > 1 ? `<a class="btn btn-secondary btn-sm" href="#/members${buildQuery(ctx, { page: page - 1 })}">${t('members.list.prev')}</a>` : `<span class="muted small">${t('members.list.prev')}</span>`}
     ${page < pages ? `<a class="btn btn-secondary btn-sm" href="#/members${buildQuery(ctx, { page: page + 1 })}">${t('members.list.next')}</a>` : `<span class="muted small">${t('members.list.next')}</span>`}
   </div></section>`;
@@ -273,26 +290,27 @@ function detailHtml(ctx){
   else body = profileHtml(ctx, m);
   const actions = [];
   if(m.status === 'pending'){
-    actions.push(`<button type="button" class="btn btn-primary" data-action="approve">${t('members.detail.approve')}</button>`);
-    actions.push(`<button type="button" class="btn btn-danger" data-action="reject">${t('members.detail.reject')}</button>`);
+    actions.push(`<button type="button" class="btn btn-primary btn-block" data-action="approve">${t('members.detail.approve')}</button>`);
+    actions.push(`<button type="button" class="btn btn-danger btn-block" data-action="reject">${t('members.detail.reject')}</button>`);
   }
-  if(m.status === 'approved') actions.push(`<button type="button" class="btn btn-danger" data-action="suspend">${t('members.detail.suspend')}</button>`);
-  if(m.status === 'suspended') actions.push(`<button type="button" class="btn btn-primary" data-action="reinstate">${t('members.detail.reinstate')}</button>`);
-  actions.push(`<a class="btn btn-secondary" href="#/members/${m.id}/edit">${t('members.detail.edit')}</a>`);
-  actions.push(`<button type="button" class="btn btn-ghost" data-action="delete-request">${t('members.detail.deleteRequest')}</button>`);
+  if(m.status === 'approved') actions.push(`<button type="button" class="btn btn-danger btn-block" data-action="suspend">${t('members.detail.suspend')}</button>`);
+  if(m.status === 'suspended') actions.push(`<button type="button" class="btn btn-primary btn-block" data-action="reinstate">${t('members.detail.reinstate')}</button>`);
+  actions.push(`<a class="btn btn-secondary btn-block" href="#/members/${m.id}/edit">${t('members.detail.edit')}</a>`);
+  actions.push(`<button type="button" class="btn btn-ghost btn-block" data-action="delete-request">${t('members.detail.deleteRequest')}</button>`);
   return `<span class="demo-badge">${t('app.demo')}</span>
-  <p><a href="#/members">${t('members.detail.back')}</a></p>
+  <p><a class="link-more" href="#/members">${t('members.detail.back')}</a></p>
   <div class="view-head"><div><h1>${esc(nameOf(m))}</h1>
   <p class="sub">${m.member_id ? `<span class="num">${esc(m.member_id)}</span>` : t('members.list.noId')} · ${badge(m.status, t('members.list.status.' + m.status))}</p></div></div>
   ${m.deletion_requested_at ? `<div class="banner" role="alert"><span>${esc(t('members.detail.deletionBanner').replace('{date}', fmtDate(m.deletion_grace_until, lang)))}</span></div>` : ''}
   <div class="filters" role="tablist">${tabBtn('profile', t('members.detail.tabProfile'))}${tabBtn('family', t('members.detail.tabFamily'))}${tabBtn('requests', t('members.detail.tabRequests'))}${tabBtn('activity', t('members.detail.tabActivity'))}</div>
   <div class="detail-grid mt-4"><div>${body}</div>
   <aside class="card"><h3>${t('members.detail.kStatus')}</h3><p class="mt-4">${badge(m.status, t('members.list.status.' + m.status))}</p>
-  <div class="mt-4" style="display:grid;gap:8px">${actions.join('')}</div></aside></div>`;
+  <div class="mt-4">${actions.join('')}</div></aside></div>`;
 }
 
 function profileHtml(ctx, m){
   const lang = getLang();
+  const hh = householdOf(m);
   const kv = (k, v) => `<dt>${k}</dt><dd>${v}</dd>`;
   return `<section class="card"><h3>${t('members.detail.personal')}</h3><dl class="kv mt-4">
   ${kv(t('members.detail.kName'), esc(nameOf(m)) + (lang === 'bn' && m.name_en ? `<br><span class="small muted">${esc(m.name_en)}</span>` : ''))}
@@ -300,6 +318,7 @@ function profileHtml(ctx, m){
   ${kv(t('members.detail.kPhone'), `<span class="num">${fmtPhoneFull(m.phone)}</span>`)}
   ${kv(t('members.detail.kArea'), esc(m.area))}
   ${kv(t('members.detail.kType'), typeLabel(m))}
+  ${hh ? kv(t('members.detail.kHousehold'), `<a href="#/households/${hh.id}">${esc(lang === 'bn' ? hh.name_bn : (hh.name_en || hh.name_bn))}</a>`) : ''}
   ${kv(t('members.detail.kStatus'), badge(m.status, t('members.list.status.' + m.status)))}
   ${kv(t('members.detail.kApplied'), fmtDate(m.created_at, lang))}
   ${kv(t('members.detail.kDonor'), m.donor_opt_in ? t('members.detail.donorYes') : t('members.detail.donorNo'))}
@@ -311,8 +330,11 @@ function profileHtml(ctx, m){
 }
 
 function familyHtml(ctx, m){
+  const lang = getLang();
+  const hh = householdOf(m);
   return `<section class="card"><h3>${t('members.detail.familyTitle')}</h3>
   <p class="small muted mt-4">${t('members.detail.familyNote')}</p>
+  ${hh ? `<p class="small mt-4">${t('members.detail.familyHouseholdNote')} <a href="#/households/${hh.id}">${esc(lang === 'bn' ? hh.name_bn : (hh.name_en || hh.name_bn))}</a></p>` : ''}
   ${m.family.length ? `<ul class="mt-4">${m.family.map(f => `<li class="list-row"><div class="grow"><strong>${esc(f.name_bn)}</strong><br><span class="small muted">${esc(f.relation_bn)}</span></div></li>`).join('')}</ul>` : emptyState(t('members.detail.familyEmpty'))}
   <form id="family-add-form" class="mt-6">
     ${field({ id: 'fam-name', label: t('members.detail.familyName'), required: true })}
@@ -327,11 +349,11 @@ function requestsHtml(ctx, m){
   return `<section class="card"><h3>${t('members.detail.reqTitle')}</h3>
   <p class="small muted mt-4">${t('members.detail.reqNote')}</p>
   ${reqs.length ? renderTable({ columns: [
-    { key: 'request_no', label: t('members.detail.colReq'), render: r => `<span class="num">${esc(r.request_no)}</span>` },
+    { key: 'request_no', label: t('members.detail.colReq'), sortable: true, render: r => `<span class="num">${esc(r.request_no)}</span>` },
     { key: 'service_name_bn', label: t('members.detail.colService'), render: r => esc(r.service_name_bn) },
-    { key: 'status', label: t('members.list.colStatus'), render: r => badge(r.status) },
-    { key: 'created_at', label: t('members.detail.colDate'), render: r => fmtDate(r.created_at, lang) }
-  ], rows: reqs, page: 1, perPage: 20, onRowClick: r => '#/expatriate/' + r.request_no, stacked: true }) : emptyState(t('members.detail.reqEmpty'))}</section>`;
+    { key: 'status', label: t('members.list.colStatus'), sortable: true, render: r => badge(r.status) },
+    { key: 'created_at', label: t('members.detail.colDate'), sortable: true, render: r => fmtDate(r.created_at, lang) }
+  ], rows: reqs, page: 1, perPage: 20, onRowClick: r => '#/expatriate/' + r.request_no, stacked: true, sort: tableSort(ctx, ['request_no', 'status', 'created_at']) }) : emptyState(t('members.detail.reqEmpty'))}</section>`;
 }
 
 function activityHtml(ctx, m){
@@ -339,30 +361,29 @@ function activityHtml(ctx, m){
   const rows = store.activity_log.filter(a => a.subject_id === m.id || a.subject_id === m.member_id);
   return `<section class="card"><h3>${t('members.detail.actTitle')}</h3>
   ${rows.length ? renderTable({ columns: [
-    { key: 'action', label: t('members.detail.colAction'), render: a => esc(a.action) },
+    { key: 'action', label: t('members.detail.colAction'), sortable: true, render: a => esc(a.action) },
     { key: 'change', label: t('members.detail.colChange'), render: a => `${esc(a.old_value ?? '—')} → ${esc(a.new_value ?? '—')}` },
     { key: 'actor', label: t('members.detail.colActor'), render: a => esc(a.actor_role) },
-    { key: 'created_at', label: t('members.detail.colDate'), render: a => fmtDate(a.created_at, lang) }
-  ], rows, page: 1, perPage: 20, stacked: true }) : emptyState(t('members.detail.actEmpty'))}</section>`;
+    { key: 'created_at', label: t('members.detail.colDate'), sortable: true, render: a => fmtDate(a.created_at, lang) }
+  ], rows, page: 1, perPage: 20, stacked: true, sort: tableSort(ctx, ['action', 'created_at']) }) : emptyState(t('members.detail.actEmpty'))}</section>`;
 }
 
 function editHtml(ctx){
   const m = findMember(ctx.params.id);
   if(!m) return notFoundHtml();
   return `<span class="demo-badge">${t('app.demo')}</span>
-  <p><a href="#/members/${m.id}">${t('members.detail.back')}</a></p>
+  <p><a class="link-more" href="#/members/${m.id}">${t('members.detail.back')}</a></p>
   <div class="view-head"><div><h1>${t('members.edit.title')}</h1><p class="sub">${esc(nameOf(m))}</p></div></div>
-  <form id="member-edit-form" class="card"><div id="edit-errors"></div>
+  <form id="member-edit-form" class="card" novalidate><div id="edit-errors"></div>
     ${field({ id: 'e-name-bn', label: t('members.edit.nameBn'), value: m.name_bn, required: true })}
     ${field({ id: 'e-name-en', label: t('members.edit.nameEn'), value: m.name_en || '' })}
     ${field({ id: 'e-phone', label: t('members.edit.phone'), value: m.phone, required: true, hint: t('members.edit.phoneHint'), attrs: 'inputmode="tel"' })}
     ${field({ id: 'e-area', label: t('members.edit.area'), value: m.area, required: true })}
-    <div class="field"><label for="e-type">${t('members.edit.type')}</label>
-      <select id="e-type" class="input">
-        <option value="resident"${m.type === 'resident' ? ' selected' : ''}>${t('members.list.type.resident')}</option>
-        <option value="expat"${m.type === 'expat' ? ' selected' : ''}>${t('members.list.type.expat')}</option>
-        <option value="student"${m.type === 'student' ? ' selected' : ''}>${t('members.list.type.student')}</option>
-      </select></div>
+    ${field({ id: 'e-type', label: t('members.edit.type'), value: m.type, options: [
+      { value: 'resident', label: t('members.list.type.resident') },
+      { value: 'expat', label: t('members.list.type.expat') },
+      { value: 'student', label: t('members.list.type.student') }
+    ] })}
     <div class="field"><label><input type="checkbox" id="e-donor"${m.donor_opt_in ? ' checked' : ''}> ${t('members.edit.donor')}</label></div>
     <div class="row"><button type="submit" class="btn btn-primary">${t('common.save')}</button>
     <a class="btn btn-secondary" href="#/members/${m.id}">${t('common.cancel')}</a></div>
@@ -392,7 +413,7 @@ function saveEdit(ctx){
   m.donor_opt_in = view.querySelector('#e-donor').checked;
   writeAudit(ctx.user.id, ctx.role, 'member.update', 'member', m.member_id || m.id, old, m.status);
   location.hash = '#/members/' + m.id;
-  setTimeout(() => ctx.toast(t('members.edit.savedToast')), 350);
+  ctx.toast(t('members.edit.savedToast'));
 }
 
 function nextMemberId(){
@@ -408,8 +429,7 @@ function reasonModal(ctx, { titleKey, bodyHtml, confirmKey, onConfirm }){
   let reason = '';
   ctx.modal({
     title: t(titleKey),
-    body: bodyHtml + `<div class="field mt-4"><label for="m-reason">${t('members.detail.reasonLabel')}</label>
-      <textarea id="m-reason" class="input" rows="3"></textarea><div class="hint">${t('members.detail.reasonHint')}</div></div>`,
+    body: bodyHtml + `<div class="mt-4">${field({ id: 'm-reason', type: 'textarea', label: t('members.detail.reasonLabel'), hint: t('members.detail.reasonHint'), rows: 3 })}</div>`,
     confirmLabel: t(confirmKey),
     danger: true,
     onConfirm: () => { if(reason.trim().length >= 10) onConfirm(reason.trim()); else ctx.toast(t('members.detail.reasonShort')); }
@@ -433,7 +453,8 @@ function handleAction(ctx, action){
       onConfirm: () => {
         m.status = 'approved'; m.member_id = id;
         writeAudit(ctx.user.id, ctx.role, 'member.approve', 'member', id, 'pending', 'approved');
-        ctx.rerender(); setTimeout(() => ctx.toast(t('members.detail.approvedToast')), 350);
+        ctx.rerender();
+        ctx.toast(t('members.detail.approvedToast'));
       }
     });
   }
@@ -442,7 +463,8 @@ function handleAction(ctx, action){
       onConfirm: reason => {
         m.status = 'rejected'; m.rejection_reason_bn = reason;
         writeAudit(ctx.user.id, ctx.role, 'member.reject', 'member', m.id, 'pending', 'rejected');
-        ctx.rerender(); setTimeout(() => ctx.toast(t('members.detail.rejectedToast')), 350);
+        ctx.rerender();
+        ctx.toast(t('members.detail.rejectedToast'));
       } });
   }
   if(action === 'suspend'){
@@ -450,7 +472,8 @@ function handleAction(ctx, action){
       onConfirm: reason => {
         m.status = 'suspended'; m.suspension_reason = reason;
         writeAudit(ctx.user.id, ctx.role, 'member.suspend', 'member', m.member_id || m.id, 'approved', 'suspended');
-        ctx.rerender(); setTimeout(() => ctx.toast(t('members.detail.suspendedToast')), 350);
+        ctx.rerender();
+        ctx.toast(t('members.detail.suspendedToast'));
       } });
   }
   if(action === 'reinstate'){
@@ -461,7 +484,8 @@ function handleAction(ctx, action){
       onConfirm: () => {
         m.status = 'approved'; m.suspension_reason = null;
         writeAudit(ctx.user.id, ctx.role, 'member.reinstate', 'member', m.member_id || m.id, 'suspended', 'approved');
-        ctx.rerender(); setTimeout(() => ctx.toast(t('members.detail.reinstatedToast')), 350);
+        ctx.rerender();
+        ctx.toast(t('members.detail.reinstatedToast'));
       }
     });
   }
@@ -476,7 +500,8 @@ function handleAction(ctx, action){
         m.deletion_requested_at = at.toISOString();
         m.deletion_grace_until = new Date(at.getTime() + 30 * 86400000).toISOString();
         writeAudit(ctx.user.id, ctx.role, 'member.delete.request', 'member', m.member_id || m.id, m.status, 'deletion-requested');
-        ctx.rerender(); setTimeout(() => ctx.toast(t('members.detail.deleteToast')), 350);
+        ctx.rerender();
+        ctx.toast(t('members.detail.deleteToast'));
       }
     });
   }

@@ -17,4 +17,6 @@
    column and let every grid child shrink below its content width. */
 @media(max-width:639px){.kv{grid-template-columns:104px 1fr;gap:4px 12px}}
 .notif-unread{font-weight:700}
-.login-state-links{margin-top:16px;font-size:14px;text-align:center}
+.login-state-links{margin-top:16px;font-size:var(--text-sm);text-align:center}
+/* Dark: completed Meridian node keeps a dark check on the light-green fill. */
+[data-theme="dark"] .meridian li.done .node{color:#102E27}

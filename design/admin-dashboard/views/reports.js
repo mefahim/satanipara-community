@@ -10,6 +10,7 @@ import { t, getLang, registerStrings } from '../js/i18n.js';
 import { store, writeAudit } from '../js/lib/store.js';
 import { fmtBDT, fmtDate, fmtNum, esc } from '../js/lib/format.js';
 import { bindTableRows } from '../js/components/table.js';
+import { statGrid } from '../js/components/stat.js';
 import { emptyState } from '../js/components/states.js';
 
 const STRINGS = {
@@ -151,7 +152,7 @@ function doExport(ctx, section, format) {
     onConfirm: () => {
       writeAudit(ctx.user.id, ctx.role, 'export.reports', 'reports', section, null, format + (simulated ? ' (simulated, csv fallback)' : ''));
       downloadCsv(section, from, to);
-      setTimeout(() => ctx.toast(t(simulated ? 'reports.export.simulated' : 'reports.export.done')), 350);
+      ctx.toast(t(simulated ? 'reports.export.simulated' : 'reports.export.done'));
     }
   });
 }
@@ -165,11 +166,19 @@ export const Reports = {
   render(ctx) {
     const lang = L();
     const { from, to } = rangeOf(ctx);
+    const pubNet = store.ledger_entries.filter(e => e.status === 'published' && inRange(e.entry_date, from, to)).reduce((a, e) => a + e.amount, 0);
+    const stats = statGrid([
+      { num: fmtNum(store.members.length, lang), label: t('reports.members.total') },
+      { num: fmtNum(store.service_requests.length, lang), label: t('reports.services.total') },
+      { num: fmtBDT(pubNet, lang), label: t('reports.finance.net') },
+      { num: fmtNum(store.activities.length, lang), label: t('reports.activity.total') }
+    ]);
     const section = (sec, rows, note) => `<section class="card" data-section="${sec}"><h3>${esc(t('reports.sec.' + sec))}</h3>
       ${note ? `<p class="small muted">${esc(note)}</p>` : ''}
       ${rows.length ? kvTable(rows) : emptyState(t('common.empty'))}
       ${exportBtns(sec)}</section>`;
     return head(t('reports.title'), t('reports.intro')) + `
+  ${stats}
   <form class="card" id="rep-filter"><div class="row">
     <div class="field"><label for="rep-from">${esc(t('reports.filter.from'))}</label><input id="rep-from" type="date" class="input" value="${from}"></div>
     <div class="field"><label for="rep-to">${esc(t('reports.filter.to'))}</label><input id="rep-to" type="date" class="input" value="${to}"></div>

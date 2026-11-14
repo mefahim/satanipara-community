@@ -1,12 +1,16 @@
 // Service catalogue (#/services). Super Admin only.
+// v2: shared statCard/statGrid (no hand-rolled BN-digit stat), real table sorting
+// (?sort=&dir=), field() in the edit modal, .link-more, no 350 ms toast delay.
 // Reached via links from #/expatriate and #/settings — NOT a sidebar item.
 // The 7 demo seed types are editable / deactivatable so the final list can replace
 // them. The final service list is OPEN (Q-22) — labelled pending confirmation.
 import { t, getLang, registerStrings } from '../js/i18n.js';
 import { store, writeAudit } from '../js/lib/store.js';
-import { esc } from '../js/lib/format.js';
+import { esc, fmtNum } from '../js/lib/format.js';
 import { plainBadge } from '../js/components/badges.js';
-import { renderTable, bindTableRows } from '../js/components/table.js';
+import { renderTable, bindTableRows, bindTableSort } from '../js/components/table.js';
+import { statGrid } from '../js/components/stat.js';
+import { field } from '../js/components/forms.js';
 
 const STRINGS = {
   bn: {
@@ -40,16 +44,20 @@ export const Services = {
     const lang = getLang(), tt = k => ctx.t('services.' + k);
     const types = store.service_types;
     const active = types.filter(s => s.active).length;
-    const stat = (num, label) => `<a class="stat" href="#/services"><div class="num">${lang === 'bn' ? String(num).replace(/[0-9]/g, d => '০১২৩৪৫৬৭৮৯'[+d]) : num}</div><div class="lbl">${label}</div></a>`;
+    const sort = ctx.query.sort && ['name_bn', 'name_en'].includes(ctx.query.sort) && (ctx.query.dir === 'asc' || ctx.query.dir === 'desc')
+      ? { key: ctx.query.sort, dir: ctx.query.dir } : null;
     return `<span class="demo-badge">${ctx.t('app.demo')}</span>
-    <p><a href="#/expatriate">← ${tt('back')}</a></p>
+    <p><a class="link-more" href="#/expatriate">${tt('back')}</a></p>
     <div class="view-head"><div><h1>${tt('title')}</h1><p class="sub">${tt('sub')}</p></div></div>
-    <div class="stat-grid">${stat(active, tt('active'))}${stat(types.length, tt('title'))}</div>
+    ${statGrid([
+      { href: '#/services', num: fmtNum(active, lang), label: tt('active') },
+      { href: '#/services', num: fmtNum(types.length, lang), label: tt('title') }
+    ])}
     <div class="card mt-4"><p><strong>${tt('q22')}</strong></p></div>
     <section class="card"><h3>${tt('title')}</h3>
-    ${renderTable({ stacked: true, rows: types, columns: [
-      { key: 'name_bn', label: tt('nameBn'), render: s => esc(s.name_bn) },
-      { key: 'name_en', label: tt('nameEn'), render: s => esc(s.name_en) },
+    ${renderTable({ stacked: true, rows: types, sort, columns: [
+      { key: 'name_bn', label: tt('nameBn'), sortable: true, render: s => esc(s.name_bn) },
+      { key: 'name_en', label: tt('nameEn'), sortable: true, render: s => esc(s.name_en) },
       { key: 'active', label: tt('status'), render: s => s.active ? plainBadge(tt('active')) : plainBadge(tt('inactive')) },
       { key: 'key', label: tt('action'), render: s => `<span class="row"><button type="button" class="btn btn-secondary btn-sm" data-edit="${s.key}">${tt('edit')}</button><button type="button" class="btn btn-secondary btn-sm" data-toggle="${s.key}">${s.active ? tt('deactivate') : tt('activate')}</button></span>` }
     ] })}</section>`;
@@ -57,16 +65,17 @@ export const Services = {
   onMount(ctx) {
     const root = document.getElementById('view');
     bindTableRows(root);
+    bindTableSort(root, (key, dir) => { location.hash = '#/services?sort=' + key + '&dir=' + dir; });
     root.querySelectorAll('[data-edit]').forEach(b => b.addEventListener('click', () => {
       const s = store.service_types.find(x => x.key === b.dataset.edit);
       if (!s) return;
-      ctx.modal({ title: ctx.t('services.editTitle'), body: `<div class="field"><label for="svc-bn">${ctx.t('services.nameBn')}</label><input id="svc-bn" class="input" value="${esc(s.name_bn)}"></div><div class="field"><label for="svc-en">${ctx.t('services.nameEn')}</label><input id="svc-en" class="input" value="${esc(s.name_en)}"></div>`, confirmLabel: ctx.t('services.save'), onConfirm: () => {
+      ctx.modal({ title: ctx.t('services.editTitle'), body: field({ id: 'svc-bn', label: ctx.t('services.nameBn'), value: s.name_bn }) + field({ id: 'svc-en', label: ctx.t('services.nameEn'), value: s.name_en }), confirmLabel: ctx.t('services.save'), onConfirm: () => {
         // Modal DOM is cleared before onConfirm runs, so values are captured live
         // via input listeners attached right after the modal opens (see below).
         if (bnVal.trim()) s.name_bn = bnVal.trim();
         if (enVal.trim()) s.name_en = enVal.trim();
         writeAudit(ctx.user.id, ctx.role, 'service_types.edit', 'service_type', s.key, null, s.name_bn);
-        ctx.rerender(); setTimeout(() => ctx.toast(ctx.t('services.saved')), 350);
+        ctx.rerender(); ctx.toast(ctx.t('services.saved'));
       } });
       // Capture field values live: the modal root is emptied before onConfirm fires.
       let bnVal = s.name_bn, enVal = s.name_en;
@@ -80,7 +89,7 @@ export const Services = {
       ctx.modal({ title: ctx.t('services.confirmTitle'), body: `<p>${ctx.t('services.confirmBody')}</p><p>${esc(getLang() === 'bn' ? s.name_bn : s.name_en)}</p>`, confirmLabel: ctx.t('common.confirm'), onConfirm: () => {
         s.active = !s.active;
         writeAudit(ctx.user.id, ctx.role, 'service_types.toggle', 'service_type', s.key, null, s.active ? 'active' : 'inactive');
-        ctx.rerender(); setTimeout(() => ctx.toast(ctx.t('services.changed')), 350);
+        ctx.rerender(); ctx.toast(ctx.t('services.changed'));
       } });
     }));
   },

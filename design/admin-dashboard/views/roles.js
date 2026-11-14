@@ -5,6 +5,7 @@
 import { t, getLang, registerStrings } from '../js/i18n.js';
 import { store } from '../js/lib/store.js';
 import { fmtNum, esc } from '../js/lib/format.js';
+import { statGrid } from '../js/components/stat.js';
 
 const STRINGS = {
   bn: {
@@ -15,6 +16,7 @@ const STRINGS = {
     'helper.name': 'প্রবাসী সহায়ক', 'helper.scope': 'শুধু প্রবাসী সহায়তা (M5) + নিজের প্রোফাইল ও বিজ্ঞপ্তি।',
     'colPerm': 'অনুমতি', 'colMeaning': 'অর্থ', 'colSA': 'সুপার অ্যাডমিন', 'colHelper': 'প্রবাসী সহায়ক',
     'yes': 'আছে', 'no': 'নেই', 'countUsers': 'ব্যবহারকারী',
+    'jumpTitle': 'অনুমতির শ্রেণি', 'jumpHint': 'শ্রেণিতে ট্যাপ করলে সেই অংশে যাওয়া যাবে।',
     'g.identity': 'পরিচয় ও সদস্যপদ (M1)', 'g.directory': 'ডিরেক্টরি (M2)', 'g.organisation': 'সংগঠন (M3)',
     'g.activities': 'বার্ষিক কার্যক্রম (M4)', 'g.expatriate': 'প্রবাসী সহায়তা (M5)', 'g.blood': 'রক্তদান (M6)',
     'g.content': 'কনটেন্ট (M7)', 'g.finance': 'অর্থ (M8)', 'g.notifications': 'বিজ্ঞপ্তি (M9)', 'g.admin': 'প্রশাসন ও সিস্টেম (M10)',
@@ -68,6 +70,7 @@ const STRINGS = {
     'helper.name': 'Expatriate Helper', 'helper.scope': 'Expatriate support only (M5) + own profile and notifications.',
     'colPerm': 'Permission', 'colMeaning': 'Meaning', 'colSA': 'Super Admin', 'colHelper': 'Expatriate Helper',
     'yes': 'Granted', 'no': 'Not granted', 'countUsers': 'users',
+    'jumpTitle': 'Permission groups', 'jumpHint': 'Tap a group to jump to that section.',
     'g.identity': 'Identity & membership (M1)', 'g.directory': 'Directory (M2)', 'g.organisation': 'Organisation (M3)',
     'g.activities': 'Annual activities (M4)', 'g.expatriate': 'Expatriate support (M5)', 'g.blood': 'Blood donation (M6)',
     'g.content': 'Content (M7)', 'g.finance': 'Finance (M8)', 'g.notifications': 'Notifications (M9)', 'g.admin': 'Administration & system (M10)',
@@ -142,18 +145,24 @@ export const Roles = {
     const cell = granted => granted
       ? `<span aria-label="${t('roles.yes')}">✓ ${t('roles.yes')}</span>`
       : `<span class="muted" aria-label="${t('roles.no')}">— ${t('roles.no')}</span>`;
-    const card = (nameKey, scopeKey, role) => `<section class="card"><h3>${t(nameKey)}</h3>
-      <p class="mt-4">${t(scopeKey)}</p>
-      <p class="mt-4"><strong class="num">${fmtNum(count(role), lang)}</strong> ${t('roles.countUsers')}</p></section>`;
+    const scopeCard = (nameKey, scopeKey) => `<section class="card"><h3>${t(nameKey)}</h3>
+      <p class="mt-4">${t(scopeKey)}</p></section>`;
     return `<span class="demo-badge">${t('app.demo')}</span>
     <div class="view-head"><div><h1>${t('roles.title')}</h1><p class="sub">${t('roles.subtitle')}</p></div></div>
     <div class="banner" role="note"><span>${t('roles.viewOnly')}</span></div>
     <p class="small muted mt-4">${t('roles.deferred')}</p>
+    ${statGrid([
+      { href: '#/users?role=super-admin', num: fmtNum(count('super-admin'), lang), label: t('roles.sa.name') },
+      { href: '#/users?role=expatriate-helper', num: fmtNum(count('expatriate-helper'), lang), label: t('roles.helper.name') }
+    ])}
     <div class="two-col mt-4">
-      ${card('roles.sa.name', 'roles.sa.scope', 'super-admin')}
-      ${card('roles.helper.name', 'roles.helper.scope', 'expatriate-helper')}
+      ${scopeCard('roles.sa.name', 'roles.sa.scope')}
+      ${scopeCard('roles.helper.name', 'roles.helper.scope')}
     </div>
-    ${GROUPS.map(([g, rows]) => `<section class="card mt-4"><h3>${t('roles.' + g)}</h3>
+    <section class="card mt-4"><h3>${t('roles.jumpTitle')}</h3>
+    <p class="small muted">${t('roles.jumpHint')}</p>
+    <div class="row mt-4">${GROUPS.map(([g], i) => `<button type="button" class="chip" data-jump="${i}" aria-pressed="false">${t('roles.' + g)}</button>`).join('')}</div></section>
+    ${GROUPS.map(([g, rows], i) => `<section class="card mt-4 stack-cards" id="roles-g-${i}"><h3>${t('roles.' + g)}</h3>
       <div class="table-wrap"><table class="tbl"><thead><tr>
         <th>${t('roles.colPerm')}</th><th>${t('roles.colMeaning')}</th>
         <th>${t('roles.colSA')}</th><th>${t('roles.colHelper')}</th>
@@ -165,6 +174,13 @@ export const Roles = {
       </tbody></table></div></section>`).join('')}
     <p class="small muted mt-4">${t('roles.matrixNote')}</p>`;
   },
-  onMount(){},
+  onMount(){
+    const root = document.getElementById('view');
+    if(!root) return;
+    root.querySelectorAll('[data-jump]').forEach(b => b.addEventListener('click', () => {
+      const sec = document.getElementById('roles-g-' + b.dataset.jump);
+      if(sec) sec.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }));
+  },
   onUnmount(){}
 };

@@ -84,6 +84,31 @@ export const ROUTES = [
   { pattern:'/denied', file:null, roles:null, permissions:[] },
   { pattern:'/404', file:null, roles:null, permissions:[] }
 ];
+// Shared navigation helpers (audit D-14 / R-G5-3): the one implementation of
+// setHash/go/withQuery/buildQueryString/hashWithQuery. Views previously each
+// carried their own copy; they now import these. setHash filters empty/null
+// values and encodes with encodeURIComponent (spaces -> %20, which parseHash
+// decodes; URLSearchParams '+' would NOT decode under parseHash).
+export function setHash(path, query){
+  const qs = Object.entries(query || {}).filter(([, v]) => v !== '' && v !== undefined && v !== null)
+    .map(([k, v]) => k + '=' + encodeURIComponent(v)).join('&');
+  location.hash = '#' + path + (qs ? '?' + qs : '');
+}
+export function go(hash){ location.hash = hash; }
+export function withQuery(base, patch){
+  const p = new URLSearchParams(location.hash.split('?')[1] || '');
+  for(const [k, v] of Object.entries(patch)){ if(v) p.set(k, v); else p.delete(k); }
+  const s = p.toString();
+  return base + (s ? '?' + s : '');
+}
+export function buildQueryString(query, patch){
+  const q = { ...(query || {}), ...(patch || {}) };
+  const p = new URLSearchParams();
+  for(const [k, v] of Object.entries(q)) if(v !== '' && v !== undefined && v !== null) p.set(k, v);
+  const s = p.toString();
+  return s ? '?' + s : '';
+}
+export function hashWithQuery(base, query, patch){ return base + buildQueryString(query, patch); }
 export function parseHash(hash){
   const raw = (hash || '#/dashboard').replace(/^#/, '');
   const [pathPart, queryPart] = raw.split('?');

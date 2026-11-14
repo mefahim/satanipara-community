@@ -4,6 +4,13 @@ Batches B/C/D: design system + shared shell + components + authentication + Supe
 Helper dashboard overviews. Built on `AUDIT-BATCH-A.md` + `AMENDMENT-01-IA-AND-I18N.md`
 (the amendment wins where they conflict).
 
+**Design Iteration 2 (2026-11-14)** redesigned every view on the v2 system
+(see `DESIGN-SYSTEM.md` §1): one nav system (sidebar / rail / bottom nav +
+More sheet), stable shell, real table sorting, shared stat cards, bottom
+sheets, validated re-auth, fully Bengali navigation, and the shared fixes in
+`../iteration2/INTEGRATION-REPORT.md`. All 68 screens re-verified live
+(`QA-REPORT.md`: 128/128 integration checks passed, 0 page errors).
+
 ## What this is — and is not
 
 A **static, simulated, design-only prototype**, same standing as Direction D `index.html`.
@@ -75,9 +82,9 @@ index.html, README.md
 css/ tokens.css base.css shell.css components.css views.css
 js/app.js            boot, hash router wiring, shell render, theme/lang init
 js/i18n.js           t(), BN/EN toggle, registerStrings(namespace, {bn,en})
-js/i18n/bn.js en.js  shell/common/login/dashboard strings ONLY, identical keys
-js/lib/ store.js router.js auth.js format.js guards.js
-js/components/ table.js filters.js badges.js modal.js drawer.js toast.js forms.js timeline.js states.js
+js/i18n/bn.js en.js  360 keys each, identical key sets (shell/common/login/dashboard + audit.action.*)
+js/lib/ store.js router.js auth.js format.js guards.js action-label.js
+js/components/ table.js filters.js badges.js modal.js drawer.js sheet.js toast.js forms.js timeline.js states.js stat.js icons.js
 js/data/ demo-users.js demo-requests.js demo-directory.js demo-org.js demo-content.js
          demo-blood.js demo-finance.js demo-system.js demo-media.js
 views/login.js views/dashboard.js
@@ -148,9 +155,9 @@ CSV export downloads a real file, Excel/PDF are labelled simulated exports
 with a CSV fallback). See `QA-REPORT.md` defect D2 and
 `SCREEN-INVENTORY.md` #44.
 
-## What was verified (Batch M QA, 2026-11-14)
+## What was verified (Batch M QA, 2026-11-14, + Design Iteration 2, 2026-11-14)
 
-Full sweep in `QA-REPORT.md` (evidence + screenshots in
+Batch M full sweep in `QA-REPORT.md` (evidence + screenshots in
 `~/workspace/satanipara-admin-dashboard/qa-final/`, outside the repo):
 Super Admin + Helper logins, 42-item SA nav / 4-item Helper nav, all 73
 routed screens, every create/edit/detail journey, confirmation modals, all
@@ -161,6 +168,19 @@ zero horizontal overflow, keyboard (skip link, Esc closes modals, focus
 returns), 0 app console errors, empty/denied/404 states. One environmental
 note: the Google Fonts CDN fails in this VM (egress proxy), so the UI renders
 in fallback fonts there — not an app error.
+
+**Iteration 2 re-verification (2026-11-14, `QA-REPORT.md` + evidence in
+`../iteration2/qa-final-v2/`): 128/128 checks passed, 0 failed, 0 page
+errors** — all 73 routes at 1440px and 360px (h1 + content, no overflow),
+the 3 journeys end-to-end (SA member approval, Helper queue → complete,
+finance draft → dual-control publish → reversal), search/filters/sorting,
+BN/EN toggle, light/dark, mobile drawer, bottom nav, More sheet, dialogs,
+form errors, empty states, Helper deep-links, back navigation, toasts,
+notification mark-read (incl. opening a related record), re-auth
+wrong/correct, login lockout, responsive matrix at 360/390/430/640/900/
+1200/1440px, money-stat geometry at every width/theme, and the bell badge
+at 360px light + dark, 1- and 2-digit counts (badge whole, inside its
+44px button in all 4 combinations).
 
 ## Known limitations (prototype)
 
@@ -173,14 +193,23 @@ in fallback fonts there — not an app error.
   volumes — see `QA-REPORT.md` §"Data gaps".
 - The notification delivery log is derived from inbox rows + the routing
   rule (no delivery-log collection in the demo data); it says so on screen.
-- The Meridian timeline shows the request's `created_at` under every
-  completed step (per-step timestamps are not in the seed).
+- The Meridian timeline shows per-step timestamps from
+  `service_request_updates` (latest update with `status_to === step`); steps
+  with no update in the seed fall back to the request's `created_at`.
 - Rejection/cancellation reasons are BN-only in the seed
   (`rejection_reason_bn` / `cancellation_reason_bn`).
-- The demo role switch picks the first Super Admin, so it cannot select the
-  second Super Admin; cross-user approval in one session needs logout +
-  login as the other admin instead.
+- The demo role switch lists all three demo accounts in the topbar user
+  menu and switches to any of them (SA2 included), so cross-user approval
+  works in one session.
 - Real-device tap behaviour is not verified — Fahim's phone check is pending.
+- Iteration 2 known limitations (full list in `QA-REPORT.md`): 7 inline
+  `style="…"` attributes remain (select max-widths + the progress-fill
+  width, which is a data value); the finance ledger keeps its select sort
+  instead of header sorting (deliberate — two sort controls would compete);
+  activities list sorting applies within each year group; screen-reader /
+  keyboard tab-order audit beyond Esc-to-close is not done; the intended
+  Anek Bangla / Manrope rendering was never exercised (Google Fonts CDN
+  blocked in this VM — self-host WOFF2 before launch).
 - Unresolved owner decisions that touch this dashboard (helper-reject
   conflict Doc 05 vs Doc 09, helper applicant-visibility brief-vs-audit
   conflict, Q/AO items from audit §2) are listed in `QA-REPORT.md`, not
@@ -189,12 +218,17 @@ in fallback fonts there — not an app error.
 ## Docs in this folder
 
 - `README.md` — this file (run, logins, file map, limitations).
-- `DESIGN-SYSTEM.md` — tokens, type, spacing, components (values quoted
-  from `css/`).
+- `DESIGN-SYSTEM.md` — v2 tokens, type, spacing, shell/nav system,
+  components (values quoted from `css/` + `js/`).
 - `SCREEN-INVENTORY.md` — all 68 planned screens (audit §3.10's 56 +
-  amendment A2's 12), each with route, owner file, role, build status.
+  amendment A2's 12), each with route, owner file, role, build status,
+  plus the iteration-2 comparison (original 68 vs final 68).
 - `USER-JOURNEYS.md` — journeys A–M + Helper workflow, Mermaid flow and
-  state-machine diagrams, open questions per journey.
-- `QA-REPORT.md` — Batch M full sweep: per-check results, evidence,
-  defects, data gaps, unresolved decisions.
+  state-machine diagrams, open questions per journey; updated for the v2
+  navigation (bottom nav, drawer, More sheet).
+- `QA-REPORT.md` — Design Iteration 2 full sweep: per-check results,
+  evidence, defects, data gaps, unresolved decisions (Batch M report kept
+  as history in § "Iteration 1 (Batch M) — history").
+- `UX-IMPROVEMENTS.md` — what changed vs iteration 1 and why, with
+  before/after screenshot references.
 

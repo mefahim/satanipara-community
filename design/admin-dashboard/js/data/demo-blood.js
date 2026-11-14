@@ -16,12 +16,10 @@ export const blood_donors = [
   { id:'d-12', name_bn:'রক্তদাতা ১২ (ডেমো)', name_en:'Donor 12 (Demo)', blood_group:'O+', area:'সাতানীপাড়া', last_donation_date:'2026-06-15', consent_to_list:false, phone:'01994000012' }
 ];
 // d-12 withdrew consent-to-list: hidden from public lists. No A− / AB− donors exist.
-export function donorAvailable(donor, asOf = new Date('2026-11-14T00:00:00+06:00')){
-  if(!donor.consent_to_list) return false;
-  if(!donor.last_donation_date) return true;
-  const last = new Date(donor.last_donation_date + 'T00:00:00+06:00');
-  return (asOf - last) / 86400000 >= 90;
-}
+// DS v2 (audit D-03): the default "as of" date is the LIVE clock — the old
+// frozen 2026-11-14 default is gone. views/blood.js still passes its own
+// AS_OF constant; the blood module worker must switch it to now() (see DS-V2.md).
+export { donorAvailable } from '../lib/format.js'; // moved here (G4-3); kept as re-export for compat
 export const blood_requests = [
   { id:'br-1', blood_group:'A+', units:2, hospital_bn:'হাসপাতাল (ডেমো)', contact_masked:'01994•••01', status:'fulfilled', created_at:'2026-11-02T09:00:00+06:00' },
   { id:'br-2', blood_group:'B+', units:1, hospital_bn:'হাসপাতাল (ডেমো)', contact_masked:'01994•••03', status:'notified', created_at:'2026-11-12T09:00:00+06:00' },

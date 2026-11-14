@@ -1,28 +1,70 @@
-/* Satanipara Community — Admin Dashboard tokens
-   Direction D tokens verbatim (AUDIT-BATCH-A §1.7; docs/direction-d/DESIGN_SYSTEM.md §2.1).
-   Light opens by default; dark is a token swap only. Gold: line/point only. */
+/* Satanipara Community — Admin Dashboard tokens v2 (Design Iteration 2)
+   Direction D identity: Forest #173F35, Deep Forest #102E27, Gold #C49A4A.
+   Gold is a restrained identity accent ONLY (rules, dots, timeline) — NEVER a
+   general button colour. Light opens by default; dark is an intentionally
+   designed palette, never a simple inversion (deep-forest surfaces, lighter
+   surfaces — not shadows — for elevation).
+   Every token below is used by css/*.css or js/*.js; no dead tokens.
+   Spacing is a 4px scale; type is Anek Bangla + Manrope with system fallbacks.
+   Bengali body text is 16px (min 15px). Touch target minimum is 44px. */
 :root{
-  --forest:#173F35; --gold:#C49A4A; --ivory:#F7F4EA;
-  --deep:#102E27; --abyss:#0B1A15; --pine:#1E4A3C; --moss:#2F6B4F;
-  --gold-soft:#E4C98F; --gold-line:#C49A4A;
-  --ground:#FBFBF8; --surface:#FFFFFF; --paper:#F7F4EA; --wash:#F0F2EF;
+  /* Brand — light */
+  --forest:#173F35; --deep:#102E27; --gold:#C49A4A; --moss:#2F6B4F; --ivory:#F7F4EA;
+  --gold-soft:#E4C98F; --gold-line:var(--gold); /* --gold is the source value; --gold-line is its semantic alias */
+  /* Surfaces — light (hierarchy: app < grouped < content < floating/modal) */
+  --ground:#FBFBF8;            /* app background */
+  --surface:#FFFFFF;           /* primary content surface */
+  --surface-2:#F3F5F1;         /* secondary grouped surface */
+  --surface-float:#FFFFFF;     /* floating action surface (menus, toasts) */
+  --surface-modal:#FFFFFF;     /* modal / bottom-sheet surface */
+  --paper:#F7F4EA; --wash:#F0F2EF;
+  /* Ink / text */
   --ink:#1E2A25; --ink-strong:#102E27; --muted:#5A6B62;
   --line:#E3E6E1; --line-strong:#C9CFC9;
+  /* Semantic status — used ONLY where the meaning is clear (badge + text, never colour alone) */
   --ok:#2F6B4F; --danger:#9B2C2C; --warn:#8A5A00; --info:#2F6B4F;
+  --on-danger:#FFFFFF; --on-primary:#F7F4EA;
+  /* Shape */
   --radius-sm:12px; --radius-md:16px; --radius-lg:20px; --radius-pill:999px;
-  --shadow-sheet:0 8px 30px rgba(16,46,39,.12); --shadow-lift:0 2px 10px rgba(16,46,39,.08);
-  --ease-product:cubic-bezier(.32,.72,0,1); --dur-fast:200ms; --dur-med:300ms; --dur-slow:500ms;
+  /* Elevation — subtle, only where layering is communicated */
+  --shadow-sheet:0 8px 30px rgba(16,46,39,.12);
+  --shadow-lift:0 2px 10px rgba(16,46,39,.08);
+  /* Motion — short, purposeful, interruptible */
+  --ease-product:cubic-bezier(.32,.72,0,1);
+  --dur-fast:150ms; --dur-med:250ms;
+  /* Focus — one ring, everywhere */
+  --focus-ring:2px solid var(--forest); --focus-ring-offset:2px;
+  /* Type */
   --font-bn:'Anek Bangla','Noto Sans Bengali','Hind Siliguri',sans-serif;
   --font-en:'Manrope','Anek Bangla',sans-serif;
   --font-quote:'Tiro Bangla','Noto Serif Bengali',serif;
+  --text-h1:28px; --text-h2:20px; --text-h3:18px;
+  --text-body:16px; --text-sm:14px; --text-xs:13px;
+  /* Spacing — 4px scale (used across css/*.css) */
   --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px; --sp-6:24px; --sp-8:32px; --sp-12:48px; --sp-16:64px;
-  --sidebar-w:264px; --topbar-h:64px; --topbar-h-mobile:56px; --container:1200px;
+  /* Touch + chrome */
+  --touch-min:44px;
+  --sidebar-w:264px; --rail-w:76px; --topbar-h:64px; --topbar-h-mobile:56px;
+  --bottomnav-h:60px; --container:1200px;
 }
 [data-theme="dark"]{
-  --ground:#0E1F1A; --surface:#14261F; --surface-2:#1B322A; --paper:#122019;
-  --wash:#16281F; --ink:#F2EFE3; --ink-strong:#FBFBF8; --muted:#B9C9BE;
-  --line:#2A4A3E; --line-strong:#3D5C4E; --forest:#E9EFEA;
-  --deep:#0B1A15; --gold-line:#C49A4A;
-  --shadow-sheet:0 8px 30px rgba(0,0,0,.45); --shadow-lift:0 2px 10px rgba(0,0,0,.35);
+  /* Brand on dark — forest lightens so it stays readable on deep surfaces */
+  --forest:#9CCFAE; --deep:#0B1A15; --gold:#C49A4A; --moss:#8FC7A8; --ivory:#FBFBF8;
+  --gold-soft:#E4C98F; --gold-line:var(--gold);
+  /* Surfaces — dark (elevation via LIGHTER surfaces, not shadows) */
+  --ground:#0C1B16;            /* app background */
+  --surface:#122019;           /* primary content surface */
+  --surface-2:#1A2E25;         /* secondary grouped surface */
+  --surface-float:#1E352B;     /* floating action surface */
+  --surface-modal:#1E352B;     /* modal / bottom-sheet surface */
+  --paper:#122019; --wash:#16281F;
+  /* Ink / text on dark */
+  --ink:#EDEFE7; --ink-strong:#FBFBF8; --muted:#A9BDB1;
+  --line:#24443A; --line-strong:#3D5C4E;
+  /* Semantic status on dark — hold contrast against dark surfaces */
   --ok:#7FBF9A; --danger:#E88A8A; --warn:#E4C98F; --info:#8FC7A8;
+  --on-danger:#1A0E0E; --on-primary:#102E27;
+  --shadow-sheet:0 8px 30px rgba(0,0,0,.45);
+  --shadow-lift:0 2px 10px rgba(0,0,0,.35);
+  --focus-ring:2px solid var(--gold-soft);
 }

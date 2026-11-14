@@ -4,14 +4,19 @@
 // DEMO data only. NEVER invent milestones: the ONLY verified milestone is the
 // founding year 1999. The draft milestone stays visibly DRAFT/unverified and
 // can never be published as verified — there is no verify action in this UI.
+// Design System v2: shared statGrid, sortable tables (?sort=&dir=), field()
+// textarea variant, .link-more for standalone links, no inline styles,
+// no post-rerender toast delay (stable shell).
 import { t, getLang, registerStrings } from '../js/i18n.js';
+import { go, withQuery } from '../js/lib/router.js';
 import { store, filterList, writeAudit } from '../js/lib/store.js';
 import { fmtNum, esc } from '../js/lib/format.js';
-import { renderTable, bindTableRows } from '../js/components/table.js';
+import { renderTable, bindTableRows, bindTableSort } from '../js/components/table.js';
 import { renderFilters, bindFilters } from '../js/components/filters.js';
 import { badge, plainBadge } from '../js/components/badges.js';
 import { field, errorSummary, validateRequired } from '../js/components/forms.js';
 import { emptyState } from '../js/components/states.js';
+import { statGrid } from '../js/components/stat.js';
 
 const STRINGS = {
   bn: {
@@ -71,15 +76,11 @@ const STRINGS = {
 registerStrings('organisation', STRINGS);
 const K = 'organisation.';
 const nm = (it, lang) => lang === 'bn' ? (it.title_bn || it.name_bn || it.title_en || it.name_en) : (it.title_en || it.name_en || it.title_bn || it.name_bn);
-function go(hash){ location.hash = hash; }
-function withQuery(base, patch){
-  const p = new URLSearchParams(location.hash.split('?')[1] || '');
-  for(const [k, v] of Object.entries(patch)){ if(v) p.set(k, v); else p.delete(k); }
-  const s = p.toString();
-  return base + (s ? '?' + s : '');
-}
-const statusBadge = s => badge(s === 'published' ? 'published' : s === 'draft' ? 'draft' : 'draft',
-  s === 'published' ? t(K + 'hist.published') : s === 'archived' ? t(K + 'hist.archived') : t(K + 'hist.draft'));
+// recorded in iteration2/MODULE-g3.md as a follow-up for the integrator.
+const sortOf = ctx => ({ key: ctx.query.sort || null, dir: ctx.query.dir === 'desc' ? 'desc' : 'asc' });
+const statusBadge = s => s === 'published' ? badge('published', t(K + 'hist.published'))
+  : s === 'archived' ? plainBadge(t(K + 'hist.archived'))
+  : badge('draft', t(K + 'hist.draft'));
 
 export const Organisation = {
   route: '#/organisation',
@@ -97,12 +98,14 @@ export const Organisation = {
   },
   onMount(ctx){
     const lang = getLang();
-    bindTableRows(document.getElementById('view'));
+    const root = document.getElementById('view');
+    bindTableRows(root);
+    bindTableSort(root, (key, dir) => go(withQuery(ctx.path, { sort: key, dir })));
     const titles = { '/organisation/history': 'hist.title', '/organisation/constitution': 'const.title', '/organisation/committee': 'comm.title', '/organisation/achievements': 'ach.title' };
     const crumbs = { '/organisation/history': 'nav.history', '/organisation/constitution': 'nav.constitution', '/organisation/committee': 'nav.committee', '/organisation/achievements': 'nav.achievements' };
     ctx.shell.setTitle(t(K + (titles[ctx.path] || 'home.title')));
     ctx.shell.setBreadcrumb(['nav.organisation', crumbs[ctx.path] || 'nav.history']);
-    bindFilters(document.getElementById('view'), {
+    bindFilters(root, {
       onSearch: q => go(withQuery(ctx.path, { q })),
       onChip: () => {},
       onClear: () => go(ctx.path)
@@ -180,28 +183,28 @@ export const Organisation = {
 function homeHtml(ctx, lang){
   const verified = store.milestones.find(m => m.verified);
   const current = store.constitution_versions.find(v => v.status === 'current');
-  const stat = (href, num, label) => `<a class="stat" href="${href}"><div class="num">${num}</div><div class="lbl">${label}</div></a>`;
   return `<span class="demo-badge">${t('app.demo')}</span>
   <div class="view-head"><div><h1>${t(K + 'home.title')}</h1><p class="sub">${t(K + 'home.sub')}</p></div></div>
-  <div class="stat-grid">
-    ${stat('#/organisation/history', fmtNum(store.milestones.length, lang), t(K + 'home.milestones'))}
-    ${stat('#/organisation/constitution', fmtNum(store.constitution_versions.length, lang), t(K + 'home.constitution'))}
-    ${stat('#/organisation/committee', fmtNum(store.committee.current.length + store.advisors.length, lang), t(K + 'home.committee'))}
-    ${stat('#/organisation/achievements', fmtNum(store.achievements.length, lang), t(K + 'home.achievements'))}</div>
+  ${statGrid([
+    { href: '#/organisation/history', num: fmtNum(store.milestones.length, lang), label: t(K + 'home.milestones') },
+    { href: '#/organisation/constitution', num: fmtNum(store.constitution_versions.length, lang), label: t(K + 'home.constitution') },
+    { href: '#/organisation/committee', num: fmtNum(store.committee.current.length + store.advisors.length, lang), label: t(K + 'home.committee') },
+    { href: '#/organisation/achievements', num: fmtNum(store.achievements.length, lang), label: t(K + 'home.achievements') }
+  ])}
   <div class="two-col mt-6">
     <section class="card"><h3>${t(K + 'home.milestones')}</h3>
       ${verified ? `<p><strong>${esc(nm(verified, lang))}</strong> — ${fmtNum(verified.year, lang)} ${badge('published', t(K + 'hist.verified'))}</p>` : ''}
       <p class="small muted mt-4">${t(K + 'home.verifiedOnly')}</p>
-      <p class="mt-4"><a href="#/organisation/history">${t(K + 'home.viewHistory')}</a></p></section>
+      <p class="mt-4"><a class="link-more" href="#/organisation/history">${t(K + 'home.viewHistory')}</a></p></section>
     <section class="card"><h3>${t(K + 'home.constitution')}</h3>
       ${current ? `<p><strong>${esc(current.version)}</strong> · ${esc(current.effective_date || '')} ${plainBadge(t(K + 'const.current'))}</p><p class="small muted mt-4">${esc(current.articles_bn || '')}</p>` : emptyState(t('common.empty'))}
-      <p class="mt-4"><a href="#/organisation/constitution">${t(K + 'home.viewConstitution')}</a></p></section>
+      <p class="mt-4"><a class="link-more" href="#/organisation/constitution">${t(K + 'home.viewConstitution')}</a></p></section>
     <section class="card"><h3>${t(K + 'home.committee')}</h3>
       <p>${esc(store.committee.current.map(m => nm(m, lang)).join(' · '))}</p>
-      <p class="mt-4"><a href="#/organisation/committee">${t(K + 'home.viewCommittee')}</a></p></section>
+      <p class="mt-4"><a class="link-more" href="#/organisation/committee">${t(K + 'home.viewCommittee')}</a></p></section>
     <section class="card"><h3>${t(K + 'home.achievements')}</h3>
       ${store.achievements.map(a => `<div class="list-row"><div class="grow"><strong>${esc(nm(a, lang))}</strong><br><span class="small muted">${fmtNum(a.year, lang)}</span></div></div>`).join('')}
-      <p class="mt-4"><a href="#/organisation/achievements">${t(K + 'home.viewAchievements')}</a></p></section>
+      <p class="mt-4"><a class="link-more" href="#/organisation/achievements">${t(K + 'home.viewAchievements')}</a></p></section>
   </div>`;
 }
 
@@ -213,8 +216,8 @@ function historyHtml(ctx, lang){
   <div class="row"><a class="btn btn-primary" href="#/organisation/history?new=1">${t(K + 'hist.new')}</a></div></div>
   <div class="mt-6">${renderFilters({ q, chips: [], activeChip: null })}</div>
   ${rows.length ? renderTable({ columns: [
-    { key: 'year', label: t(K + 'hist.colYear'), render: r => fmtNum(r.year, lang) },
-    { key: 'title_bn', label: t(K + 'hist.colTitle'), render: r => `<strong>${esc(nm(r, lang))}</strong><br><span class="small muted">${esc(r.body_bn || '')}</span>` },
+    { key: 'year', label: t(K + 'hist.colYear'), sortable: true, render: r => fmtNum(r.year, lang) },
+    { key: 'title_bn', label: t(K + 'hist.colTitle'), sortable: true, render: r => `<strong>${esc(nm(r, lang))}</strong><br><span class="small muted">${esc(r.body_bn || '')}</span>` },
     { key: 'status', label: t(K + 'hist.colStatus'), render: r => `${r.verified ? badge('published', t(K + 'hist.verified')) + ' ' : ''}${statusBadge(r.status)}` },
     { key: 'actions', label: '', render: r => {
       const pub = r.status === 'published'
@@ -225,7 +228,7 @@ function historyHtml(ctx, lang){
         : `<button type="button" class="btn btn-secondary btn-sm" data-ms-action="${r.id}" data-ms-kind="archive">${t(K + 'hist.archive')}</button>`;
       return `<span class="row">${pub} ${arch} <a class="btn btn-secondary btn-sm" href="#/organisation/history?edit=${r.id}">${t(K + 'hist.edit')}</a></span>`;
     } }
-  ], rows, page: 1, perPage: 20, onRowClick: null, stacked: true }) : emptyState(t('common.empty'), t(K + 'hist.new'), '#/organisation/history?new=1')}
+  ], rows, page: 1, perPage: 20, onRowClick: null, stacked: true, sort: sortOf(ctx) }) : emptyState(t('common.empty'), t(K + 'hist.new'), '#/organisation/history?new=1')}
   <p class="small muted mt-4">${t(K + 'home.verifiedOnly')}</p>`;
 }
 
@@ -234,11 +237,11 @@ function constitutionHtml(ctx, lang){
   <div class="view-head"><div><h1>${t(K + 'const.title')}</h1><p class="sub">${t(K + 'const.sub')}</p></div>
   <div class="row"><a class="btn btn-primary" href="#/organisation/constitution?new=1">${t(K + 'const.new')}</a></div></div>
   ${renderTable({ columns: [
-    { key: 'version', label: t(K + 'const.colVersion'), render: r => `<strong>${esc(r.version)}</strong>` },
-    { key: 'effective_date', label: t(K + 'const.colDate'), render: r => esc(r.effective_date || '') },
+    { key: 'version', label: t(K + 'const.colVersion'), sortable: true, render: r => `<strong>${esc(r.version)}</strong>` },
+    { key: 'effective_date', label: t(K + 'const.colDate'), sortable: true, render: r => esc(r.effective_date || '') },
     { key: 'status', label: t(K + 'const.colStatus'), render: r => r.status === 'current' ? badge('published', t(K + 'const.current')) : badge('draft', t(K + 'const.superseded')) },
     { key: 'actions', label: '', render: r => `<span class="row"><button type="button" class="btn btn-secondary btn-sm" data-cv-preview="${r.id}">${t(K + 'const.preview')}</button>${r.status === 'current' ? '' : ` <button type="button" class="btn btn-secondary btn-sm" data-cv-current="${r.id}">${t(K + 'const.setCurrent')}</button>`}</span>` }
-  ], rows: store.constitution_versions, page: 1, perPage: 20, onRowClick: null, stacked: true })}`;
+  ], rows: store.constitution_versions, page: 1, perPage: 20, onRowClick: null, stacked: true, sort: sortOf(ctx) })}`;
 }
 
 function committeeHtml(ctx, lang){
@@ -252,11 +255,11 @@ function committeeHtml(ctx, lang){
     ${tabs.map(([v, key]) => `<a class="chip" role="tab" aria-selected="${tab === v}" href="#/organisation/committee?tab=${v}" ${tab === v ? 'aria-current="page"' : ''}>${t(K + key)}</a>`).join('')}
   </div>
   ${rows.length ? renderTable({ columns: [
-    { key: 'name_bn', label: t(K + 'comm.colName'), render: r => `<strong>${esc(nm(r, lang))}</strong>` },
-    { key: 'role_bn', label: t(K + 'comm.colRole'), render: r => esc(r.role_bn || '') },
+    { key: 'name_bn', label: t(K + 'comm.colName'), sortable: true, render: r => `<strong>${esc(nm(r, lang))}</strong>` },
+    { key: 'role_bn', label: t(K + 'comm.colRole'), sortable: true, render: r => esc(r.role_bn || '') },
     { key: 'term', label: t(K + 'comm.colTerm'), render: r => esc(r.term || t(K + 'comm.noTerm')) },
     { key: 'actions', label: '', render: r => `<button type="button" class="btn btn-secondary btn-sm" data-cm-remove="${r.id}" data-cm-tab="${tab}">${t(K + 'comm.remove')}</button>` }
-  ], rows, page: 1, perPage: 20, onRowClick: null, stacked: true }) : emptyState(t('common.empty'), t(K + 'comm.new'), '#/organisation/committee?tab=' + tab + '&new=1')}`;
+  ], rows, page: 1, perPage: 20, onRowClick: null, stacked: true, sort: sortOf(ctx) }) : emptyState(t('common.empty'), t(K + 'comm.new'), '#/organisation/committee?tab=' + tab + '&new=1')}`;
 }
 
 function achievementsHtml(ctx, lang){
@@ -267,11 +270,11 @@ function achievementsHtml(ctx, lang){
   <div class="row"><a class="btn btn-primary" href="#/organisation/achievements?new=1">${t(K + 'ach.new')}</a></div></div>
   <div class="mt-6">${renderFilters({ q, chips: [], activeChip: null })}</div>
   ${rows.length ? renderTable({ columns: [
-    { key: 'year', label: t(K + 'ach.colYear'), render: r => fmtNum(r.year, lang) },
-    { key: 'title_bn', label: t(K + 'ach.colTitle'), render: r => `<strong>${esc(nm(r, lang))}</strong><br><span class="small muted">${esc(r.body_bn || '')}</span>` },
-    { key: 'status', label: t(K + 'ach.colStatus'), render: r => r.archived ? badge('draft', t(K + 'hist.archived')) : badge('published', t(K + 'hist.published')) },
+    { key: 'year', label: t(K + 'ach.colYear'), sortable: true, render: r => fmtNum(r.year, lang) },
+    { key: 'title_bn', label: t(K + 'ach.colTitle'), sortable: true, render: r => `<strong>${esc(nm(r, lang))}</strong><br><span class="small muted">${esc(r.body_bn || '')}</span>` },
+    { key: 'status', label: t(K + 'ach.colStatus'), render: r => r.archived ? plainBadge(t(K + 'hist.archived')) : badge('published', t(K + 'hist.published')) },
     { key: 'actions', label: '', render: r => `<span class="row"><button type="button" class="btn btn-secondary btn-sm" data-ac-action="${r.id}" data-ac-kind="${r.archived ? 'unarchive' : 'archive'}">${t(K + (r.archived ? 'ach.unarchive' : 'ach.archive'))}</button> <a class="btn btn-secondary btn-sm" href="#/organisation/achievements?edit=${r.id}">${t(K + 'hist.edit')}</a></span>` }
-  ], rows, page: 1, perPage: 20, onRowClick: null, stacked: true }) : emptyState(t('common.empty'), t(K + 'ach.new'), '#/organisation/achievements?new=1')}`;
+  ], rows, page: 1, perPage: 20, onRowClick: null, stacked: true, sort: sortOf(ctx) }) : emptyState(t('common.empty'), t(K + 'ach.new'), '#/organisation/achievements?new=1')}`;
 }
 
 function milestoneFormHtml(ctx){
@@ -282,7 +285,7 @@ function milestoneFormHtml(ctx){
     field({ id: 'o-year', label: t(K + 'form.year'), type: 'number', value: String(v.year || ''), required: true }),
     field({ id: 'o-title-bn', label: t(K + 'form.title'), value: v.title_bn, required: true }),
     field({ id: 'o-title-en', label: t(K + 'form.titleEn'), value: v.title_en || '' }),
-    `<div class="field"><label for="o-body">${t(K + 'form.body')}</label><textarea id="o-body" name="o-body" class="input" rows="3">${esc(v.body_bn || '')}</textarea></div>`,
+    field({ id: 'o-body', label: t(K + 'form.body'), type: 'textarea', value: v.body_bn || '', rows: 3 }),
     `<p class="small muted">${t(K + 'form.draftNote')}</p>`
   ], 'milestone');
 }
@@ -291,7 +294,7 @@ function constitutionFormHtml(ctx){
   return orgForm(ctx, '#/organisation/constitution', [
     field({ id: 'o-version', label: t(K + 'form.version'), value: '', required: true }),
     field({ id: 'o-date', label: t(K + 'form.date'), type: 'date', value: '' }),
-    `<div class="field"><label for="o-body">${t(K + 'form.summary')}</label><textarea id="o-body" name="o-body" class="input" rows="3"></textarea></div>`
+    field({ id: 'o-body', label: t(K + 'form.summary'), type: 'textarea', value: '', rows: 3 })
   ], 'constitution');
 }
 
@@ -313,7 +316,7 @@ function achievementFormHtml(ctx){
     field({ id: 'o-year', label: t(K + 'form.year'), type: 'number', value: String(v.year || ''), required: true }),
     field({ id: 'o-title-bn', label: t(K + 'form.title'), value: v.title_bn, required: true }),
     field({ id: 'o-title-en', label: t(K + 'form.titleEn'), value: v.title_en || '' }),
-    `<div class="field"><label for="o-body">${t(K + 'form.body')}</label><textarea id="o-body" name="o-body" class="input" rows="3">${esc(v.body_bn || '')}</textarea></div>`
+    field({ id: 'o-body', label: t(K + 'form.body'), type: 'textarea', value: v.body_bn || '', rows: 3 })
   ], 'achievement');
 }
 

@@ -4,11 +4,13 @@ import { users, members } from '../data/demo-users.js';
 import { service_requests, service_request_updates, service_request_expenses, service_types, emergency_team_members } from '../data/demo-requests.js';
 import { households, persons, professionals, institutions, landmarks, freedom_fighters } from '../data/demo-directory.js';
 import { milestones, constitution_versions, committee, advisors, past_leaders, achievements } from '../data/demo-org.js';
-import { activities, posts, faqs } from '../data/demo-content.js';
+import { activities, posts, faqs, student_achievements } from '../data/demo-content.js';
 import { blood_donors, blood_requests, blood_consents } from '../data/demo-blood.js';
 import { ledger_entries, ledger_reversals, finance_categories, projects, annual_reports } from '../data/demo-finance.js';
 import { notifications, contact_messages, activity_log, settings, data_requests } from '../data/demo-system.js';
 import { albums, media } from '../data/demo-media.js';
+import { now } from './format.js';
+export { now }; // single live clock — re-exported so views/components import it from the store
 
 export const store = {
   DEMO: true,
@@ -21,6 +23,7 @@ export const store = {
   milestones: [...milestones], constitution_versions: [...constitution_versions],
   committee: JSON.parse(JSON.stringify(committee)), advisors: [...advisors], past_leaders: [...past_leaders], achievements: [...achievements],
   activities: [...activities], posts: [...posts], faqs: [...faqs],
+  student_achievements: [...student_achievements],
   blood_donors: [...blood_donors], blood_requests: [...blood_requests], blood_consents: [...blood_consents],
   ledger_entries: [...ledger_entries], ledger_reversals: [...ledger_reversals],
   finance_categories: [...finance_categories], projects: [...projects], annual_reports: [...annual_reports],
@@ -28,6 +31,25 @@ export const store = {
   activity_log: [...activity_log], settings: JSON.parse(JSON.stringify(settings)), data_requests: [...data_requests],
   albums: [...albums], media: [...media]
 };
+// Store mutation API (DS v2, audit D-11): views MUST mutate through these
+// helpers, never by writing to an imported js/data array directly.
+// content.js still reads/writes the imported student_achievements array —
+// the content module worker must migrate it to storeAdd/storeRemove (see DS-V2.md).
+export function storeAdd(collection, item){
+  if(!store[collection] || !Array.isArray(store[collection])) throw new Error('unknown store collection: ' + collection);
+  store[collection].unshift(item);
+  return item;
+}
+export function storeRemove(collection, predicate){
+  if(!store[collection] || !Array.isArray(store[collection])) throw new Error('unknown store collection: ' + collection);
+  store[collection] = store[collection].filter(item => !predicate(item));
+}
+export function storeUpdate(collection, predicate, patch){
+  if(!store[collection] || !Array.isArray(store[collection])) throw new Error('unknown store collection: ' + collection);
+  const item = store[collection].find(predicate);
+  if(item) Object.assign(item, patch);
+  return item || null;
+}
 export function filterList(list, { q = '', fields = [], match = null } = {}){
   let out = [...list];
   if(q){
@@ -59,7 +81,7 @@ export function counts(){
     activeRequests: store.service_requests.filter(r => ['accepted','in_progress'].includes(r.status)).length,
     urgentRequests: store.service_requests.filter(r => r.urgency === 'urgent' && ['pending','accepted','in_progress'].includes(r.status)).length,
     unreadMessages: store.contact_messages.filter(m => m.status === 'new').length,
-    staleRequests: store.service_requests.filter(r => r.status === 'in_progress' && r.last_update_at && (new Date('2026-11-14T00:00:00+06:00') - new Date(r.last_update_at)) > 72*3600*1000).length,
+    staleRequests: store.service_requests.filter(r => r.status === 'in_progress' && r.last_update_at && (now() - new Date(r.last_update_at)) > 72*3600*1000).length,
     pendingFinance: store.ledger_entries.filter(e => e.status === 'draft').length
   };
 }

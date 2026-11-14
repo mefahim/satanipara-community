@@ -3,13 +3,16 @@
 // password reset, role history), edit (activate/suspend, role change).
 // Hard guards, enforced visibly: never remove your OWN Super Admin role; never
 // leave zero active Super Admins (action disabled + reason shown).
+// v2: shared statGrid, real table sorting (?sort=&dir=), field() role select,
+// .link-more back/tool links, role-permissions card on detail.
 import { t, getLang, registerStrings } from '../js/i18n.js';
+import { buildQueryString } from '../js/lib/router.js';
 import { store, filterList, writeAudit, activeSuperAdmins } from '../js/lib/store.js';
-import { fmtDate, fmtDateTime, fmtPhoneMasked, fmtPhoneFull, esc } from '../js/lib/format.js';
+import { fmtDate, fmtDateTime, fmtPhoneMasked, fmtPhoneFull, fmtNum, esc } from '../js/lib/format.js';
 import { badge, plainBadge } from '../js/components/badges.js';
-import { renderTable, bindTableRows } from '../js/components/table.js';
+import { renderTable, bindTableRows, bindTableSort } from '../js/components/table.js';
 import { field, errorSummary, validateRequired } from '../js/components/forms.js';
-import { emptyState } from '../js/components/states.js';
+import { statGrid } from '../js/components/stat.js';
 import { notFoundHtml } from '../js/lib/guards.js';
 
 const STRINGS = {
@@ -23,6 +26,7 @@ const STRINGS = {
     'list.colLastLogin': 'শেষ লগইন', 'list.colCreated': 'তৈরির তারিখ', 'list.never': 'কখনো নয়',
     'list.toolsTitle': 'অ্যাডমিন টুলস', 'list.toolsDataRights': 'তথ্য-অধিকার অনুরোধ দেখুন',
     'list.toolsRoles': 'ভূমিকা ও অনুমতি দেখুন', 'list.oneAdminNote': 'সতর্কতা: বর্তমানে মাত্র একজন সক্রিয় সুপার অ্যাডমিন আছেন। তাঁকে স্থগিত বা ভূমিকা বদল করা যাবে না।',
+    'list.statTotal': 'মোট ব্যবহারকারী', 'list.statSa': 'সক্রিয় সুপার অ্যাডমিন', 'list.statHelper': 'প্রবাসী সহায়ক', 'list.statSuspended': 'স্থগিত',
     'detail.back': 'ব্যবহারকারী তালিকায় ফিরুন', 'detail.kName': 'নাম', 'detail.kPhone': 'মোবাইল (বিস্তারিত দৃশ্যে)',
     'detail.kRole': 'ভূমিকা', 'detail.kStatus': 'অবস্থা', 'detail.kArea': 'এলাকা',
     'detail.kCreated': 'তৈরির তারিখ', 'detail.kLastLogin': 'শেষ লগইন',
@@ -41,6 +45,8 @@ const STRINGS = {
     'detail.selfRoleNote': 'নিজের সুপার অ্যাডমিন ভূমিকা নিজে সরানো যায় না — এমনকি আরেকজন সুপার অ্যাডমিন থাকলেও।',
     'detail.lastSaNote': 'শেষ সক্রিয় সুপার অ্যাডমিনের ভূমিকা বদলানো যাবে না — এতে কোনো সুপার অ্যাডমিন থাকবে না।',
     'detail.suspendBlockedNote': 'শেষ সক্রিয় সুপার অ্যাডমিনকে স্থগিত করা যাবে না।',
+    'detail.permsTitle': 'এই ভূমিকার অনুমতি', 'detail.permsBody': 'এই ব্যবহারকারী যা করতে পারেন, তা তাঁর ভূমিকা থেকে আসে। পূর্ণ তালিকা ভূমিকা ও অনুমতির পাতায় আছে।',
+    'detail.permsLink': 'ভূমিকা ও অনুমতির তালিকা দেখুন',
     'new.title': 'নতুন ব্যবহারকারী তৈরি', 'new.nameBn': 'নাম (বাংলা)', 'new.nameEn': 'নাম (English)',
     'new.phone': 'মোবাইল নম্বর', 'new.phoneHint': 'লগইনের জন্য এই নম্বর ব্যবহৃত হবে।',
     'new.role': 'ভূমিকা', 'new.roleHint': 'প্রথম ধাপে শুধু এই দুটি ভূমিকাই দেওয়া যায়।',
@@ -64,6 +70,7 @@ const STRINGS = {
     'list.colLastLogin': 'Last login', 'list.colCreated': 'Created', 'list.never': 'Never',
     'list.toolsTitle': 'Admin tools', 'list.toolsDataRights': 'View data-rights requests',
     'list.toolsRoles': 'View roles and permissions', 'list.oneAdminNote': 'Warning: there is currently only one active Super Admin. They cannot be suspended or have their role changed.',
+    'list.statTotal': 'Total users', 'list.statSa': 'Active Super Admins', 'list.statHelper': 'Expatriate Helpers', 'list.statSuspended': 'Suspended',
     'detail.back': 'Back to user list', 'detail.kName': 'Name', 'detail.kPhone': 'Phone (detail view)',
     'detail.kRole': 'Role', 'detail.kStatus': 'Status', 'detail.kArea': 'Area',
     'detail.kCreated': 'Created', 'detail.kLastLogin': 'Last login',
@@ -82,6 +89,8 @@ const STRINGS = {
     'detail.selfRoleNote': 'You can never remove your own Super Admin role — even when another Super Admin exists.',
     'detail.lastSaNote': 'The last active Super Admin\u2019s role cannot be changed — that would leave zero Super Admins.',
     'detail.suspendBlockedNote': 'The last active Super Admin cannot be suspended.',
+    'detail.permsTitle': 'Permissions of this role', 'detail.permsBody': 'What this user can do comes from their role. The full list is on the roles and permissions page.',
+    'detail.permsLink': 'View the roles and permissions list',
     'new.title': 'Create new user', 'new.nameBn': 'Name (Bengali)', 'new.nameEn': 'Name (English)',
     'new.phone': 'Phone number', 'new.phoneHint': 'This number is used to log in.',
     'new.role': 'Role', 'new.roleHint': 'In Phase 1 only these two roles can be assigned.',
@@ -112,6 +121,9 @@ export const Users = {
   },
   onMount(ctx){
     bindTableRows(document.getElementById('view'));
+    bindTableSort(document.getElementById('view'), (key, dir) => {
+      location.hash = '#/users' + buildQuery(ctx, { sort: key, dir, page: 1 });
+    });
     const view = document.getElementById('view');
     if(!view) return;
     const go = qs => { location.hash = '#/users' + qs; };
@@ -131,14 +143,14 @@ export const Users = {
 };
 
 function findUser(id){ return store.users.find(u => u.id === id); }
-function buildQuery(ctx, patch){
-  const q = { ...ctx.query, ...patch };
-  const p = new URLSearchParams();
-  for(const [k, v] of Object.entries(q)) if(v !== '' && v !== undefined && v !== null) p.set(k, v);
-  const s = p.toString();
-  return s ? '?' + s : '';
-}
+function buildQuery(ctx, patch){ return buildQueryString(ctx.query, patch); }
 function roleLabel(role){ return t('users.list.role.' + role); }
+function roleOptions(){
+  return [
+    { value: 'super-admin', label: t('users.list.role.super-admin') },
+    { value: 'expatriate-helper', label: t('users.list.role.expatriate-helper') }
+  ];
+}
 function nameOf(u){ const lang = getLang(); return lang === 'bn' ? u.name_bn : (u.name_en || u.name_bn); }
 function isSelf(ctx, u){ return ctx.user && u.id === ctx.user.id; }
 function isLastSA(u){ return u.role === 'super-admin' && u.status === 'active' && activeSuperAdmins() === 1; }
@@ -157,9 +169,16 @@ function listHtml(ctx){
   rows.sort((a, b) => a.created_at.localeCompare(b.created_at));
   const page = parseInt(ctx.query.page, 10) || 1;
   const oneAdmin = activeSuperAdmins() === 1;
+  const sort = ctx.query.sort ? { key: ctx.query.sort, dir: ctx.query.dir === 'desc' ? 'desc' : 'asc' } : null;
   return `<span class="demo-badge">${t('app.demo')}</span>
   <div class="view-head"><div><h1>${t('users.list.title')}</h1><p class="sub">${t('users.list.subtitle')}</p></div>
   <div><a class="btn btn-primary" href="#/users/new">${t('users.list.newUser')}</a></div></div>
+  ${statGrid([
+    { num: fmtNum(store.users.length, lang), label: t('users.list.statTotal') },
+    { num: fmtNum(activeSuperAdmins(), lang), label: t('users.list.statSa') },
+    { num: fmtNum(store.users.filter(u => u.role === 'expatriate-helper' && u.status === 'active').length, lang), label: t('users.list.statHelper') },
+    { num: fmtNum(store.users.filter(u => u.status === 'suspended').length, lang), label: t('users.list.statSuspended') }
+  ])}
   ${oneAdmin ? `<div class="banner" role="alert"><span>${t('users.list.oneAdminNote')}</span></div>` : ''}
   <div class="filters mt-4" role="search">
     <input class="input search-box" type="search" data-u-q value="${esc(ctx.query.q || '')}" placeholder="${esc(t('users.list.searchPh'))}" aria-label="${esc(t('users.list.searchPh'))}">
@@ -175,16 +194,16 @@ function listHtml(ctx){
     </select>
   </div>
   <section class="card mt-4">${renderTable({ columns: [
-    { key: 'name_bn', label: t('users.list.colName'), render: u => `<strong>${esc(nameOf(u))}</strong>${isSelf(ctx, u) ? ` <span class="small muted">(${esc(u.phone)})</span>` : ''}` },
+    { key: 'name_bn', label: t('users.list.colName'), sortable: true, render: u => `<strong>${esc(nameOf(u))}</strong>${isSelf(ctx, u) ? ` <span class="small muted">(${esc(u.phone)})</span>` : ''}` },
     { key: 'phone', label: t('users.list.colPhone'), render: u => `<span class="num">${fmtPhoneMasked(u.phone)}</span>` },
-    { key: 'role', label: t('users.list.colRole'), render: u => plainBadge(roleLabel(u.role)) },
-    { key: 'status', label: t('users.list.colStatus'), render: u => badge(u.status === 'active' ? 'approved' : 'rejected', t('users.list.status.' + u.status)) },
-    { key: 'last_login', label: t('users.list.colLastLogin'), render: u => u.last_login ? fmtDate(u.last_login, lang) : `<span class="muted">${t('users.list.never')}</span>` },
-    { key: 'created_at', label: t('users.list.colCreated'), render: u => fmtDate(u.created_at, lang) }
-  ], rows, page, perPage: 20, onRowClick: u => '#/users/' + u.id, stacked: true })}</section>
+    { key: 'role', label: t('users.list.colRole'), sortable: true, render: u => plainBadge(roleLabel(u.role)) },
+    { key: 'status', label: t('users.list.colStatus'), sortable: true, render: u => badge(u.status === 'active' ? 'approved' : 'rejected', t('users.list.status.' + u.status)) },
+    { key: 'last_login', label: t('users.list.colLastLogin'), sortable: true, render: u => u.last_login ? fmtDate(u.last_login, lang) : `<span class="muted">${t('users.list.never')}</span>` },
+    { key: 'created_at', label: t('users.list.colCreated'), sortable: true, render: u => fmtDate(u.created_at, lang) }
+  ], rows, page, perPage: 20, onRowClick: u => '#/users/' + u.id, stacked: true, sort })}</section>
   <section class="card mt-4"><h3>${t('users.list.toolsTitle')}</h3>
-  <p class="mt-4"><a href="#/data-rights">${t('users.list.toolsDataRights')}</a></p>
-  <p class="mt-4"><a href="#/roles">${t('users.list.toolsRoles')}</a></p></section>`;
+  <p class="mt-4"><a class="link-more" href="#/data-rights">${t('users.list.toolsDataRights')}</a></p>
+  <p class="mt-4"><a class="link-more" href="#/roles">${t('users.list.toolsRoles')}</a></p></section>`;
 }
 
 function detailHtml(ctx){
@@ -206,7 +225,7 @@ function detailHtml(ctx){
   }
   const kv = (k, v) => `<dt>${k}</dt><dd>${v}</dd>`;
   return `<span class="demo-badge">${t('app.demo')}</span>
-  <p><a href="#/users">${t('users.detail.back')}</a></p>
+  <p><a class="link-more" href="#/users">${t('users.detail.back')}</a></p>
   <div class="view-head"><div><h1>${esc(nameOf(u))}</h1>
   <p class="sub">${plainBadge(roleLabel(u.role))} ${badge(u.status === 'active' ? 'approved' : 'rejected', t('users.list.status.' + u.status))}</p></div></div>
   <div class="detail-grid"><section class="card"><dl class="kv">
@@ -220,27 +239,26 @@ function detailHtml(ctx){
   </dl>
   ${self && u.role === 'super-admin' ? `<p class="small muted mt-4">${t('users.detail.selfRoleNote')}</p>` : ''}
   ${lastSA ? `<p class="small muted mt-4">${t('users.detail.lastSaNote')}</p>` : ''}
-  <div class="mt-4" style="display:grid;gap:8px">${actions.join('')}</div></section>
+  <div class="row mt-4">${actions.join('')}</div></section>
   <section class="card"><h3>${t('users.detail.roleHistory')}</h3>
   <p class="small muted mt-4">${t('users.detail.historyNote')}</p>
   <div class="list-row mt-4"><div class="grow"><strong>${t('users.detail.historyCreated')}</strong><br><span class="small muted">${fmtDate(u.created_at, lang)} · ${roleLabel(u.role)}</span></div></div>
   ${history.length ? history.map(a => `<div class="list-row"><div class="grow"><strong>${esc(a.action)}</strong> — ${esc(a.old_value ?? '—')} → ${esc(a.new_value ?? '—')}<br><span class="small muted">${fmtDate(a.created_at, lang)} · ${esc(a.actor_role)}</span></div></div>`).join('') : `<p class="muted mt-4">${t('users.detail.historyEmpty')}</p>`}
-  </section></div>`;
+  </section></div>
+  <section class="card"><h3>${t('users.detail.permsTitle')}</h3>
+  <p class="small muted">${t('users.detail.permsBody')}</p>
+  <p class="mt-4"><a class="btn btn-secondary" href="#/roles">${t('users.detail.permsLink')}</a></p></section>`;
 }
 
 function newHtml(ctx){
   return `<span class="demo-badge">${t('app.demo')}</span>
-  <p><a href="#/users">${t('users.detail.back')}</a></p>
+  <p><a class="link-more" href="#/users">${t('users.detail.back')}</a></p>
   <div class="view-head"><div><h1>${t('users.new.title')}</h1></div></div>
-  <form id="user-new-form" class="card"><div id="new-errors"></div>
+  <form id="user-new-form" class="card" novalidate><div id="new-errors"></div>
     ${field({ id: 'n-name-bn', label: t('users.new.nameBn'), required: true })}
     ${field({ id: 'n-name-en', label: t('users.new.nameEn') })}
     ${field({ id: 'n-phone', label: t('users.new.phone'), required: true, hint: t('users.new.phoneHint'), attrs: 'inputmode="tel"' })}
-    <div class="field"><label for="n-role">${t('users.new.role')} *</label>
-      <select id="n-role" class="input">
-        <option value="super-admin">${t('users.list.role.super-admin')}</option>
-        <option value="expatriate-helper">${t('users.list.role.expatriate-helper')}</option>
-      </select><div class="hint">${t('users.new.roleHint')}</div></div>
+    ${field({ id: 'n-role', label: t('users.new.role'), required: true, hint: t('users.new.roleHint'), options: roleOptions() })}
     ${field({ id: 'n-password', label: t('users.new.password'), type: 'password', required: true, hint: t('users.new.passwordHint'), attrs: 'autocomplete="new-password"' })}
     <div class="row"><button type="submit" class="btn btn-primary">${t('users.new.create')}</button>
     <a class="btn btn-secondary" href="#/users">${t('common.cancel')}</a></div>
@@ -255,18 +273,14 @@ function editHtml(ctx){
   const roleBlocked = (self && u.role === 'super-admin') || lastSA;
   const roleNote = self && u.role === 'super-admin' ? t('users.detail.selfRoleNote') : (lastSA ? t('users.detail.lastSaNote') : '');
   return `<span class="demo-badge">${t('app.demo')}</span>
-  <p><a href="#/users/${u.id}">${t('users.detail.back')}</a></p>
+  <p><a class="link-more" href="#/users/${u.id}">${t('users.detail.back')}</a></p>
   <div class="view-head"><div><h1>${t('users.edit.title')}</h1><p class="sub">${esc(nameOf(u))}</p></div></div>
-  <form id="user-edit-form" class="card"><div id="edit-errors"></div>
+  <form id="user-edit-form" class="card" novalidate><div id="edit-errors"></div>
     ${field({ id: 'e-name-bn', label: t('users.edit.nameBn'), value: u.name_bn, required: true })}
     ${field({ id: 'e-name-en', label: t('users.edit.nameEn'), value: u.name_en || '' })}
     ${field({ id: 'e-phone', label: t('users.edit.phone'), value: u.phone, required: true, attrs: 'inputmode="tel"' })}
     ${field({ id: 'e-area', label: t('users.edit.area'), value: u.area || '' })}
-    <div class="field"><label for="e-role">${t('users.edit.role')} *</label>
-      <select id="e-role" class="input"${roleBlocked ? ' disabled aria-disabled="true"' : ''}>
-        <option value="super-admin"${u.role === 'super-admin' ? ' selected' : ''}>${t('users.list.role.super-admin')}</option>
-        <option value="expatriate-helper"${u.role === 'expatriate-helper' ? ' selected' : ''}>${t('users.list.role.expatriate-helper')}</option>
-      </select>${roleNote ? `<div class="hint">${roleNote}</div>` : ''}</div>
+    ${field({ id: 'e-role', label: t('users.edit.role'), value: u.role, required: true, hint: roleNote, options: roleOptions(), attrs: roleBlocked ? 'disabled aria-disabled="true"' : '' })}
     <div class="row"><button type="submit" class="btn btn-primary">${t('common.save')}</button>
     <a class="btn btn-secondary" href="#/users/${u.id}">${t('common.cancel')}</a></div>
   </form>`;
@@ -293,7 +307,7 @@ function saveNew(ctx){
   store.users.push({ id, name_bn: nameBn, name_en: view.querySelector('#n-name-en').value.trim(), phone, role, area: 'সাতানীপাড়া', status: 'active', last_login: null, created_at: new Date().toISOString() });
   writeAudit(ctx.user.id, ctx.role, 'user.create', 'user', id, null, role);
   location.hash = '#/users/' + id;
-  setTimeout(() => ctx.toast(t('users.new.createdToast')), 350);
+  ctx.toast(t('users.new.createdToast'));
 }
 
 function saveEdit(ctx){
@@ -322,7 +336,7 @@ function saveEdit(ctx){
   writeAudit(ctx.user.id, ctx.role, 'user.update', 'user', u.id, oldRole, newRole);
   if(newRole !== oldRole) writeAudit(ctx.user.id, ctx.role, 'user.role.change', 'user', u.id, oldRole, newRole);
   location.hash = '#/users/' + u.id;
-  setTimeout(() => ctx.toast(t('users.edit.savedToast')), 350);
+  ctx.toast(t('users.edit.savedToast'));
 }
 
 function handleAction(ctx, action){
@@ -341,7 +355,7 @@ function handleAction(ctx, action){
         ctx.drawer({
           title: t('users.detail.resetDoneTitle'),
           body: `<p>${esc(nameOf(u))} — <span class="num">${fmtPhoneMasked(u.phone)}</span></p>
-          <p class="mt-4"><code class="num" style="font-size:20px">${pw}</code></p>
+          <p class="mt-4"><code class="num">${pw}</code></p>
           <p class="mt-4">${t('users.detail.resetOnce')}</p><p class="mt-4">${t('users.detail.resetExpiry')}</p>`
         });
       }
@@ -361,7 +375,7 @@ function handleAction(ctx, action){
         u.status = suspending ? 'suspended' : 'active';
         writeAudit(ctx.user.id, ctx.role, suspending ? 'user.suspend' : 'user.activate', 'user', u.id, old, u.status);
         ctx.rerender();
-        setTimeout(() => ctx.toast(suspending ? t('users.detail.suspendedToast') : t('users.detail.activatedToast')), 350);
+        ctx.toast(suspending ? t('users.detail.suspendedToast') : t('users.detail.activatedToast'));
       }
     });
   }

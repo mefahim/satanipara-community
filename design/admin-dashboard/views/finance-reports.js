@@ -3,10 +3,12 @@
 // ("as of now", no stored snapshot). Report publishing follows the same dual control as
 // the ledger: the publisher must differ from the person who prepared the draft.
 import { t, getLang, registerStrings } from '../js/i18n.js';
-import { store, writeAudit } from '../js/lib/store.js';
+import { setHash } from '../js/lib/router.js';
+import { store, writeAudit, storeAdd } from '../js/lib/store.js';
 import { fmtBDT, fmtDate, fmtDateTime, fmtNum, esc } from '../js/lib/format.js';
 import { badge, plainBadge } from '../js/components/badges.js';
-import { renderTable, bindTableRows } from '../js/components/table.js';
+import { renderTable, bindTableRows, bindTableSort } from '../js/components/table.js';
+import { statGrid } from '../js/components/stat.js';
 import { emptyState } from '../js/components/states.js';
 import { validateRequired } from '../js/components/forms.js';
 
@@ -79,16 +81,9 @@ const STRINGS = {
   }
 };
 registerStrings('finance-reports', STRINGS);
-// The projects footer uses t('finance.overview.publicNote'), a key owned by the
-// finance module (views/finance.js) — but finance.js is never loaded on the
-// #/finance/projects route, so the lookup fell through to the literal key.
-// Register the same key here so the footer renders real text on this route too
-// (identical translation to finance.js; this registration only fills the gap
-// when finance.js has not loaded).
-registerStrings('finance', {
-  bn: { 'overview.publicNote': 'সাধারণের জন্য প্রকাশিত তথ্যই শুধু দেখানো হয়।' },
-  en: { 'overview.publicNote': 'Only published information is shown to the public.' }
-});
+// DS v2 (audit D-09): finance.overview.publicNote lives in the base dicts
+// (js/i18n/bn.js + en.js) — this file and views/finance.js both read it from
+// there now; no view registers its own copy.
 
 const L = () => getLang();
 const uname = (id, lang) => { const u = store.users.find(x => x.id === id); return u ? (lang === 'bn' ? u.name_bn : u.name_en) : (id || '—'); };
@@ -105,21 +100,24 @@ const spentFor = projectId => -store.ledger_entries
   .filter(e => e.project_id === projectId && e.status === 'published' && e.kind === 'expense')
   .reduce((a, e) => a + e.amount, 0);
 
+function sortFrom(ctx){ return ctx.query.sort ? { key: ctx.query.sort, dir: ctx.query.dir || 'asc' } : null; }
+
 function projectsHtml(ctx) {
   const lang = L();
   const rows = store.projects.map(p => ({ ...p, spent: spentFor(p.id) }));
   return head(t('finance-reports.title.projects'), t('finance-reports.projects.intro')) + `
   ${renderTable({ columns: [
-    { key: 'name_bn', label: t('finance-reports.projects.colName'), render: r => esc(lang === 'bn' ? r.name_bn : r.name_en) },
-    { key: 'budget', label: t('finance-reports.projects.colBudget'), render: r => `<span class="num">${fmtBDT(r.budget, lang)}</span>` },
-    { key: 'spent', label: t('finance-reports.projects.colSpent'), render: r => `<span class="num">${fmtBDT(r.spent, lang)}</span>` },
+    { key: 'name_bn', label: t('finance-reports.projects.colName'), sortable:true, render: r => esc(lang === 'bn' ? r.name_bn : r.name_en) },
+    { key: 'budget', label: t('finance-reports.projects.colBudget'), sortable:true, render: r => `<span class="num">${fmtBDT(r.budget, lang)}</span>` },
+    { key: 'spent', label: t('finance-reports.projects.colSpent'), sortable:true, render: r => `<span class="num">${fmtBDT(r.spent, lang)}</span>` },
     { key: 'remaining', label: t('finance-reports.projects.colRemaining'), render: r => `<span class="num">${fmtBDT(r.budget - r.spent, lang)}</span>` },
-    { key: 'used', label: t('finance-reports.projects.colUsed'), render: r => { const pct = r.budget ? Math.round((r.spent / r.budget) * 100) : 0; return `<span class="num">${fmtNum(pct, lang)}%</span><div style="height:6px;border-radius:3px;background:var(--wash);margin-top:6px"><div style="height:6px;border-radius:3px;width:${Math.min(pct, 100)}%;background:var(--forest)"></div></div>`; } },
+    { key: 'used', label: t('finance-reports.projects.colUsed'), render: r => { const pct = r.budget ? Math.round((r.spent / r.budget) * 100) : 0; return `<span class="num">${fmtNum(pct, lang)}%</span><div class="progress" role="progressbar" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100"><div class="progress-fill" style="width:${Math.min(pct, 100)}%"></div></div>`; } },
     { key: 'status', label: t('finance-reports.projects.colStatus'), render: r => plainBadge(t('finance-reports.projects.status.' + r.status)) },
     { key: 'entries', label: t('finance-reports.projects.colEntries'), render: r => `<span class="num">${fmtNum(store.ledger_entries.filter(e => e.project_id === r.id).length, lang)}</span>` }
-  ], rows, page: 1, perPage: 20, onRowClick: r => '#/finance/ledger?project=' + r.id, stacked: true })}
+  ], rows, page: 1, perPage: 20, onRowClick: r => '#/finance/ledger?project=' + r.id, stacked: true, sort: sortFrom(ctx) })}
   <p class="small muted">${esc(t('finance-reports.projects.computedNote'))}</p>
-  <p class="small muted">${esc(t('finance-reports.projects.viewLedger'))} — ${esc(t('finance.overview.publicNote'))}</p>`;
+  <p class="mt-4"><a class="link-more" href="#/finance/ledger">${esc(t('finance-reports.projects.viewLedger'))}</a></p>
+  <p class="small muted">${esc(t('finance.overview.publicNote'))}</p>`;
 }
 function categoriesHtml(ctx) {
   const lang = L();
@@ -133,9 +131,9 @@ function categoriesHtml(ctx) {
     { key: 'kind', label: t('finance-reports.categories.colKind'), render: r => plainBadge(t('finance-reports.kind.' + r.kind)) },
     { key: 'active', label: t('finance-reports.categories.colActive'), render: r => esc(r.active ? t('finance-reports.categories.activeYes') : t('finance-reports.categories.activeNo')) },
     { key: 'count', label: t('finance-reports.categories.colEntries'), render: r => `<span class="num">${fmtNum(r.count, lang)}</span>` },
-    { key: 'pubTotal', label: t('finance-reports.categories.colPublishedTotal'), render: r => `<span class="num">${fmtBDT(r.pubTotal, lang)}</span>` },
+    { key: 'pubTotal', label: t('finance-reports.categories.colPublishedTotal'), sortable:true, render: r => `<span class="num">${fmtBDT(r.pubTotal, lang)}</span>` },
     { key: 'drafts', label: t('finance-reports.categories.colDrafts'), render: r => `<span class="num">${fmtNum(r.drafts, lang)}</span>` }
-  ], rows, page: 1, perPage: 20, stacked: true })}`;
+  ], rows, page: 1, perPage: 20, stacked: true, sort: sortFrom(ctx) })}`;
 }
 function summariesHtml(ctx) {
   const lang = L();
@@ -153,18 +151,19 @@ function summariesHtml(ctx) {
   <p class="small muted">${esc(t('finance-reports.summaries.asOf'))} · ${esc(year)}</p>
   ${renderTable({ columns: [
     { key: 'month', label: t('finance-reports.summaries.colMonth'), render: r => esc(r.month) },
-    { key: 'income', label: t('finance-reports.summaries.colIncome'), render: r => `<span class="num">${fmtBDT(r.income, lang)}</span>` },
-    { key: 'donation', label: t('finance-reports.summaries.colDonation'), render: r => `<span class="num">${fmtBDT(r.donation, lang)}</span>` },
-    { key: 'expense', label: t('finance-reports.summaries.colExpense'), render: r => `<span class="num">${fmtBDT(r.expense, lang)}</span>` },
-    { key: 'net', label: t('finance-reports.summaries.colNet'), render: r => `<span class="num">${fmtBDT(r.net, lang)}</span>` },
+    { key: 'income', label: t('finance-reports.summaries.colIncome'), sortable:true, render: r => `<span class="num">${fmtBDT(r.income, lang)}</span>` },
+    { key: 'donation', label: t('finance-reports.summaries.colDonation'), sortable:true, render: r => `<span class="num">${fmtBDT(r.donation, lang)}</span>` },
+    { key: 'expense', label: t('finance-reports.summaries.colExpense'), sortable:true, render: r => `<span class="num">${fmtBDT(r.expense, lang)}</span>` },
+    { key: 'net', label: t('finance-reports.summaries.colNet'), sortable:true, render: r => `<span class="num">${fmtBDT(r.net, lang)}</span>` },
     { key: 'count', label: t('finance-reports.summaries.colEntries'), render: r => `<span class="num">${fmtNum(r.count, lang)}</span>` }
-  ], rows, page: 1, perPage: 20, stacked: true })}
-  <section class="card"><h3>${esc(t('finance-reports.summaries.total'))}</h3>
-    <dl class="kv"><dt>${esc(t('finance-reports.summaries.colIncome'))}</dt><dd class="num">${fmtBDT(tot('income'), lang)}</dd>
-    <dt>${esc(t('finance-reports.summaries.colDonation'))}</dt><dd class="num">${fmtBDT(tot('donation'), lang)}</dd>
-    <dt>${esc(t('finance-reports.summaries.colExpense'))}</dt><dd class="num">${fmtBDT(tot('expense'), lang)}</dd>
-    <dt>${esc(t('finance-reports.summaries.colNet'))}</dt><dd class="num">${fmtBDT(tot('net'), lang)}</dd></dl></section>
-  <p class="small muted">${esc(t('finance-reports.summaries.publicNote'))}</p>`;
+  ], rows, page: 1, perPage: 20, stacked: true, sort: sortFrom(ctx) })}
+  ${statGrid([
+    { num: fmtBDT(tot('income'), lang), label: t('finance-reports.summaries.colIncome') },
+    { num: fmtBDT(tot('donation'), lang), label: t('finance-reports.summaries.colDonation') },
+    { num: fmtBDT(tot('expense'), lang), label: t('finance-reports.summaries.colExpense') },
+    { num: fmtBDT(tot('net'), lang), label: t('finance-reports.summaries.colNet') }
+  ])}
+  <p class="small muted mt-4">${esc(t('finance-reports.summaries.total'))} · ${esc(year)} — ${esc(t('finance-reports.summaries.publicNote'))}</p>`;
 }
 function reportsHtml(ctx) {
   const lang = L();
@@ -179,12 +178,12 @@ function reportsHtml(ctx) {
     : `<p class="muted">${esc(t('finance-reports.reports.noYearLeft'))}</p>`}
   </section>
   ${rows.length ? renderTable({ columns: [
-    { key: 'year', label: t('finance-reports.reports.colYear'), render: r => `<span class="num">${fmtNum(r.year, lang)}</span>` },
+    { key: 'year', label: t('finance-reports.reports.colYear'), sortable:true, render: r => `<span class="num">${fmtNum(r.year, lang)}</span>` },
     { key: 'title_bn', label: t('finance-reports.reports.colTitle'), render: r => esc(lang === 'bn' ? r.title_bn : r.title_en) },
     { key: 'status', label: t('finance-reports.reports.colStatus'), render: r => badge(r.status, t('finance-reports.status.' + r.status)) },
     { key: 'audited', label: t('finance-reports.reports.colAudited'), render: r => esc(r.audited ? t('finance-reports.reports.auditedYes') : t('finance-reports.reports.auditedNo')) },
     { key: 'published_at', label: t('finance-reports.reports.colPublished'), render: r => r.published_at ? fmtDate(r.published_at, lang) : '—' }
-  ], rows, page: 1, perPage: 20, stacked: true }) : emptyState(t('common.empty'))}
+  ], rows, page: 1, perPage: 20, stacked: true, sort: sortFrom(ctx) }) : emptyState(t('common.empty'))}
   ${rows.filter(r => r.status === 'draft').map(r => {
     const self = r.entered_by === ctx.user.id;
     return `<section class="card" role="note"><h3><span class="num">${fmtNum(r.year, lang)}</span> — ${esc(lang === 'bn' ? r.title_bn : r.title_en)}</h3>
@@ -213,6 +212,8 @@ export const FinanceReports = {
   onMount(ctx) {
     const root = document.getElementById('view');
     bindTableRows(root);
+    // Real table sorting (DS v2, audit D-06): sort state lives in the query string.
+    bindTableSort(root, (key, dir) => { const q = { ...ctx.query, sort: key, dir }; setHash(ctx.path, q); });
     const y = document.getElementById('fr-year');
     if (y) y.addEventListener('change', () => { location.hash = '#/finance/summaries?year=' + y.value; });
     const prep = document.getElementById('fr-prepare');
@@ -222,11 +223,12 @@ export const FinanceReports = {
       ctx.modal({ title: t('finance-reports.reports.prepare'), body: `<p>${esc(t('finance-reports.reports.confirmPrepare'))}</p>`,
         confirmLabel: t('finance-reports.reports.prepareBtn'), requireReauth: true,
         onConfirm: () => {
-          store.annual_reports.push({ id: 'ar-' + year, year: parseInt(year, 10),
+          storeAdd('annual_reports', { id: 'ar-' + year, year: parseInt(year, 10),
             title_bn: 'বার্ষিক প্রতিবেদন ' + year + ' (ডেমো)', title_en: 'Annual report ' + year + ' (Demo)',
             audited: false, status: 'draft', published_at: null, entered_by: ctx.user.id, approved_by: null });
           writeAudit(ctx.user.id, ctx.role, 'finance.report.prepare', 'annual_report', 'ar-' + year, null, 'draft');
-          ctx.rerender(); setTimeout(() => ctx.toast(t('finance-reports.reports.prepared')), 350);
+          ctx.toast(t('finance-reports.reports.prepared'));
+          ctx.rerender();
         } });
     });
     root.querySelectorAll('[data-fr]').forEach(b => b.addEventListener('click', () => {
@@ -235,13 +237,13 @@ export const FinanceReports = {
         if (r.entered_by === ctx.user.id) { ctx.toast(t('finance-reports.reports.selfBlock')); return; }
         ctx.modal({ title: t('finance-reports.reports.approve'), body: `<p>${esc(t('finance-reports.reports.confirmApprove'))}</p>`,
           confirmLabel: t('finance-reports.reports.approve'), requireReauth: true,
-          onConfirm: () => { r.status = 'published'; r.approved_by = ctx.user.id; r.published_at = new Date().toISOString(); writeAudit(ctx.user.id, ctx.role, 'finance.report.publish', 'annual_report', r.id, 'draft', 'published'); ctx.rerender(); setTimeout(() => ctx.toast(t('finance-reports.reports.published')), 350); } });
+          onConfirm: () => { r.status = 'published'; r.approved_by = ctx.user.id; r.published_at = new Date().toISOString(); writeAudit(ctx.user.id, ctx.role, 'finance.report.publish', 'annual_report', r.id, 'draft', 'published'); ctx.toast(t('finance-reports.reports.published')); ctx.rerender(); } });
       }
       if (b.dataset.fr === 'reject') {
         let reason = '';
         ctx.modal({ title: t('finance-reports.reports.reject'), body: `<p>${esc(t('finance-reports.reports.confirmReject'))}</p><div class="field"><label for="fr-reason">${esc(t('finance-reports.reports.reason'))} *</label><textarea id="fr-reason" class="input" rows="3"></textarea></div>`,
           confirmLabel: t('finance-reports.reports.reject'), danger: true,
-          onConfirm: () => { if (!validateRequired(reason, 10)) { ctx.toast(t('finance-reports.reports.reasonShort')); return; } r.status = 'rejected'; r.rejection_reason_bn = reason.trim(); writeAudit(ctx.user.id, ctx.role, 'finance.report.reject', 'annual_report', r.id, 'draft', 'rejected'); ctx.rerender(); setTimeout(() => ctx.toast(t('finance-reports.reports.rejected')), 350); } });
+          onConfirm: () => { if (!validateRequired(reason, 10)) { ctx.toast(t('finance-reports.reports.reasonShort')); return; } r.status = 'rejected'; r.rejection_reason_bn = reason.trim(); writeAudit(ctx.user.id, ctx.role, 'finance.report.reject', 'annual_report', r.id, 'draft', 'rejected'); ctx.toast(t('finance-reports.reports.rejected')); ctx.rerender(); } });
         const el = document.getElementById('fr-reason');
         if (el) el.addEventListener('input', () => { reason = el.value; });
       }

@@ -1,12 +1,16 @@
 // Directory view — #/directory (+ ?kind=), #/directory/new, #/directory/:id,
+// v2: shared statCard/statGrid, real table sorting (?sort=&dir=), field() select
+// variants, quick-view drawer button per row (the drawer binding had no trigger).
 // #/infrastructure, #/freedom-fighters.
 // DEMO data only. Public visibility REQUIRES recorded consent: an entry whose
 // consent is not granted can never be set public (blocked in the form and in
 // the detail action). Date of birth is NEVER collected or shown — age band only.
 import { t, getLang, registerStrings } from '../js/i18n.js';
+import { go, withQuery } from '../js/lib/router.js';
 import { store, filterList, writeAudit } from '../js/lib/store.js';
 import { fmtNum, esc } from '../js/lib/format.js';
-import { renderTable, bindTableRows } from '../js/components/table.js';
+import { renderTable, bindTableRows, bindTableSort } from '../js/components/table.js';
+import { statGrid } from '../js/components/stat.js';
 import { renderFilters, bindFilters } from '../js/components/filters.js';
 import { badge, plainBadge } from '../js/components/badges.js';
 import { field, errorSummary, validateRequired } from '../js/components/forms.js';
@@ -15,7 +19,7 @@ import { emptyState } from '../js/components/states.js';
 const STRINGS = {
   bn: {
     'list.title': 'জন-নির্দেশিকা', 'list.sub': 'ব্যক্তি, পেশাজীবী ও প্রতিষ্ঠান — নমুনা তথ্য। জন্মতারিখ কখনো দেখানো হয় না, শুধু বয়সের ধাপ।',
-    'list.new': 'নতুন এন্ট্রি যোগ করুন', 'list.colName': 'নাম', 'list.colKind': 'ধরন', 'list.colArea': 'এলাকা', 'list.colRole': 'পেশা / ধরন',
+    'list.new': 'নতুন এন্ট্রি যোগ করুন', 'list.colName': 'নাম', 'list.colKind': 'ধরন', 'list.colAction': 'কাজ', 'list.quickView': 'দ্রুত দেখুন', 'list.colArea': 'এলাকা', 'list.colRole': 'পেশা / ধরন',
     'list.colAge': 'বয়সের ধাপ', 'list.colVisibility': 'দৃশ্যমানতা', 'list.colConsent': 'সম্মতি', 'kind.all': 'সবগুলো', 'chip.archived': 'আর্কাইভ করা',
     'kind.person': 'ব্যক্তি', 'kind.professionals': 'পেশাজীবী', 'kind.institutions': 'প্রতিষ্ঠান', 'kind.landmarks': 'স্থাপনা', 'kind.freedom_fighters': 'মুক্তিযোদ্ধা',
     'vis.public': 'সর্বজনীন', 'vis.members': 'শুধু সদস্যদের জন্য', 'vis.private': 'ব্যক্তিগত', 'consent.granted': 'সম্মতি দেওয়া হয়েছে',
@@ -41,7 +45,7 @@ const STRINGS = {
   },
   en: {
     'list.title': 'People Directory', 'list.sub': 'Persons, professionals and institutions — demo data. Date of birth is never shown, only the age band.',
-    'list.new': 'Add entry', 'list.colName': 'Name', 'list.colKind': 'Kind', 'list.colArea': 'Area', 'list.colRole': 'Profession / type', 'list.colAge': 'Age band',
+    'list.new': 'Add entry', 'list.colName': 'Name', 'list.colKind': 'Kind', 'list.colAction': 'Action', 'list.quickView': 'Quick view', 'list.colArea': 'Area', 'list.colRole': 'Profession / type', 'list.colAge': 'Age band',
     'list.colVisibility': 'Visibility', 'list.colConsent': 'Consent', 'kind.all': 'All', 'chip.archived': 'Archived', 'kind.person': 'Person',
     'kind.professionals': 'Professional', 'kind.institutions': 'Institution', 'kind.landmarks': 'Landmark', 'kind.freedom_fighters': 'Freedom fighter',
     'vis.public': 'Public', 'vis.members': 'Members only', 'vis.private': 'Private', 'consent.granted': 'Consent granted', 'consent.withdrawn': 'Consent withdrawn',
@@ -74,12 +78,10 @@ const kindLabel = k => t(K + 'kind.' + (k === 'person' ? 'person' : k));
 const roleOf = it => it.profession_bn || it.type_bn || '';
 const allEntries = () => [...store.persons, ...store.professionals, ...store.institutions];
 const findEntry = id => allEntries().find(e => e.id === id) || store.landmarks.find(e => e.id === id) || store.freedom_fighters.find(e => e.id === id);
-function go(hash){ location.hash = hash; }
-function withQuery(base, patch){
-  const p = new URLSearchParams(location.hash.split('?')[1] || '');
-  for(const [k, v] of Object.entries(patch)){ if(v) p.set(k, v); else p.delete(k); }
-  const s = p.toString();
-  return base + (s ? '?' + s : '');
+
+function tableSort(ctx){
+  const k = ctx.query.sort, d = ctx.query.dir;
+  return k && ['name_bn', 'kind', 'area', 'type_bn', 'age_band'].includes(k) && (d === 'asc' || d === 'desc') ? { key: k, dir: d } : null;
 }
 
 export const Directory = {
@@ -103,6 +105,7 @@ export const Directory = {
   onMount(ctx){
     const lang = getLang();
     bindTableRows(document.getElementById('view'));
+    bindTableSort(document.getElementById('view'), (key, dir) => go(withQuery(ctx.path, { sort: key, dir })));
     const titles = { '/infrastructure': 'infra.title', '/freedom-fighters': 'ff.title', '/directory/new': 'form.titleNew' };
     ctx.shell.setTitle(t(K + (titles[ctx.path] || (ctx.params.id ? 'detail.title' : 'list.title'))));
     ctx.shell.setBreadcrumb(['nav.community', ctx.path === '/infrastructure' ? 'nav.infrastructure' : ctx.path === '/freedom-fighters' ? 'nav.freedom' : 'nav.directory']);
@@ -141,7 +144,8 @@ export const Directory = {
       ctx.toast(t(K + 'toast.visibilityChanged'));
       ctx.rerender();
     }));
-    document.querySelectorAll('[data-drawer-entry]').forEach(b => b.addEventListener('click', () => {
+    document.querySelectorAll('[data-drawer-entry]').forEach(b => b.addEventListener('click', ev => {
+      ev.stopPropagation(); // the row itself navigates; the quick-view button must not
       const e = findEntry(b.dataset.drawerEntry);
       if(!e) return;
       ctx.drawer({ title: nm(e, lang), body: drawerBody(e, lang) });
@@ -169,21 +173,23 @@ function listHtml(ctx, lang){
   return `<span class="demo-badge">${t('app.demo')}</span>
   <div class="view-head"><div><h1>${t(K + 'list.title')}</h1><p class="sub">${t(K + 'list.sub')}</p></div>
   <div class="row"><a class="btn btn-primary" href="#/directory/new">${t(K + 'list.new')}</a></div></div>
-  <div class="stat-grid">
-    <a class="stat" href="#/directory"><div class="num">${fmtNum(allEntries().length, lang)}</div><div class="lbl">${t(K + 'kind.all')}</div></a>
-    <a class="stat" href="#/directory?kind=person"><div class="num">${fmtNum(store.persons.length, lang)}</div><div class="lbl">${t(K + 'kind.person')}</div></a>
-    <a class="stat" href="#/directory?kind=professionals"><div class="num">${fmtNum(store.professionals.length, lang)}</div><div class="lbl">${t(K + 'kind.professionals')}</div></a>
-    <a class="stat" href="#/directory?kind=institutions"><div class="num">${fmtNum(store.institutions.length, lang)}</div><div class="lbl">${t(K + 'kind.institutions')}</div></a></div>
+  ${statGrid([
+    { href: '#/directory', num: fmtNum(allEntries().length, lang), label: t(K + 'kind.all') },
+    { href: '#/directory?kind=person', num: fmtNum(store.persons.length, lang), label: t(K + 'kind.person') },
+    { href: '#/directory?kind=professionals', num: fmtNum(store.professionals.length, lang), label: t(K + 'kind.professionals') },
+    { href: '#/directory?kind=institutions', num: fmtNum(store.institutions.length, lang), label: t(K + 'kind.institutions') }
+  ])}
   <div class="mt-6">${renderFilters({ q, chips, activeChip: kind || 'all' })}</div>
   ${rows.length ? renderTable({ columns: [
-    { key: 'name_bn', label: t(K + 'list.colName'), render: r => `<strong>${esc(nm(r, lang))}</strong>${r.archived ? ' ' + badge('draft', t(K + 'chip.archived')) : ''}` },
-    { key: 'kind', label: t(K + 'list.colKind'), render: r => kindLabel(r.kind) },
-    { key: 'area', label: t(K + 'list.colArea'), render: r => esc(r.area || '') },
+    { key: 'name_bn', label: t(K + 'list.colName'), sortable: true, render: r => `<strong>${esc(nm(r, lang))}</strong>${r.archived ? ' ' + badge('draft', t(K + 'chip.archived')) : ''}` },
+    { key: 'kind', label: t(K + 'list.colKind'), sortable: true, render: r => kindLabel(r.kind) },
+    { key: 'area', label: t(K + 'list.colArea'), sortable: true, render: r => esc(r.area || '') },
     { key: 'profession_bn', label: t(K + 'list.colRole'), render: r => esc(roleOf(r)) },
     { key: 'age_band', label: t(K + 'list.colAge'), render: r => esc(r.age_band || '—') },
     { key: 'visibility', label: t(K + 'list.colVisibility'), render: r => r.visibility === 'public' && r.consent_status !== 'granted' ? badge('draft', t(K + 'consent.hiddenNote')) : plainBadge(visLabel(r.visibility)) },
-    { key: 'consent_status', label: t(K + 'list.colConsent'), render: r => badge(r.consent_status === 'granted' ? 'published' : 'draft', consentLabel(r.consent_status)) }
-  ], rows, page: 1, perPage: 20, onRowClick: r => '#/directory/' + r.id, stacked: true }) : emptyState(t('common.empty'), t(K + 'list.new'), '#/directory/new')}`;
+    { key: 'consent_status', label: t(K + 'list.colConsent'), render: r => badge(r.consent_status === 'granted' ? 'published' : 'draft', consentLabel(r.consent_status)) },
+    { key: 'actions', label: t(K + 'list.colAction'), render: r => `<button type="button" class="btn btn-ghost btn-sm" data-drawer-entry="${r.id}">${t(K + 'list.quickView')}</button>` }
+  ], rows, page: 1, perPage: 20, onRowClick: r => '#/directory/' + r.id, stacked: true, sort: tableSort(ctx) }) : emptyState(t('common.empty'), t(K + 'list.new'), '#/directory/new')}`;
 }
 
 function detailHtml(ctx, e, lang){
@@ -211,31 +217,38 @@ function detailHtml(ctx, e, lang){
     <button type="button" class="btn btn-secondary" data-dir-vis="private" data-dir-vis-id="${e.id}">${t(K + 'detail.setPrivate')}</button></div>
     <p class="small muted mt-4">${t('common.updating')}</p></section>
   </div></div>
-  <p class="mt-4"><a href="${back}">${t('common.back')}</a></p>`;
+  <p class="mt-4"><a class="link-more" href="${back}">${t('common.back')}</a></p>`;
 }
 
 function formHtml(ctx, e){
   const isNew = !e;
   const v = e || { kind: 'person', name_bn: '', name_en: '', area: 'সাতানীপাড়া', profession_bn: '', type_bn: '', age_band: '', visibility: 'members-only', consent_status: 'granted' };
-  const opt = (val, cur, label) => `<option value="${val}"${val === cur ? ' selected' : ''}>${label}</option>`;
   const isInst = v.kind === 'institutions';
   return `<span class="demo-badge">${t('app.demo')}</span>
   <div class="view-head"><div><h1>${t(K + (isNew ? 'form.titleNew' : 'form.titleEdit'))}</h1></div></div>
   <form id="dir-form" class="card" novalidate>
     <div id="dir-errors"></div>
-    <div class="field"><label for="f-kind">${t(K + 'form.kind')}</label>
-      <select id="f-kind" name="f-kind" class="input">${opt('person', v.kind, t(K + 'kind.person'))}${opt('professionals', v.kind, t(K + 'kind.professionals'))}${opt('institutions', v.kind, t(K + 'kind.institutions'))}</select></div>
+    ${field({ id: 'f-kind', label: t(K + 'form.kind'), value: v.kind, options: [
+      { value: 'person', label: t(K + 'kind.person') },
+      { value: 'professionals', label: t(K + 'kind.professionals') },
+      { value: 'institutions', label: t(K + 'kind.institutions') }
+    ] })}
     ${field({ id: 'f-name-bn', label: t(K + 'form.nameBn'), value: v.name_bn, required: true })}
     ${field({ id: 'f-name-en', label: t(K + 'form.nameEn'), value: v.name_en })}
     ${field({ id: 'f-area', label: t(K + 'form.area'), value: v.area })}
     ${field({ id: 'f-role', label: t(K + 'form.role'), value: v.profession_bn || v.type_bn || '' })}
     ${isInst ? '' : field({ id: 'f-age', label: t(K + 'form.age'), value: v.age_band || '', attrs: 'aria-describedby="f-age-hint"' })}
     ${isInst ? '' : `<div class="hint" id="f-age-hint">${t(K + 'form.noDobHint')}</div>`}
-    <div class="field"><label for="f-visibility">${t(K + 'form.visibility')}</label>
-      <select id="f-visibility" name="f-visibility" class="input">${opt('public', v.visibility, t(K + 'vis.public'))}${opt('members-only', v.visibility, t(K + 'vis.members'))}${opt('private', v.visibility, t(K + 'vis.private'))}</select>
-      <div class="hint">${t(K + 'form.consentHint')}</div></div>
-    <div class="field"><label for="f-consent">${t(K + 'form.consent')}</label>
-      <select id="f-consent" name="f-consent" class="input">${opt('granted', v.consent_status, t(K + 'consent.granted'))}${opt('withdrawn', v.consent_status, t(K + 'consent.withdrawn'))}${opt('pending', v.consent_status, t(K + 'consent.pending'))}</select></div>
+    ${field({ id: 'f-visibility', label: t(K + 'form.visibility'), value: v.visibility, hint: t(K + 'form.consentHint'), options: [
+      { value: 'public', label: t(K + 'vis.public') },
+      { value: 'members-only', label: t(K + 'vis.members') },
+      { value: 'private', label: t(K + 'vis.private') }
+    ] })}
+    ${field({ id: 'f-consent', label: t(K + 'form.consent'), value: v.consent_status, options: [
+      { value: 'granted', label: t(K + 'consent.granted') },
+      { value: 'withdrawn', label: t(K + 'consent.withdrawn') },
+      { value: 'pending', label: t(K + 'consent.pending') }
+    ] })}
     <div class="row mt-4"><button type="submit" class="btn btn-primary">${t(K + 'form.save')}</button>
     <a class="btn btn-secondary" href="${isNew ? '#/directory' : '#/directory/' + e.id}">${t(K + 'form.cancel')}</a></div>
   </form>`;
@@ -297,11 +310,11 @@ function infraHtml(ctx, lang){
   <div class="row"><a class="btn btn-primary" href="#/infrastructure?new=1">${t(K + 'infra.new')}</a></div></div>
   <div class="mt-6">${renderFilters({ q, chips: [], activeChip: null })}</div>
   ${rows.length ? renderTable({ columns: [
-    { key: 'name_bn', label: t(K + 'infra.colName'), render: r => `<strong>${esc(nm(r, lang))}</strong>` },
-    { key: 'type_bn', label: t(K + 'infra.colType'), render: r => esc(r.type_bn || '') },
-    { key: 'area', label: t(K + 'infra.colArea'), render: r => esc(r.area || '') },
+    { key: 'name_bn', label: t(K + 'infra.colName'), sortable: true, render: r => `<strong>${esc(nm(r, lang))}</strong>` },
+    { key: 'type_bn', label: t(K + 'infra.colType'), sortable: true, render: r => esc(r.type_bn || '') },
+    { key: 'area', label: t(K + 'infra.colArea'), sortable: true, render: r => esc(r.area || '') },
     { key: 'visibility', label: t(K + 'infra.colVisibility'), render: r => plainBadge(visLabel(r.visibility)) }
-  ], rows, page: 1, perPage: 20, onRowClick: null, stacked: true }) : emptyState(t('common.empty'), t(K + 'infra.new'), '#/infrastructure?new=1')}
+  ], rows, page: 1, perPage: 20, onRowClick: r => '#/directory/' + r.id, stacked: true, sort: tableSort(ctx) }) : emptyState(t('common.empty'), t(K + 'infra.new'), '#/infrastructure?new=1')}
   <p class="small muted mt-4">${t(K + 'infra.sub')}</p>`;
 }
 
@@ -313,16 +326,15 @@ function ffHtml(ctx, lang){
   <div class="row"><a class="btn btn-primary" href="#/freedom-fighters?new=1">${t(K + 'ff.new')}</a></div></div>
   <div class="mt-6">${renderFilters({ q, chips: [], activeChip: null })}</div>
   ${rows.length ? renderTable({ columns: [
-    { key: 'name_bn', label: t(K + 'ff.colName'), render: r => `<strong>${esc(nm(r, lang))}</strong>` },
+    { key: 'name_bn', label: t(K + 'ff.colName'), sortable: true, render: r => `<strong>${esc(nm(r, lang))}</strong>` },
     { key: 'age_band', label: t(K + 'ff.colAge'), render: r => esc(r.age_band || '—') },
-    { key: 'area', label: t(K + 'ff.colArea'), render: r => esc(r.area || '') },
+    { key: 'area', label: t(K + 'ff.colArea'), sortable: true, render: r => esc(r.area || '') },
     { key: 'visibility', label: t(K + 'ff.colVisibility'), render: r => plainBadge(visLabel(r.visibility)) }
-  ], rows, page: 1, perPage: 20, onRowClick: null, stacked: true }) : emptyState(t('common.empty'), t(K + 'ff.new'), '#/freedom-fighters?new=1')}
+  ], rows, page: 1, perPage: 20, onRowClick: r => '#/directory/' + r.id, stacked: true, sort: tableSort(ctx) }) : emptyState(t('common.empty'), t(K + 'ff.new'), '#/freedom-fighters?new=1')}
   <p class="small muted mt-4">${t(K + 'detail.noDob')}</p>`;
 }
 
 function simpleForm(ctx, titleKey, formId, ageField){
-  const opt = (val, label) => `<option value="${val}">${label}</option>`;
   return `<span class="demo-badge">${t('app.demo')}</span>
   <div class="view-head"><div><h1>${t(K + titleKey)}</h1></div></div>
   <form id="${formId}" class="card" novalidate>
@@ -333,11 +345,16 @@ function simpleForm(ctx, titleKey, formId, ageField){
     ${field({ id: 's-role', label: t(K + 'form.role'), value: '' })}
     ${ageField ? field({ id: 's-age', label: t(K + 'form.age'), value: '' }) : ''}
     ${ageField ? `<div class="hint">${t(K + 'form.noDobHint')}</div>` : ''}
-    <div class="field"><label for="s-visibility">${t(K + 'form.visibility')}</label>
-      <select id="s-visibility" name="s-visibility" class="input">${opt('public', t(K + 'vis.public'))}${opt('members-only', t(K + 'vis.members'))}${opt('private', t(K + 'vis.private'))}</select>
-      <div class="hint">${t(K + 'form.consentHint')}</div></div>
-    <div class="field"><label for="s-consent">${t(K + 'form.consent')}</label>
-      <select id="s-consent" name="s-consent" class="input">${opt('granted', t(K + 'consent.granted'))}${opt('withdrawn', t(K + 'consent.withdrawn'))}${opt('pending', t(K + 'consent.pending'))}</select></div>
+    ${field({ id: 's-visibility', label: t(K + 'form.visibility'), value: 'members-only', hint: t(K + 'form.consentHint'), options: [
+      { value: 'public', label: t(K + 'vis.public') },
+      { value: 'members-only', label: t(K + 'vis.members') },
+      { value: 'private', label: t(K + 'vis.private') }
+    ] })}
+    ${field({ id: 's-consent', label: t(K + 'form.consent'), value: 'granted', options: [
+      { value: 'granted', label: t(K + 'consent.granted') },
+      { value: 'withdrawn', label: t(K + 'consent.withdrawn') },
+      { value: 'pending', label: t(K + 'consent.pending') }
+    ] })}
     <div class="row mt-4"><button type="submit" class="btn btn-primary">${t(K + 'form.save')}</button>
     <a class="btn btn-secondary" href="${ageField ? '#/freedom-fighters' : '#/infrastructure'}">${t(K + 'form.cancel')}</a></div>
   </form>`;

@@ -1,10 +1,11 @@
 // faq.js — FAQ list + editor: question/answer BN/EN, category, order, search.
 // All data DEMO-labelled. No backend calls.
 import { t, getLang, registerStrings } from '../js/i18n.js';
-import { store, filterList, writeAudit } from '../js/lib/store.js';
+import { setHash } from '../js/lib/router.js';
+import { store, filterList, writeAudit, storeAdd, storeUpdate, storeRemove } from '../js/lib/store.js';
 import { fmtNum, esc } from '../js/lib/format.js';
 import { plainBadge } from '../js/components/badges.js';
-import { renderTable, bindTableRows } from '../js/components/table.js';
+import { renderTable, bindTableRows, bindTableSort } from '../js/components/table.js';
 import { renderFilters, bindFilters } from '../js/components/filters.js';
 import { field } from '../js/components/forms.js';
 import { emptyState } from '../js/components/states.js';
@@ -32,7 +33,6 @@ const CATS = [['membership','faq.cat.membership'], ['expatriate','faq.cat.expatr
 function catLabel(c){ const f = CATS.find(x => x[0] === c); return f ? t(f[1]) : c; }
 function qOf(f, lang){ return lang === 'bn' ? (f.question_bn || f.question_en || '') : (f.question_en || f.question_bn || ''); }
 function aOf(f, lang){ return lang === 'bn' ? (f.answer_bn || f.answer_en || '') : (f.answer_en || f.answer_bn || ''); }
-function setHash(path, query){ const qs = new URLSearchParams(query).toString(); location.hash = '#' + path + (qs ? '?' + qs : ''); }
 export const Faq = {
   route: '#/faq',
   title: { bn: 'সাধারণ জিজ্ঞাসা', en: 'FAQ' },
@@ -46,7 +46,10 @@ export const Faq = {
     const catF = ctx.query.category || 'all';
     let rows = filterList(store.faqs, { q, fields: ['question_bn', 'question_en', 'answer_bn', 'answer_en'] });
     if(catF !== 'all') rows = rows.filter(f => f.category === catF);
-    rows.sort((a, b) => (a.order || 0) - (b.order || 0));
+    // Default order is the public display order; ?sort=&dir= (sortable headers)
+    // overrides it — renderTable sorts before paginating.
+    if(!ctx.query.sort) rows.sort((a, b) => (a.order || 0) - (b.order || 0));
+    const sort = ctx.query.sort ? { key: ctx.query.sort, dir: ctx.query.dir || 'asc' } : null;
     const editId = ctx.query.edit || null;
     const isNew = ctx.query.new === '1';
     const editing = isNew ? {} : (editId ? store.faqs.find(f => f.id === editId) : null);
@@ -57,15 +60,16 @@ export const Faq = {
     ${editing || isNew ? editorHtml(ctx, lang, editing, isNew) : ''}
     ${renderFilters({ q, chips, activeChip: catF })}
     ${rows.length ? renderTable({ columns: [
-      { key:'order', label:t('faq.list.colOrder'), render: r => fmtNum(r.order ?? 0, lang) },
-      { key:'question_bn', label:t('faq.list.colQuestion'), render: r => `<strong>${esc(qOf(r, lang))}</strong><br><span class="small muted">${esc(aOf(r, lang).slice(0, 120))}</span>` },
+      { key:'order', label:t('faq.list.colOrder'), sortable:true, render: r => fmtNum(r.order ?? 0, lang) },
+      { key:'question_bn', label:t('faq.list.colQuestion'), sortable:true, render: r => `<strong>${esc(qOf(r, lang))}</strong><br><span class="small muted">${esc(aOf(r, lang).slice(0, 120))}</span>` },
       { key:'category', label:t('faq.list.colCategory'), render: r => plainBadge(catLabel(r.category)) },
       { key:'actions', label:'', render: r => `<a class="btn btn-secondary btn-sm" href="#/faq?edit=${r.id}">${t('faq.act.edit')}</a> <button type="button" class="btn btn-ghost btn-sm" data-act="delete" data-id="${r.id}">${t('faq.act.delete')}</button>` }
-    ], rows, page: parseInt(ctx.query.page || '1', 10), perPage: 20, stacked: true }) : emptyState(t('common.empty'), t('faq.list.new'), '#/faq?new=1')}`;
+    ], rows, page: parseInt(ctx.query.page || '1', 10), perPage: 20, stacked: true, sort }) : emptyState(t('common.empty'), t('faq.list.new'), '#/faq?new=1')}`;
   },
   onMount(ctx){
     const root = document.getElementById('view');
     bindTableRows(root);
+    bindTableSort(root, (key, dir) => { const q = { ...ctx.query, sort: key, dir, page: '1' }; delete q.edit; delete q.new; setHash(ctx.path, q); });
     bindFilters(root, {
       onSearch: v => { const q = { ...ctx.query, q: v, page: '1' }; delete q.edit; delete q.new; if(!v) delete q.q; setHash(ctx.path, q); },
       onChip: v => { const q = { ...ctx.query, category: v, page: '1' }; delete q.edit; delete q.new; if(v === 'all') delete q.category; setHash(ctx.path, q); },
@@ -74,7 +78,7 @@ export const Faq = {
     root.querySelectorAll('[data-act="delete"]').forEach(b => b.addEventListener('click', () => {
       const f = store.faqs.find(x => x.id === b.dataset.id);
       if(!f) return;
-      ctx.modal({ title: t('faq.act.delete'), body: `<p>${t('faq.confirm.deleteBody')}</p><p class="small muted">${esc(f.question_bn)}</p>`, confirmLabel: t('faq.act.delete'), danger: true, onConfirm: () => { store.faqs = store.faqs.filter(x => x.id !== f.id); writeAudit(ctx.user.id, ctx.role, 'faq.delete', 'faq', f.id, 'active', 'deleted'); ctx.toast(t('faq.msg.deleted')); location.hash = '#/faq'; ctx.rerender && ctx.rerender(); } });
+      ctx.modal({ title: t('faq.act.delete'), body: `<p>${t('faq.confirm.deleteBody')}</p><p class="small muted">${esc(f.question_bn)}</p>`, confirmLabel: t('faq.act.delete'), danger: true, onConfirm: () => { storeRemove('faqs', x => x.id === f.id); writeAudit(ctx.user.id, ctx.role, 'faq.delete', 'faq', f.id, 'active', 'deleted'); ctx.toast(t('faq.msg.deleted')); location.hash = '#/faq'; ctx.rerender && ctx.rerender(); } });
     }));
     const form = root.querySelector('#faq-form');
     if(form) form.addEventListener('submit', e => { e.preventDefault(); saveForm(ctx, form); });
@@ -87,9 +91,9 @@ function editorHtml(ctx, lang, f, isNew){
   <h3>${isNew ? t('faq.edit.newTitle') : t('faq.edit.editTitle')}</h3>
   ${field({ id:'fq-q-bn', label:t('faq.edit.questionBn'), value: v.question_bn || '', required: true })}
   ${field({ id:'fq-q-en', label:t('faq.edit.questionEn'), value: v.question_en || '' })}
-  <div class="field"><label for="fq-a-bn">${t('faq.edit.answerBn')} *</label><textarea id="fq-a-bn" class="input" rows="3">${esc(v.answer_bn || '')}</textarea></div>
-  <div class="field"><label for="fq-a-en">${t('faq.edit.answerEn')}</label><textarea id="fq-a-en" class="input" rows="3">${esc(v.answer_en || '')}</textarea></div>
-  <div class="field"><label for="fq-cat">${t('faq.edit.category')}</label><select id="fq-cat" class="input">${CATS.map(([cv, k]) => `<option value="${cv}"${v.category === cv ? ' selected' : ''}>${t(k)}</option>`).join('')}</select></div>
+  ${field({ id:'fq-a-bn', label:t('faq.edit.answerBn'), type:'textarea', rows:3, value: v.answer_bn || '', required: true })}
+  ${field({ id:'fq-a-en', label:t('faq.edit.answerEn'), type:'textarea', rows:3, value: v.answer_en || '' })}
+  ${field({ id:'fq-cat', label:t('faq.edit.category'), value: v.category || 'membership', options: CATS.map(([cv, k]) => ({ value: cv, label: t(k) })) })}
   ${field({ id:'fq-order', label:t('faq.edit.order'), type:'number', value: v.order ?? (store.faqs.length + 1) })}
   <div class="error" id="form-err" hidden>${t('faq.edit.required')}</div>
   <div class="row mt-4"><button type="submit" class="btn btn-primary">${t('faq.act.save')}</button>
@@ -103,8 +107,8 @@ function saveForm(ctx, form){
   if(!qBn || !aBn){ err.hidden = false; form.querySelector('#fq-q-bn').focus(); return; }
   const val = s => { const el = form.querySelector(s); return el ? el.value.trim() : ''; };
   const data = { question_bn: qBn, question_en: val('#fq-q-en'), answer_bn: aBn, answer_en: val('#fq-a-en'), category: val('#fq-cat') || 'other', order: parseInt(val('#fq-order'), 10) || 1 };
-  if(id){ const f = store.faqs.find(x => x.id === id); if(f){ Object.assign(f, data); writeAudit(ctx.user.id, ctx.role, 'faq.update', 'faq', id, null, data.question_bn); } }
-  else { store.faqs.push({ id:'faq-' + Date.now(), ...data }); writeAudit(ctx.user.id, ctx.role, 'faq.create', 'faq', data.question_bn, null, 'created'); }
+  if(id){ const f = store.faqs.find(x => x.id === id); if(f){ storeUpdate('faqs', x => x.id === id, data); writeAudit(ctx.user.id, ctx.role, 'faq.update', 'faq', id, null, data.question_bn); } }
+  else { storeAdd('faqs', { id:'faq-' + Date.now(), ...data }); writeAudit(ctx.user.id, ctx.role, 'faq.create', 'faq', data.question_bn, null, 'created'); }
   ctx.toast(t('faq.msg.saved'));
   location.hash = '#/faq';
 }

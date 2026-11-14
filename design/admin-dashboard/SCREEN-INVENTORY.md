@@ -8,9 +8,11 @@ categories, published summaries, system health). **Total: 68 screens.**
 
 Status key: **Built + verified** = renders in the Batch M QA sweep
 (2026-11-14, headless Chromium, evidence in `QA-REPORT.md` + screenshots
-in `~/workspace/satanipara-admin-dashboard/qa-final/`). **Built, with
-limitation** = renders but with a noted gap. **Not built** = route exists
-but no view file; the shell shows the "module in build" state.
+in `~/workspace/satanipara-admin-dashboard/qa-final/`) and re-verified in
+the Design Iteration 2 sweep (2026-11-14, 128/128 checks passed, evidence
+in `../iteration2/qa-final-v2/`). **Built, with limitation** = renders but
+with a noted gap. **Not built** = route exists but no view file; the shell
+shows the "module in build" state.
 
 Route table verified against `js/lib/router.js`; owner files verified
 against `views/`.
@@ -108,3 +110,41 @@ not new screens — they are covered in the table above.)
 - Nothing else is silently missing: every sidebar item (42 SA + 4 Helper)
   lands on a built screen, and every blueprint-only surface (#52–54) is
   reachable via in-app links.
+
+## Iteration 2 comparison — original 68 vs final 68
+
+The iteration-2 sweep (2026-11-14, `QA-REPORT.md`, evidence
+`../iteration2/qa-final-v2/`) visited all 73 routes at 1440px and 360px
+and confirmed every one of the 68 screens above still renders with an
+`h1` and content. **Nothing was removed. No screen was added** — the
+route table (`js/lib/router.js`) was not changed in iteration 2, so no
+new route and no new screen exists to count. What changed was *inside*
+the 68 screens (see `UX-IMPROVEMENTS.md` for the full list). The
+in-screen additions are recorded here so the count stays honest:
+
+| # | Screen | Added inside the screen in iteration 2 | Reason |
+|---|---|---|---|
+| 2 | Dashboard — Super Admin | "যা দেখা দরকার" attention list (pending approvals, urgent/stale requests, pending finance drafts, unread messages — each a real link, hidden when zero); greeting + live Dhaka date; finance snapshot now also shows published 2026 income/expense/net beside the 4-row preview vs full-year figures; Helper queue search now actually filters | Attention-first triage: the admin sees what needs them before the numbers |
+| 3 | Dashboard — Helper | Queue search now filters by request no./service/applicant; queue table sortable | The v1 search re-rendered but never filtered (dead control) |
+| 9–11 | Member list / detail / edit | Household link on profile + family tab (members carry `household_id`); detail request/activity tables sortable; edit form validation now reachable (`novalidate` so the app's error summary runs) | Correct a wrong v1 note; make validation actually reachable |
+| 16–17 | Directory list / detail | Per-row "দ্রুত দেখুন" quick-view button wiring the drawer; infrastructure + freedom-fighter rows now navigate to detail | Two dead controls in v1 (untriggered drawer binding, `onRowClick: null`) |
+| 20–21 | Expatriate queue / detail | Summary card first (status, priority, assigned helper, last update absolute + relative, latest note, expense summary, next permitted action); no-charge line; SA-only exits shown as disabled options with the reason written out (Helper close/reject/cancel explained, not silently gated); Meridian per-step timestamps (`stepTimes`); relative "time since update" | Effort reduction + the audit D3 explanation fix |
+| 22–25 | Blood registry / requests | Consent-records section on donor detail; phone row label fixed (was "Name"); `consent.waiting` line now shown; availability + fulfilment on the live clock | Correctness + consent transparency |
+| 26–30 | Content lists / detail | Totals stat grid on the overview; expired/scheduled plain-language notes on detail; list sort moved from a confusing `<select>` to table headers | One sorting mechanism instead of two; plain language for states |
+| 31–32 | Activities | List stat cards (total/published/archived/beneficiaries); empty-submit now renders the shared error summary; detail shows status as a labelled row | Consistency with the shared components |
+| 42–43 | Finance projects / summaries | Project "Used" column now uses the shared `.progress` component | Remove the last inline-styled progress bars |
+| 45–46 | Notifications | Opening a related record now marks it read (bell drops); delivery log states in plain language that there is no resend button (derived log) | Audit D4 fix; no fake controls |
+| 51 | Settings | Tabbed layout (`?tab=brand/contact/policy/system/sessions`) | Group a long form into findable sections |
+| 55 | Profile | Now reachable by Super Admin too (`profile.view` added to the SA permission set — the G1 blocker) | Was denied for SA under permission enforcement |
+| — | All screens | Real table sorting (`?sort=&dir=`), shared stat cards, shared `field()` forms, `.link-more` 44px text links, no 350ms toast delay, no inline styles in module files, fully Bengali navigation | DS v2 adoption (see `DESIGN-SYSTEM.md`) |
+
+**Comparison table:**
+
+| | Original (iteration 1) | Final (iteration 2) |
+|---|---|---|
+| Screens planned | 68 | 68 |
+| Screens built | 68 | 68 |
+| Screens removed | — | 0 |
+| Screens added | — | 0 |
+| Routes | 73 (+ 4 login variants) | 73 (+ 4 login variants), unchanged |
+| Screens with a documented limitation | 0 (by design: #35 video placeholder, #46 derived log, #51/#55 simulated sections, #62 disabled add, #68 demo values) | 0 added; the same by-design limitations remain and are listed in `QA-REPORT.md` |

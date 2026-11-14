@@ -121,9 +121,7 @@ function policyHtml(s, lang){
   return `<section class="card"><h3>${t('settings.policy.title')}</h3>
   <p class="small muted">${t('settings.policy.note')}</p>
   <form id="settings-form" data-tab="policy" novalidate class="mt-4">
-  ${items.map(([id, label, val, en]) => `<div class="field"><label for="${id}">${esc(label)}</label>
-    <textarea id="${id}" name="${id}" class="input" rows="3">${esc(val || '')}</textarea>
-    <div class="hint">${esc(en)} — ${t('settings.policy.enNote')}</div></div>`).join('')}
+  ${items.map(([id, label, val, en]) => field({ id, label, type: 'textarea', value: val || '', rows: 3, hint: en + ' — ' + t('settings.policy.enNote') })).join('')}
   ${saveBtn()}</form></section>`;
 }
 function systemHtml(s, lang){
@@ -184,7 +182,8 @@ function bindSettings(ctx){
       }
     }
     writeAudit(ctx.user.id, ctx.role, 'settings.change', 'settings', tab, '—', 'updated');
-    Promise.resolve(ctx.rerender()).then(() => ctx.toast(t('settings.saved')));
+    ctx.rerender();
+    ctx.toast(t('settings.saved'));
   });
   const lo = root.querySelector('[data-logout-all]');
   if(lo) lo.addEventListener('click', () => {
