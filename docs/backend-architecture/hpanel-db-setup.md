@@ -1,5 +1,18 @@
 # hPanel Database Setup — Satanipara Community (Worker C)
 
+> **CORRECTION 2026-11-14 (provisioned):** the database actually created
+> in hPanel is **`u263467780_satina6para86`** (note: `satina6para86`, not
+> `satanipara`) and the main database user is the same name. All names in
+> this document have been updated to match. The main user **cannot**
+> `CREATE USER` / `CREATE DATABASE` on this shared hosting (proven
+> ERROR 1227 / 1044), so the four users below can only be created here in
+> hPanel + phpMyAdmin — never from the application or SSH. The server
+> `.env` already points at MariaDB using the main user (temporary — full
+> privileges on this one database) until the `_app` user exists; switch
+> `.env` to `_app` the moment step 4 is applied. Migrations have NOT run
+> yet — they need Fahim's separate approval of the migration plan.
+
+
 **Purpose:** the exact steps Fahim follows in Hostinger hPanel to create
 the MariaDB database and the four least-privilege users, so the server
 `.env` can be switched from sqlite to MariaDB.
@@ -46,14 +59,14 @@ follow §8.4's privilege suggestions literally:
 1. hPanel → left menu **Databases** → **MySQL Databases**
    (on some hPanel versions: **Databases → MySQL Databases**).
 2. Under **Create a New Database**, enter the database name:
-   **`u263467780_satanipara`**
+   **`u263467780_satina6para86`**
    (Hostinger prefixes names with the account name; if the field already
-   shows the prefix, type only `satanipara`.)
+   shows the prefix, type only `satina6para86`.)
 3. Click **Create**. Confirm the database appears in the list as
-   `u263467780_satanipara`.
+   `u263467780_satina6para86`.
 4. Note the **MySQL host** shown on the same screen. Expected:
-   **`localhost`**. If it shows anything else, write it down — the
-   `.env` and the grants in `identities.sql` assume `localhost`, and a
+   **`127.0.0.1`**. If it shows anything else, write it down — the
+   `.env` and the grants in `identities.sql` assume `127.0.0.1`, and a
    different host means the usernames' host part must change with it.
 
 ## 3. Create the four users (hPanel screen)
@@ -75,13 +88,13 @@ On the same **MySQL Databases** screen, under **Create a New MySQL User**
 
 | # | Username | Used by | hPanel privilege pick (if forced) |
 |---|---|---|---|
-| 1 | `u263467780_satanipara_app` | Laravel application (`.env` `DB_USERNAME`) — the only user the app ever connects as | SELECT, INSERT, UPDATE, DELETE (tightened to per-table grants in step 4) |
-| 2 | `u263467780_satanipara_mig` | Deploy pipeline only (migrations, trigger creation). **Never in the app `.env`.** | All privileges **on this database only** (tightened in step 4; never `*.*`) |
-| 3 | `u263467780_satanipara_bkp` | Nightly backup (`mysqldump` / spatie backup) | SELECT, LOCK TABLES |
-| 4 | `u263467780_satanipara_rep` | Finance Auditor / BI read-only — **create only when that role is actually needed; if it is not needed yet, skip this user for now** | SELECT |
+| 1 | `u263467780_satina6para86_app` | Laravel application (`.env` `DB_USERNAME`) — the only user the app ever connects as | SELECT, INSERT, UPDATE, DELETE (tightened to per-table grants in step 4) |
+| 2 | `u263467780_satina6para86_mig` | Deploy pipeline only (migrations, trigger creation). **Never in the app `.env`.** | All privileges **on this database only** (tightened in step 4; never `*.*`) |
+| 3 | `u263467780_satina6para86_bkp` | Nightly backup (`mysqldump` / spatie backup) | SELECT, LOCK TABLES |
+| 4 | `u263467780_satina6para86_rep` | Finance Auditor / BI read-only — **create only when that role is actually needed; if it is not needed yet, skip this user for now** | SELECT |
 
 After creating the users, **add each user to the database
-`u263467780_satanipara`** using the "Add User to Database" control on
+`u263467780_satina6para86`** using the "Add User to Database" control on
 the same screen (if hPanel did not already do it at creation).
 
 ## 4. Apply the exact grants (phpMyAdmin → SQL)
@@ -119,8 +132,8 @@ the Phase 1 handover). Apply them as follows:
      install where the grants were never widened.
 5. **Reporting user, column-level grant — read carefully.** The
    `GRANT SELECT (id, name_bn, name_en, member_no, member_type,
-   status, created_at) ON u263467780_satanipara.users TO
-   'u263467780_satanipara_rep'@'localhost'` line runs in phpMyAdmin
+   status, created_at) ON u263467780_satina6para86.users TO
+   'u263467780_satina6para86_rep'@'127.0.0.1'` line runs in phpMyAdmin
    SQL exactly as written. **If it errors** (for example because the
    `users` table does not exist yet — the migrations have not run):
    do **not** fall back to a table-level `GRANT SELECT ON users`.
@@ -133,7 +146,7 @@ the Phase 1 handover). Apply them as follows:
    - `app`: `USAGE on *.*`, then per-table grants; **no** `DELETE` on
      `ledger_entries` / `ledger_reversals` / `activity_log`; **no** DDL
      privilege anywhere.
-   - `mig`: the DDL+DML set on `u263467780_satanipara.*` only; no `*.*`
+   - `mig`: the DDL+DML set on `u263467780_satina6para86.*` only; no `*.*`
      grant, no `GRANT OPTION`.
    - `bkp`: `SELECT, LOCK TABLES, SHOW VIEW, EVENT, TRIGGER` on the
      database only.
@@ -145,8 +158,8 @@ the Phase 1 handover). Apply them as follows:
 Send **through the secure vault only** (the coordinator will tell you
 which vault entries to fill):
 
-- Database name: `u263467780_satanipara`
-- MySQL host as shown in hPanel (expected `localhost`)
+- Database name: `u263467780_satina6para86`
+- MySQL host as shown in hPanel (expected `127.0.0.1`)
 - The four usernames (above)
 - The four passwords (one vault entry per user, named as in step 3)
 
@@ -169,7 +182,7 @@ listed here only so you know what comes next:
    RESTRICT`, not `SET NULL` — MariaDB refuses a CHECK that references
    a `SET NULL` FK column (ERROR 1901; proven in TEST-RESULTS.md §4).
 3. **Switch the server `.env`** from `DB_CONNECTION=sqlite` to MariaDB
-   with `DB_USERNAME=u263467780_satanipara_app` (the app user only —
+   with `DB_USERNAME=u263467780_satina6para86_app` (the app user only —
    never the migration user), then run `php artisan migrate` with the
    migration user from the deploy pipeline, and verify `/health`.
 4. **Set up the backup job** (hPanel → Cron Jobs) using the backup user
@@ -182,14 +195,14 @@ listed here only so you know what comes next:
   from another account.
 - **Storage:** secure vault only. No password in chat, email, a doc, a
   screenshot, `.env` history, or a shell history file.
-- **Host restriction:** all four users are `'localhost'` only — no `%`
+- **Host restriction:** all four users are `'127.0.0.1'` only — no `%`
   (any host). The application, the deploy pipeline, and the backup job
   all run on the same host, so no remote database user is needed. If a
   future need arises for a remote user, that is a new decision, not an
   edit to these users.
 - **Rotation (every 90 days, or immediately if a password is ever
   exposed):** (1) generate a new password in the vault; (2) apply it
-  with `ALTER USER 'u263467780_satanipara_<role>'@'localhost'
+  with `ALTER USER 'u263467780_satina6para86_<role>'@'127.0.0.1'
   IDENTIFIED BY '<new>'; FLUSH PRIVILEGES;` from phpMyAdmin SQL;
   (3) update the place that uses it (`.env` for `app`; deploy pipeline
   secret for `mig`; backup job for `bkp`); (4) verify the service still
@@ -204,7 +217,7 @@ listed here only so you know what comes next:
 - **Lockout:** failed-login lockout (`FAILED_LOGIN_ATTEMPTS` /
   `PASSWORD_LOCK_TIME`) is not configurable on shared hosting; rely on
   hPanel's brute-force protection and on the fact that the users are
-  `localhost`-only.
+  `127.0.0.1`-only.
 - **No password in the repo, ever.** The `.env` on the server holds the
   app password (mode 600, outside the document root, as the foundation
   report verified). The migration password lives only in the deploy

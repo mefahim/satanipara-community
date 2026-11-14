@@ -2,7 +2,7 @@
 -- Satanipara Community — four least-privilege database identities
 -- MariaDB 11.8.9 — PRODUCTION definitions (prepare only; do NOT run
 -- until Fahim has created the database + users in hPanel).
--- Database: u263467780_satanipara | Host: localhost
+-- Database: u263467780_satina6para86 | Host: 127.0.0.1
 -- Source: Doc 06 §7.1, Doc 08 §3.1, Phase 0.1.1 Worker B FINDINGS §6.
 -- Passwords: <VAULT:…> placeholders — real values live ONLY in the
 -- secure vault, never in this file, never in chat, never in .env
@@ -14,83 +14,89 @@
 --    or SSH) AFTER the database exists and AFTER the migrations that
 --    create these tables have run. Column-level grants fail if the
 --    table/column does not exist yet.
+--    PROVISIONED 2026-11-14: database u263467780_satina6para86 exists (note
+--    the name — 'satina6para86', as created in hPanel). The main database
+--    user CANNOT CREATE USER / CREATE DATABASE on this shared hosting
+--    (ERROR 1227 / 1044, proven 2026-11-14), so this file is applied from
+--    phpMyAdmin SQL by the account holder, never by the application user.
+--    Per-table grants for _app / _rep need the migrations run first.
 
-DROP USER IF EXISTS 'u263467780_satanipara_app'@'localhost';
-CREATE USER 'u263467780_satanipara_app'@'localhost'
-  IDENTIFIED BY '<VAULT:satanipara-db-app>';
+DROP USER IF EXISTS 'u263467780_satina6para86_app'@'127.0.0.1';
+CREATE USER 'u263467780_satina6para86_app'@'127.0.0.1'
+  IDENTIFIED BY '<VAULT:satina6para86-db-app>';
 
-DROP USER IF EXISTS 'u263467780_satanipara_mig'@'localhost';
-CREATE USER 'u263467780_satanipara_mig'@'localhost'
-  IDENTIFIED BY '<VAULT:satanipara-db-mig>';
+DROP USER IF EXISTS 'u263467780_satina6para86_mig'@'127.0.0.1';
+CREATE USER 'u263467780_satina6para86_mig'@'127.0.0.1'
+  IDENTIFIED BY '<VAULT:satina6para86-db-mig>';
 
-DROP USER IF EXISTS 'u263467780_satanipara_bkp'@'localhost';
-CREATE USER 'u263467780_satanipara_bkp'@'localhost'
-  IDENTIFIED BY '<VAULT:satanipara-db-bkp>';
+DROP USER IF EXISTS 'u263467780_satina6para86_bkp'@'127.0.0.1';
+CREATE USER 'u263467780_satina6para86_bkp'@'127.0.0.1'
+  IDENTIFIED BY '<VAULT:satina6para86-db-bkp>';
 
-DROP USER IF EXISTS 'u263467780_satanipara_rep'@'localhost';
-CREATE USER 'u263467780_satanipara_rep'@'localhost'
-  IDENTIFIED BY '<VAULT:satanipara-db-rep>';
+DROP USER IF EXISTS 'u263467780_satina6para86_rep'@'127.0.0.1';
+CREATE USER 'u263467780_satina6para86_rep'@'127.0.0.1'
+  IDENTIFIED BY '<VAULT:satina6para86-db-rep>';
 
--- (i) APP RUNTIME — u263467780_satanipara_app (Laravel .env DB_USERNAME)
+-- (i) APP RUNTIME — u263467780_satina6para86_app (Laravel .env DB_USERNAME)
 --     The ONLY user the application ever connects as.
-GRANT SELECT, INSERT, UPDATE ON u263467780_satanipara.ledger_entries TO 'u263467780_satanipara_app'@'localhost';
-GRANT SELECT, INSERT, UPDATE ON u263467780_satanipara.ledger_reversals TO 'u263467780_satanipara_app'@'localhost';
-GRANT SELECT, INSERT ON u263467780_satanipara.activity_log TO 'u263467780_satanipara_app'@'localhost';
-GRANT SELECT, UPDATE ON u263467780_satanipara.sequences TO 'u263467780_satanipara_app'@'localhost';
-GRANT SELECT ON u263467780_satanipara.migrations TO 'u263467780_satanipara_app'@'localhost';
-GRANT SELECT, INSERT, UPDATE, DELETE ON u263467780_satanipara.users TO 'u263467780_satanipara_app'@'localhost';
-GRANT SELECT, INSERT, UPDATE, DELETE ON u263467780_satanipara.roles TO 'u263467780_satanipara_app'@'localhost';
-GRANT SELECT, INSERT, UPDATE, DELETE ON u263467780_satanipara.user_devices TO 'u263467780_satanipara_app'@'localhost';
-GRANT SELECT, INSERT, UPDATE, DELETE ON u263467780_satanipara.push_subscriptions TO 'u263467780_satanipara_app'@'localhost';
-GRANT SELECT, INSERT, UPDATE, DELETE ON u263467780_satanipara.households TO 'u263467780_satanipara_app'@'localhost';
-GRANT SELECT, INSERT, UPDATE, DELETE ON u263467780_satanipara.persons TO 'u263467780_satanipara_app'@'localhost';
-GRANT SELECT, INSERT, UPDATE, DELETE ON u263467780_satanipara.professions TO 'u263467780_satanipara_app'@'localhost';
-GRANT SELECT, INSERT, UPDATE, DELETE ON u263467780_satanipara.countries TO 'u263467780_satanipara_app'@'localhost';
-GRANT SELECT, INSERT, UPDATE, DELETE ON u263467780_satanipara.institutions TO 'u263467780_satanipara_app'@'localhost';
-GRANT SELECT, INSERT, UPDATE, DELETE ON u263467780_satanipara.landmarks TO 'u263467780_satanipara_app'@'localhost';
-GRANT SELECT, INSERT, UPDATE, DELETE ON u263467780_satanipara.freedom_fighters TO 'u263467780_satanipara_app'@'localhost';
-GRANT SELECT, INSERT, UPDATE, DELETE ON u263467780_satanipara.person_family_links TO 'u263467780_satanipara_app'@'localhost';
-GRANT SELECT, INSERT, UPDATE, DELETE ON u263467780_satanipara.infrastructure_facilities TO 'u263467780_satanipara_app'@'localhost';
-GRANT SELECT, INSERT, UPDATE, DELETE ON u263467780_satanipara.committee_terms TO 'u263467780_satanipara_app'@'localhost';
-GRANT SELECT, INSERT, UPDATE, DELETE ON u263467780_satanipara.committee_members TO 'u263467780_satanipara_app'@'localhost';
-GRANT SELECT, INSERT, UPDATE, DELETE ON u263467780_satanipara.advisors TO 'u263467780_satanipara_app'@'localhost';
-GRANT SELECT, INSERT, UPDATE, DELETE ON u263467780_satanipara.past_leaders TO 'u263467780_satanipara_app'@'localhost';
-GRANT SELECT, INSERT, UPDATE, DELETE ON u263467780_satanipara.achievements TO 'u263467780_satanipara_app'@'localhost';
-GRANT SELECT, INSERT, UPDATE, DELETE ON u263467780_satanipara.constitution_versions TO 'u263467780_satanipara_app'@'localhost';
-GRANT SELECT, INSERT, UPDATE, DELETE ON u263467780_satanipara.activities TO 'u263467780_satanipara_app'@'localhost';
-GRANT SELECT, INSERT, UPDATE, DELETE ON u263467780_satanipara.posts TO 'u263467780_satanipara_app'@'localhost';
-GRANT SELECT, INSERT, UPDATE, DELETE ON u263467780_satanipara.post_translations TO 'u263467780_satanipara_app'@'localhost';
-GRANT SELECT, INSERT, UPDATE, DELETE ON u263467780_satanipara.media TO 'u263467780_satanipara_app'@'localhost';
-GRANT SELECT, INSERT, UPDATE, DELETE ON u263467780_satanipara.media_links TO 'u263467780_satanipara_app'@'localhost';
-GRANT SELECT, INSERT, UPDATE, DELETE ON u263467780_satanipara.events TO 'u263467780_satanipara_app'@'localhost';
-GRANT SELECT, INSERT, UPDATE, DELETE ON u263467780_satanipara.gallery_albums TO 'u263467780_satanipara_app'@'localhost';
-GRANT SELECT, INSERT, UPDATE, DELETE ON u263467780_satanipara.faqs TO 'u263467780_satanipara_app'@'localhost';
-GRANT SELECT, INSERT, UPDATE, DELETE ON u263467780_satanipara.annual_reports TO 'u263467780_satanipara_app'@'localhost';
-GRANT SELECT, INSERT, UPDATE, DELETE ON u263467780_satanipara.service_requests TO 'u263467780_satanipara_app'@'localhost';
-GRANT SELECT, INSERT, UPDATE, DELETE ON u263467780_satanipara.service_request_updates TO 'u263467780_satanipara_app'@'localhost';
-GRANT SELECT, INSERT, UPDATE, DELETE ON u263467780_satanipara.service_request_expenses TO 'u263467780_satanipara_app'@'localhost';
-GRANT SELECT, INSERT, UPDATE, DELETE ON u263467780_satanipara.emergency_team_members TO 'u263467780_satanipara_app'@'localhost';
-GRANT SELECT, INSERT, UPDATE, DELETE ON u263467780_satanipara.blood_donors TO 'u263467780_satanipara_app'@'localhost';
-GRANT SELECT, INSERT, UPDATE, DELETE ON u263467780_satanipara.blood_requests TO 'u263467780_satanipara_app'@'localhost';
-GRANT SELECT, INSERT, UPDATE, DELETE ON u263467780_satanipara.blood_consents TO 'u263467780_satanipara_app'@'localhost';
-GRANT SELECT, INSERT, UPDATE, DELETE ON u263467780_satanipara.service_types TO 'u263467780_satanipara_app'@'localhost';
-GRANT SELECT, INSERT, UPDATE, DELETE ON u263467780_satanipara.finance_categories TO 'u263467780_satanipara_app'@'localhost';
-GRANT SELECT, INSERT, UPDATE, DELETE ON u263467780_satanipara.projects TO 'u263467780_satanipara_app'@'localhost';
-GRANT SELECT, INSERT, UPDATE, DELETE ON u263467780_satanipara.notifications_log TO 'u263467780_satanipara_app'@'localhost';
-GRANT SELECT, INSERT, UPDATE, DELETE ON u263467780_satanipara.settings TO 'u263467780_satanipara_app'@'localhost';
-GRANT SELECT, INSERT, UPDATE, DELETE ON u263467780_satanipara.contact_messages TO 'u263467780_satanipara_app'@'localhost';
-GRANT SELECT, INSERT, UPDATE, DELETE ON u263467780_satanipara.data_requests TO 'u263467780_satanipara_app'@'localhost';
-GRANT SELECT, INSERT, UPDATE, DELETE ON u263467780_satanipara.permissions TO 'u263467780_satanipara_app'@'localhost';
-GRANT SELECT, INSERT, UPDATE, DELETE ON u263467780_satanipara.role_has_permissions TO 'u263467780_satanipara_app'@'localhost';
-GRANT SELECT, INSERT, UPDATE, DELETE ON u263467780_satanipara.model_has_permissions TO 'u263467780_satanipara_app'@'localhost';
-GRANT SELECT, INSERT, UPDATE, DELETE ON u263467780_satanipara.model_has_roles TO 'u263467780_satanipara_app'@'localhost';
-GRANT SELECT, INSERT, UPDATE, DELETE ON u263467780_satanipara.personal_access_tokens TO 'u263467780_satanipara_app'@'localhost';
-GRANT SELECT, INSERT, UPDATE, DELETE ON u263467780_satanipara.notifications TO 'u263467780_satanipara_app'@'localhost';
-GRANT SELECT, INSERT, UPDATE, DELETE ON u263467780_satanipara.jobs TO 'u263467780_satanipara_app'@'localhost';
-GRANT SELECT, INSERT, UPDATE, DELETE ON u263467780_satanipara.failed_jobs TO 'u263467780_satanipara_app'@'localhost';
-GRANT SELECT, INSERT, UPDATE, DELETE ON u263467780_satanipara.cache TO 'u263467780_satanipara_app'@'localhost';
-GRANT SELECT, INSERT, UPDATE, DELETE ON u263467780_satanipara.sessions TO 'u263467780_satanipara_app'@'localhost';
-GRANT SELECT, INSERT, UPDATE, DELETE ON u263467780_satanipara.password_reset_tokens TO 'u263467780_satanipara_app'@'localhost';
+GRANT SELECT, INSERT, UPDATE ON u263467780_satina6para86.ledger_entries TO 'u263467780_satina6para86_app'@'127.0.0.1';
+GRANT SELECT, INSERT, UPDATE ON u263467780_satina6para86.ledger_reversals TO 'u263467780_satina6para86_app'@'127.0.0.1';
+GRANT SELECT, INSERT ON u263467780_satina6para86.activity_log TO 'u263467780_satina6para86_app'@'127.0.0.1';
+GRANT SELECT, UPDATE ON u263467780_satina6para86.sequences TO 'u263467780_satina6para86_app'@'127.0.0.1';
+GRANT SELECT ON u263467780_satina6para86.migrations TO 'u263467780_satina6para86_app'@'127.0.0.1';
+GRANT SELECT, INSERT, UPDATE, DELETE ON u263467780_satina6para86.users TO 'u263467780_satina6para86_app'@'127.0.0.1';
+GRANT SELECT, INSERT, UPDATE, DELETE ON u263467780_satina6para86.roles TO 'u263467780_satina6para86_app'@'127.0.0.1';
+GRANT SELECT, INSERT, UPDATE, DELETE ON u263467780_satina6para86.user_devices TO 'u263467780_satina6para86_app'@'127.0.0.1';
+GRANT SELECT, INSERT, UPDATE, DELETE ON u263467780_satina6para86.push_subscriptions TO 'u263467780_satina6para86_app'@'127.0.0.1';
+GRANT SELECT, INSERT, UPDATE, DELETE ON u263467780_satina6para86.households TO 'u263467780_satina6para86_app'@'127.0.0.1';
+GRANT SELECT, INSERT, UPDATE, DELETE ON u263467780_satina6para86.persons TO 'u263467780_satina6para86_app'@'127.0.0.1';
+GRANT SELECT, INSERT, UPDATE, DELETE ON u263467780_satina6para86.professions TO 'u263467780_satina6para86_app'@'127.0.0.1';
+GRANT SELECT, INSERT, UPDATE, DELETE ON u263467780_satina6para86.countries TO 'u263467780_satina6para86_app'@'127.0.0.1';
+GRANT SELECT, INSERT, UPDATE, DELETE ON u263467780_satina6para86.institutions TO 'u263467780_satina6para86_app'@'127.0.0.1';
+GRANT SELECT, INSERT, UPDATE, DELETE ON u263467780_satina6para86.landmarks TO 'u263467780_satina6para86_app'@'127.0.0.1';
+GRANT SELECT, INSERT, UPDATE, DELETE ON u263467780_satina6para86.freedom_fighters TO 'u263467780_satina6para86_app'@'127.0.0.1';
+GRANT SELECT, INSERT, UPDATE, DELETE ON u263467780_satina6para86.person_family_links TO 'u263467780_satina6para86_app'@'127.0.0.1';
+GRANT SELECT, INSERT, UPDATE, DELETE ON u263467780_satina6para86.infrastructure_facilities TO 'u263467780_satina6para86_app'@'127.0.0.1';
+GRANT SELECT, INSERT, UPDATE, DELETE ON u263467780_satina6para86.committee_terms TO 'u263467780_satina6para86_app'@'127.0.0.1';
+GRANT SELECT, INSERT, UPDATE, DELETE ON u263467780_satina6para86.committee_members TO 'u263467780_satina6para86_app'@'127.0.0.1';
+GRANT SELECT, INSERT, UPDATE, DELETE ON u263467780_satina6para86.advisors TO 'u263467780_satina6para86_app'@'127.0.0.1';
+GRANT SELECT, INSERT, UPDATE, DELETE ON u263467780_satina6para86.past_leaders TO 'u263467780_satina6para86_app'@'127.0.0.1';
+GRANT SELECT, INSERT, UPDATE, DELETE ON u263467780_satina6para86.achievements TO 'u263467780_satina6para86_app'@'127.0.0.1';
+GRANT SELECT, INSERT, UPDATE, DELETE ON u263467780_satina6para86.constitution_versions TO 'u263467780_satina6para86_app'@'127.0.0.1';
+GRANT SELECT, INSERT, UPDATE, DELETE ON u263467780_satina6para86.activities TO 'u263467780_satina6para86_app'@'127.0.0.1';
+GRANT SELECT, INSERT, UPDATE, DELETE ON u263467780_satina6para86.posts TO 'u263467780_satina6para86_app'@'127.0.0.1';
+GRANT SELECT, INSERT, UPDATE, DELETE ON u263467780_satina6para86.post_translations TO 'u263467780_satina6para86_app'@'127.0.0.1';
+GRANT SELECT, INSERT, UPDATE, DELETE ON u263467780_satina6para86.media TO 'u263467780_satina6para86_app'@'127.0.0.1';
+GRANT SELECT, INSERT, UPDATE, DELETE ON u263467780_satina6para86.media_links TO 'u263467780_satina6para86_app'@'127.0.0.1';
+GRANT SELECT, INSERT, UPDATE, DELETE ON u263467780_satina6para86.events TO 'u263467780_satina6para86_app'@'127.0.0.1';
+GRANT SELECT, INSERT, UPDATE, DELETE ON u263467780_satina6para86.gallery_albums TO 'u263467780_satina6para86_app'@'127.0.0.1';
+GRANT SELECT, INSERT, UPDATE, DELETE ON u263467780_satina6para86.faqs TO 'u263467780_satina6para86_app'@'127.0.0.1';
+GRANT SELECT, INSERT, UPDATE, DELETE ON u263467780_satina6para86.annual_reports TO 'u263467780_satina6para86_app'@'127.0.0.1';
+GRANT SELECT, INSERT, UPDATE, DELETE ON u263467780_satina6para86.service_requests TO 'u263467780_satina6para86_app'@'127.0.0.1';
+GRANT SELECT, INSERT, UPDATE, DELETE ON u263467780_satina6para86.service_request_updates TO 'u263467780_satina6para86_app'@'127.0.0.1';
+GRANT SELECT, INSERT, UPDATE, DELETE ON u263467780_satina6para86.service_request_expenses TO 'u263467780_satina6para86_app'@'127.0.0.1';
+GRANT SELECT, INSERT, UPDATE, DELETE ON u263467780_satina6para86.emergency_team_members TO 'u263467780_satina6para86_app'@'127.0.0.1';
+GRANT SELECT, INSERT, UPDATE, DELETE ON u263467780_satina6para86.blood_donors TO 'u263467780_satina6para86_app'@'127.0.0.1';
+GRANT SELECT, INSERT, UPDATE, DELETE ON u263467780_satina6para86.blood_requests TO 'u263467780_satina6para86_app'@'127.0.0.1';
+GRANT SELECT, INSERT, UPDATE, DELETE ON u263467780_satina6para86.blood_consents TO 'u263467780_satina6para86_app'@'127.0.0.1';
+GRANT SELECT, INSERT, UPDATE, DELETE ON u263467780_satina6para86.service_types TO 'u263467780_satina6para86_app'@'127.0.0.1';
+GRANT SELECT, INSERT, UPDATE, DELETE ON u263467780_satina6para86.finance_categories TO 'u263467780_satina6para86_app'@'127.0.0.1';
+GRANT SELECT, INSERT, UPDATE, DELETE ON u263467780_satina6para86.projects TO 'u263467780_satina6para86_app'@'127.0.0.1';
+GRANT SELECT, INSERT, UPDATE, DELETE ON u263467780_satina6para86.notifications_log TO 'u263467780_satina6para86_app'@'127.0.0.1';
+GRANT SELECT, INSERT, UPDATE, DELETE ON u263467780_satina6para86.settings TO 'u263467780_satina6para86_app'@'127.0.0.1';
+GRANT SELECT, INSERT, UPDATE, DELETE ON u263467780_satina6para86.contact_messages TO 'u263467780_satina6para86_app'@'127.0.0.1';
+GRANT SELECT, INSERT, UPDATE, DELETE ON u263467780_satina6para86.data_requests TO 'u263467780_satina6para86_app'@'127.0.0.1';
+GRANT SELECT, INSERT, UPDATE, DELETE ON u263467780_satina6para86.permissions TO 'u263467780_satina6para86_app'@'127.0.0.1';
+GRANT SELECT, INSERT, UPDATE, DELETE ON u263467780_satina6para86.role_has_permissions TO 'u263467780_satina6para86_app'@'127.0.0.1';
+GRANT SELECT, INSERT, UPDATE, DELETE ON u263467780_satina6para86.model_has_permissions TO 'u263467780_satina6para86_app'@'127.0.0.1';
+GRANT SELECT, INSERT, UPDATE, DELETE ON u263467780_satina6para86.model_has_roles TO 'u263467780_satina6para86_app'@'127.0.0.1';
+GRANT SELECT, INSERT, UPDATE, DELETE ON u263467780_satina6para86.personal_access_tokens TO 'u263467780_satina6para86_app'@'127.0.0.1';
+GRANT SELECT, INSERT, UPDATE, DELETE ON u263467780_satina6para86.notifications TO 'u263467780_satina6para86_app'@'127.0.0.1';
+GRANT SELECT, INSERT, UPDATE, DELETE ON u263467780_satina6para86.jobs TO 'u263467780_satina6para86_app'@'127.0.0.1';
+GRANT SELECT, INSERT, UPDATE, DELETE ON u263467780_satina6para86.failed_jobs TO 'u263467780_satina6para86_app'@'127.0.0.1';
+GRANT SELECT, INSERT, UPDATE, DELETE ON u263467780_satina6para86.cache TO 'u263467780_satina6para86_app'@'127.0.0.1';
+GRANT SELECT, INSERT, UPDATE, DELETE ON u263467780_satina6para86.sessions TO 'u263467780_satina6para86_app'@'127.0.0.1';
+GRANT SELECT, INSERT, UPDATE, DELETE ON u263467780_satina6para86.password_reset_tokens TO 'u263467780_satina6para86_app'@'127.0.0.1';
 
 --     CANNOT do (verified in tests/04b): DELETE on ledger_entries /
 --     ledger_reversals / activity_log (no grant); UPDATE/DELETE on
@@ -98,12 +104,12 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON u263467780_satanipara.password_reset_tok
 --     ALTER, DROP, INDEX, TRIGGER, REFERENCES, CREATE VIEW);
 --     TRUNCATE (needs DROP); SUPER / FILE / GRANT OPTION / RELOAD.
 
--- (ii) MIGRATIONS — u263467780_satanipara_mig (deploy pipeline ONLY)
+-- (ii) MIGRATIONS — u263467780_satina6para86_mig (deploy pipeline ONLY)
 --     Never in the app .env, never on the app server at runtime.
 GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, ALTER, DROP, INDEX,
   REFERENCES, CREATE VIEW, SHOW VIEW, CREATE ROUTINE, ALTER ROUTINE,
   EVENT, TRIGGER, LOCK TABLES
-  ON u263467780_satanipara.* TO 'u263467780_satanipara_mig'@'localhost';
+  ON u263467780_satina6para86.* TO 'u263467780_satina6para86_mig'@'127.0.0.1';
 
 --     CANNOT do: anything outside %s (no grant on *.*); GRANT OPTION;
 --     SUPER / FILE / RELOAD. Its DELETE on the ledger tables is NOT a
@@ -112,23 +118,23 @@ GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, ALTER, DROP, INDEX,
 --     reviewed migration, and must never be used interactively for
 --     routine work — every use goes through the deploy pipeline.
 
--- (iii) BACKUP — u263467780_satanipara_bkp (mysqldump / spatie backup)
+-- (iii) BACKUP — u263467780_satina6para86_bkp (mysqldump / spatie backup)
 GRANT SELECT, LOCK TABLES, SHOW VIEW, EVENT, TRIGGER
-  ON u263467780_satanipara.* TO 'u263467780_satanipara_bkp'@'localhost';
+  ON u263467780_satina6para86.* TO 'u263467780_satina6para86_bkp'@'127.0.0.1';
 
 --     CANNOT do: any write (INSERT/UPDATE/DELETE), any DDL, any access
 --     outside %s. LOCK TABLES is for a consistent dump; TRIGGER +
 --     SHOW VIEW + EVENT let mysqldump include triggers/views/events.
 
--- (iv) REPORTING — u263467780_satanipara_rep (Finance Auditor / BI)
+-- (iv) REPORTING — u263467780_satina6para86_rep (Finance Auditor / BI)
 --     Create ONLY when the Finance Auditor role / BI need actually
 --     arises (Doc 06 §7.1). Until then this account must not exist.
-GRANT SELECT ON u263467780_satanipara.ledger_entries TO 'u263467780_satanipara_rep'@'localhost';
-GRANT SELECT ON u263467780_satanipara.ledger_reversals TO 'u263467780_satanipara_rep'@'localhost';
-GRANT SELECT ON u263467780_satanipara.finance_categories TO 'u263467780_satanipara_rep'@'localhost';
-GRANT SELECT ON u263467780_satanipara.projects TO 'u263467780_satanipara_rep'@'localhost';
+GRANT SELECT ON u263467780_satina6para86.ledger_entries TO 'u263467780_satina6para86_rep'@'127.0.0.1';
+GRANT SELECT ON u263467780_satina6para86.ledger_reversals TO 'u263467780_satina6para86_rep'@'127.0.0.1';
+GRANT SELECT ON u263467780_satina6para86.finance_categories TO 'u263467780_satina6para86_rep'@'127.0.0.1';
+GRANT SELECT ON u263467780_satina6para86.projects TO 'u263467780_satina6para86_rep'@'127.0.0.1';
 GRANT SELECT (id, name_bn, name_en, member_no, member_type, status, created_at)
-  ON u263467780_satanipara.users TO 'u263467780_satanipara_rep'@'localhost';
+  ON u263467780_satina6para86.users TO 'u263467780_satina6para86_rep'@'127.0.0.1';
 
 --     CANNOT do: any write; any DDL; SELECT on any other table
 --     (no SELECT on activity_log — audit viewing stays in-app, Super
@@ -149,30 +155,30 @@ FLUSH PRIVILEGES;
 -- --- the app user DELETE. A REVOKE of a privilege that was never ---
 -- --- granted fails with ERROR 1141 — that error means 'already tight', ---
 -- --- not a failure. Run with --force or ignore 1141. ---
-REVOKE DELETE ON u263467780_satanipara.ledger_entries FROM 'u263467780_satanipara_app'@'localhost';
-REVOKE DELETE ON u263467780_satanipara.ledger_reversals FROM 'u263467780_satanipara_app'@'localhost';
-REVOKE DELETE, UPDATE ON u263467780_satanipara.activity_log FROM 'u263467780_satanipara_app'@'localhost';
-REVOKE INSERT, DELETE ON u263467780_satanipara.sequences FROM 'u263467780_satanipara_app'@'localhost';
+REVOKE DELETE ON u263467780_satina6para86.ledger_entries FROM 'u263467780_satina6para86_app'@'127.0.0.1';
+REVOKE DELETE ON u263467780_satina6para86.ledger_reversals FROM 'u263467780_satina6para86_app'@'127.0.0.1';
+REVOKE DELETE, UPDATE ON u263467780_satina6para86.activity_log FROM 'u263467780_satina6para86_app'@'127.0.0.1';
+REVOKE INSERT, DELETE ON u263467780_satina6para86.sequences FROM 'u263467780_satina6para86_app'@'127.0.0.1';
 REVOKE CREATE, ALTER, DROP, INDEX, TRIGGER, REFERENCES, CREATE VIEW,
   CREATE ROUTINE, ALTER ROUTINE, EVENT
-  ON u263467780_satanipara.* FROM 'u263467780_satanipara_app'@'localhost';
+  ON u263467780_satina6para86.* FROM 'u263467780_satina6para86_app'@'127.0.0.1';
 -- (GRANT OPTION and the global privileges are revoked separately:
 -- they cannot appear in a database-level REVOKE list.)
-REVOKE GRANT OPTION ON u263467780_satanipara.* FROM 'u263467780_satanipara_app'@'localhost';
+REVOKE GRANT OPTION ON u263467780_satina6para86.* FROM 'u263467780_satina6para86_app'@'127.0.0.1';
 REVOKE SUPER, FILE, RELOAD, SHUTDOWN, PROCESS, SHOW DATABASES
-  ON *.* FROM 'u263467780_satanipara_app'@'localhost';
+  ON *.* FROM 'u263467780_satina6para86_app'@'127.0.0.1';
 FLUSH PRIVILEGES;
 
 -- --- VERIFICATION (run after applying; expected results in comments) ---
-SHOW GRANTS FOR 'u263467780_satanipara_app'@'localhost';
+SHOW GRANTS FOR 'u263467780_satina6para86_app'@'127.0.0.1';
 --   Expect: USAGE on *.*, then exactly the per-table grants above;
 --   NO grant mentioning DELETE on ledger_entries / ledger_reversals /
 --   activity_log, and NO DDL privilege anywhere.
-SHOW GRANTS FOR 'u263467780_satanipara_mig'@'localhost';
---   Expect: the DDL+DML set on u263467780_satanipara.* only; no *.* grant, no GRANT OPTION.
-SHOW GRANTS FOR 'u263467780_satanipara_bkp'@'localhost';
---   Expect: SELECT, LOCK TABLES, SHOW VIEW, EVENT, TRIGGER on u263467780_satanipara.* only.
-SHOW GRANTS FOR 'u263467780_satanipara_rep'@'localhost';
+SHOW GRANTS FOR 'u263467780_satina6para86_mig'@'127.0.0.1';
+--   Expect: the DDL+DML set on u263467780_satina6para86.* only; no *.* grant, no GRANT OPTION.
+SHOW GRANTS FOR 'u263467780_satina6para86_bkp'@'127.0.0.1';
+--   Expect: SELECT, LOCK TABLES, SHOW VIEW, EVENT, TRIGGER on u263467780_satina6para86.* only.
+SHOW GRANTS FOR 'u263467780_satina6para86_rep'@'127.0.0.1';
 --   Expect: SELECT on the four finance tables + the column list on users.
 
 -- Forbidden-action probes (run each as the named user; every one must
